@@ -71,6 +71,13 @@ export class MatchScene extends Phaser.Scene {
   /** Le lancer en cours a-t-il deja fait tomber un kubb ? Remis a zero a chaque tir. */
   private knockedThisThrow = false;
   /**
+   * Le lancer en cours a-t-il deja ricoche sur une bande ? Remis a zero a
+   * chaque tir. Un kubb adverse abattu apres un tel ricochet redresse un
+   * kubb tombe de son propre camp (le plus a gauche) — recompense un tir
+   * indirect plus difficile a placer.
+   */
+  private bouncedWallThisThrow = false;
+  /**
    * Sens du vent pour la partie en cours, tire une seule fois a create() —
    * jamais par lancer, sans quoi il n'y aurait rien a lire ni a compenser.
    * null si la meteo est desactivee.
@@ -132,6 +139,7 @@ export class MatchScene extends Phaser.Scene {
     this.runPerks = stage ? run?.perks ?? [] : [];
     this.secondSouffleUsed = false;
     this.knockedThisThrow = false;
+    this.bouncedWallThisThrow = false;
     // "Bras infatigable" (Defi) : lancers en plus pour le joueur uniquement.
     if (this.runPerks.includes('lancer-bonus')) this.throwsLeft.blue += LANCER_BONUS_THROWS;
 
@@ -293,6 +301,7 @@ export class MatchScene extends Phaser.Scene {
     this.restMs = 0;
     this.aimPower = 0;
     this.knockedThisThrow = false;
+    this.bouncedWallThisThrow = false;
     this.drawAim();
     this.syncHud();
   }
@@ -476,13 +485,16 @@ export class MatchScene extends Phaser.Scene {
         1
       );
 
-      // Bandes et rochers se comportent pareil : un rebond, rien d'autre.
+      // Bandes et rochers se comportent pareil a l'impact : un rebond, rien
+      // d'autre. Seule une bande (pas un rocher) marque le lancer comme
+      // "indirect" pour la redresse eventuelle d'un kubb tombe (plus bas).
       if (
         pair.bodyA.label === 'wall' ||
         pair.bodyB.label === 'wall' ||
         pair.bodyA.label === 'obstacle' ||
         pair.bodyB.label === 'obstacle'
       ) {
+        if (pair.bodyA.label === 'wall' || pair.bodyB.label === 'wall') this.bouncedWallThisThrow = true;
         this.playBounce(speed);
         continue;
       }
@@ -519,8 +531,28 @@ export class MatchScene extends Phaser.Scene {
         ),
         TEAMS[this.activeTeam].cssColor
       );
+      if (this.bouncedWallThisThrow) this.reviveLeftmostKubb(this.activeTeam);
       this.syncHud();
     }
+  }
+
+  /**
+   * Recompense un kubb adverse abattu apres un ricochet sur une bande : redresse
+   * le premier kubb tombe de son propre camp, toujours le plus a gauche
+   * (`kubbs` est range dans cet ordre, comme THROW_POSITIONS). Ne fait rien si
+   * l'equipe n'a aucun kubb a terre.
+   */
+  private reviveLeftmostKubb(team: TeamId) {
+    const fallen = this.teams[team].kubbs.find((k) => !k.isStanding);
+    if (!fallen) return;
+
+    fallen.reviveUp(this);
+    this.juice.floatingText(
+      fallen.sprite.x,
+      fallen.sprite.y,
+      translate(gameStore.getState().lang, 'match.kubbRevived'),
+      TEAMS[team].cssColor
+    );
   }
 
   /** Ricochet ou choc trop mou : un son bref, espace pour rester lisible. */

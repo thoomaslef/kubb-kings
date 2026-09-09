@@ -12,16 +12,23 @@ import type { TeamId } from './Team';
  * texture : le rendu peut evoluer sans toucher aux collisions.
  */
 export class Kubb {
-  readonly sprite: Phaser.Physics.Matter.Image;
+  sprite: Phaser.Physics.Matter.Image;
   readonly team: TeamId;
   private readonly skin: KubbSkin;
+  /** Position d'origine (le kubb ne se deplace jamais tant qu'il est debout) : reprise telle quelle a la redresse. */
+  private readonly x: number;
+  private readonly y: number;
   /** Ombre portee, sprite independant qui suit le bloc. */
   private readonly shadow: Phaser.GameObjects.Image;
+  /** Decor couche au sol pendant que le kubb est a terre — detruit a la redresse. */
+  private fallenSprite: Phaser.GameObjects.Image | null = null;
   private downed = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, team: TeamId, skin: KubbSkin) {
     this.team = team;
     this.skin = skin;
+    this.x = x;
+    this.y = y;
 
     this.shadow = scene.add
       .image(x + SHADOW.offsetX, y + SHADOW.offsetY, 'shadow')
@@ -29,13 +36,18 @@ export class Kubb {
       .setAlpha(SHADOW.alpha)
       .setScale(SHADOW.scale.kubb);
 
-    this.sprite = scene.matter.add.image(x, y, `kubb-${team}-${skin}`, undefined, {
+    this.sprite = this.spawnBody(scene);
+  }
+
+  private spawnBody(scene: Phaser.Scene): Phaser.Physics.Matter.Image {
+    const sprite = scene.matter.add.image(this.x, this.y, `kubb-${this.team}-${this.skin}`, undefined, {
       ...KUBB_BODY,
       chamfer: { radius: 5 },
       shape: { type: 'rectangle', width: HITBOX.kubb, height: HITBOX.kubb }
     });
-    this.sprite.setDepth(4);
-    this.sprite.setData('kubb', this);
+    sprite.setDepth(4);
+    sprite.setData('kubb', this);
+    return sprite;
   }
 
   get isStanding() {
@@ -62,6 +74,7 @@ export class Kubb {
       .setDepth(1)
       .setRotation(rotation)
       .setScale(0.68, 1.05);
+    this.fallenSprite = fallen;
 
     // Le bloc part sur un cote au hasard et s'aplatit.
     scene.tweens.add({
@@ -85,5 +98,28 @@ export class Kubb {
       duration: 260,
       ease: 'Quad.easeOut'
     });
+  }
+
+  /**
+   * Redresse un kubb tombe a sa position d'origine (effet "ricochet sur bande
+   * avant l'impact") : reforme un corps physique neuf, comme a la creation.
+   */
+  reviveUp(scene: Phaser.Scene) {
+    if (!this.downed) return;
+    this.downed = false;
+
+    scene.tweens.killTweensOf(this.shadow);
+    if (this.fallenSprite) {
+      scene.tweens.killTweensOf(this.fallenSprite);
+      this.fallenSprite.destroy();
+      this.fallenSprite = null;
+    }
+
+    this.sprite = this.spawnBody(scene);
+    this.shadow.setDepth(2);
+    this.shadow.setPosition(this.x + SHADOW.offsetX, this.y + SHADOW.offsetY);
+    this.shadow.setRotation(0);
+    this.shadow.setScale(SHADOW.scale.kubb);
+    this.shadow.setAlpha(SHADOW.alpha);
   }
 }

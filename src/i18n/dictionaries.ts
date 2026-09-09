@@ -144,6 +144,8 @@ const fr: Record<string, string> = {
   'rules.item7': 'Faire tomber le roi dans les regles = victoire.',
   'rules.item8':
     "Partie limitee a 4 minutes et {n} lancers par equipe. Au buzzer, l'equipe qui a abattu le plus de kubbs l'emporte.",
+  'rules.item9':
+    "Un tir qui ricoche sur une bande avant d'abattre un kubb adverse redresse en recompense l'un de vos propres kubbs tombes, toujours le plus a gauche.",
   'rules.back': 'Retour',
   'rules.replayTutorial': 'Revoir le tutoriel',
   'rules.tutorialWillReplay': 'Reapparaitra a la prochaine partie',
@@ -205,6 +207,7 @@ const fr: Record<string, string> = {
   'match.secondSouffle': 'SECOND SOUFFLE !',
   'match.knockedLast': 'DERNIER !',
   'match.knockedDown': 'ABATTU !',
+  'match.kubbRevived': 'KUBB RELEVE !',
   'match.kingFalls': 'LE ROI TOMBE !',
   'match.kingTooEarly': 'ROI TOUCHE TROP TOT'
 };
@@ -340,6 +343,8 @@ const en: Record<string, string> = {
   'rules.item7': 'Knocking down the king within the rules = victory.',
   'rules.item8':
     'Match capped at 4 minutes and {n} throws per team. At the buzzer, the team with the most kubbs down wins.',
+  'rules.item9':
+    "A throw that bounces off a wall before knocking down an opposing kubb revives one of your own fallen kubbs as a reward — always the leftmost one.",
   'rules.back': 'Back',
   'rules.replayTutorial': 'Replay the tutorial',
   'rules.tutorialWillReplay': 'Will show again next match',
@@ -401,6 +406,7 @@ const en: Record<string, string> = {
   'match.secondSouffle': 'SECOND WIND!',
   'match.knockedLast': 'LAST ONE!',
   'match.knockedDown': 'DOWN!',
+  'match.kubbRevived': 'KUBB REVIVED!',
   'match.kingFalls': 'THE KING FALLS!',
   'match.kingTooEarly': 'KING HIT TOO SOON'
 };
