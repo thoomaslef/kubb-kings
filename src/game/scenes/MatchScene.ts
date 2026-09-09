@@ -8,6 +8,7 @@ import { Baton } from '../entities/Baton';
 import { WALL_BODY } from '../physics/matterConfig';
 import { Juice } from '../juice';
 import { PALETTE, BORDER_WIDTH } from '../theme';
+import { AI_PROFILES, AI_TEAM, decideThrow, type AiProfile } from '../ai';
 import * as sfx from '../audio';
 import {
   AIM,
@@ -17,11 +18,9 @@ import {
   KNOCKDOWN_IMPACT_SPEED,
   MATCH_DURATION_MS,
   MAX_THROWS_PER_TEAM,
-  THROW
+  THROW,
+  THROW_LINE_MARGIN
 } from '../rules';
-
-/** Marge entre le bord du terrain et la position de lancer extreme. */
-const THROW_LINE_MARGIN = 40;
 
 /**
  * Scene de match : un tour = choisir sa position de lancer, viser, doser, lancer.
@@ -53,6 +52,10 @@ export class MatchScene extends Phaser.Scene {
   private lastShownSecond = -1;
 
   private juice!: Juice;
+  /** Profil de l'IA, ou null en 1v1 local : c'est ce qui distingue les modes. */
+  private ai: AiProfile | null = null;
+  private aiTimer: Phaser.Time.TimerEvent | null = null;
+  private aiTween: Phaser.Tweens.Tween | null = null;
   /** Le jingle d'ouverture du roi ne se joue qu'une fois par equipe. */
   private kingAnnounced: Record<TeamId, boolean> = { blue: false, red: false };
   /** Horodatage du dernier rebond sonorise, pour ne pas mitrailler les bandes. */
@@ -74,6 +77,11 @@ export class MatchScene extends Phaser.Scene {
     this.lastShownSecond = -1;
     this.kingAnnounced = { blue: false, red: false };
     this.lastBounceMs = 0;
+    this.aiTimer = null;
+    this.aiTween = null;
+
+    const { mode, difficulty } = gameStore.getState();
+    this.ai = mode === 'solo' ? AI_PROFILES[difficulty] : null;
 
     gameStore.getState().setScreen('match');
 
@@ -98,6 +106,7 @@ export class MatchScene extends Phaser.Scene {
       bridge.off('leave-match', this.handleLeave, this);
       // Le ralenti du hit-stop survivrait au changement de scene sans ce reset.
       this.juice.destroy();
+      this.cancelAiTurn();
       // Le monde Matter est deja detruit quand SHUTDOWN est emis : on garde le garde-fou.
       this.matter.world?.off(Phaser.Physics.Matter.Events.COLLISION_START, this.onCollisionStart, this);
     });
@@ -105,6 +114,8 @@ export class MatchScene extends Phaser.Scene {
     this.aimAngle = this.forwardAngle();
     this.syncHud();
     this.drawAim();
+
+    if (this.isAiTeam(this.activeTeam)) this.beginAiTurn();
   }
 
   update(_time: number, delta: number) {
@@ -221,14 +232,114 @@ export class MatchScene extends Phaser.Scene {
     this.activeTeam = this.throwsLeft[next] > 0 ? next : this.activeTeam;
 
     if (this.activeTeam !== previous) {
-      const team = TEAMS[this.activeTeam];
-      this.juice.turnBanner(`AU TOUR DE L'EQUIPE ${team.label.toUpperCase()}`, team.color, FIELD_CENTER_Y, this.scale.width);
+      this.juice.turnBanner(
+        this.turnLabel(this.activeTeam),
+        TEAMS[this.activeTeam].color,
+        FIELD_CENTER_Y,
+        this.scale.width
+      );
     }
 
     this.phase = 'aiming';
     this.aimAngle = this.forwardAngle();
     this.drawAim();
     this.syncHud();
+
+    if (this.isAiTeam(this.activeTeam)) this.beginAiTurn();
+  }
+
+  /**
+   * Texte du bandeau de tour. En solo on ne parle plus d'equipes de couleur :
+   * il y a le joueur et il y a l'IA.
+   */
+  private turnLabel(team: TeamId): string {
+    if (this.ai) return this.isAiTeam(team) ? "AU TOUR DE L'IA" : 'A VOUS DE JOUER';
+    return `AU TOUR DE L'EQUIPE ${TEAMS[team].label.toUpperCase()}`;
+  }
+
+  // --------------------------------------------------------------------- IA
+
+  /** L'equipe donnee est-elle tenue par l'IA ? Toujours false en 1v1 local. */
+  private isAiTeam(team: TeamId): boolean {
+    return this.ai !== null && team === AI_TEAM;
+  }
+
+  /**
+   * Tour de l'IA : elle reflechit, se deplace le long de sa ligne de lancer,
+   * arme, puis tire. Chaque etape est jouee a l'ecran — sans cela le baton
+   * partirait de nulle part et le joueur ne comprendrait pas ce qui arrive.
+   *
+   * Toutes les etapes se gardent sur `phase`, qui repasse a 'over' si la partie
+   * se termine entre-temps : un tour d'IA ne doit jamais lancer apres coup.
+   */
+  private beginAiTurn() {
+    const profile = this.ai;
+    if (!profile) return;
+
+    this.phase = 'ai-aiming';
+    this.aimPower = 0;
+    this.aimAngle = this.forwardAngle();
+    this.drawAim();
+    this.syncHud();
+
+    this.aiTimer = this.time.delayedCall(profile.thinkMs, () => {
+      if (this.phase !== 'ai-aiming') return;
+
+      const opponent = this.teams[OPPONENT[AI_TEAM]];
+      const shot = decideThrow(
+        {
+          throwerY: TEAMS[AI_TEAM].throwerY,
+          direction: TEAMS[AI_TEAM].direction,
+          targets: opponent.kubbs
+            .filter((kubb) => kubb.isStanding)
+            .map((kubb) => ({ x: kubb.sprite.x, y: kubb.sprite.y })),
+          kingTargetable: opponent.standingCount === 0,
+          kingStanding: this.king.isStanding
+        },
+        profile
+      );
+
+      this.throwX[AI_TEAM] = shot.throwX;
+      this.aimAngle = shot.angle;
+
+      this.aiTween = this.tweens.add({
+        targets: this.throwerSprites[AI_TEAM],
+        x: shot.throwX,
+        duration: 280,
+        ease: 'Sine.easeInOut',
+        onComplete: () => this.animateAiAim(shot.power)
+      });
+    });
+  }
+
+  /** Fait monter la jauge de l'IA sous les yeux du joueur, puis lance. */
+  private animateAiAim(power: number) {
+    if (this.phase !== 'ai-aiming') return;
+
+    const gauge = { value: 0 };
+    this.aiTween = this.tweens.add({
+      targets: gauge,
+      value: power,
+      duration: 420,
+      ease: 'Quad.easeIn',
+      onUpdate: () => {
+        this.aimPower = gauge.value;
+        this.drawAim();
+      },
+      onComplete: () => {
+        if (this.phase !== 'ai-aiming') return;
+        this.aimPower = power;
+        this.launch();
+      }
+    });
+  }
+
+  /** Coupe un tour d'IA en cours : fin de partie ou sortie de scene. */
+  private cancelAiTurn() {
+    this.aiTimer?.remove();
+    this.aiTimer = null;
+    this.aiTween?.remove();
+    this.aiTween = null;
   }
 
   // ------------------------------------------------------------- collisions
@@ -350,6 +461,7 @@ export class MatchScene extends Phaser.Scene {
   private finish(result: MatchResult, delayMs = 750) {
     this.phase = 'over';
     this.isDragging = false;
+    this.cancelAiTurn();
     this.baton?.destroy();
     this.baton = null;
     this.aimGfx.clear();
@@ -393,7 +505,9 @@ export class MatchScene extends Phaser.Scene {
   private drawAim() {
     const g = this.aimGfx;
     g.clear();
-    if (this.phase !== 'aiming') return;
+    // Le tour de l'IA se dessine comme celui du joueur : le joueur doit voir
+    // d'ou elle tire et avec quelle force.
+    if (this.phase !== 'aiming' && this.phase !== 'ai-aiming') return;
 
     const origin = this.origin();
     const color = TEAMS[this.activeTeam].color;
@@ -408,7 +522,8 @@ export class MatchScene extends Phaser.Scene {
       throwerY
     );
 
-    if (!this.isDragging) {
+    // Fleche et jauge des que la visee est engagee — au doigt ou par l'IA.
+    if (!this.isDragging && this.aimPower <= 0) {
       g.lineStyle(2, color, 0.5);
       g.strokeCircle(origin.x, origin.y, 26);
       return;

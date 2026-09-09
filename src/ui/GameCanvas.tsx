@@ -14,7 +14,9 @@ export function GameCanvas() {
 
     // Poignee de debug en dev : window.__kubb.scene.getScene('MatchScene')
     if (import.meta.env.DEV) {
-      (window as unknown as { __kubb?: Phaser.Game }).__kubb = game;
+      const w = window as unknown as { __kubb?: Phaser.Game; __kubbStoreApi?: typeof useGameStore };
+      w.__kubb = game;
+      w.__kubbStoreApi = useGameStore;
     }
 
     // Une scene en pause ne tourne plus : l'ordre doit venir de l'exterieur.

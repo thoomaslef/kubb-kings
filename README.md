@@ -3,8 +3,8 @@
 Jeu mobile HTML5 inspire du [Kubb](https://fr.wikipedia.org/wiki/Kubb), le jeu de plein air
 suedois : deux equipes se lancent des batons pour abattre les blocs adverses, puis le roi.
 
-Ce depot contient le **MVP** : un **1v1 local** (pass-and-play sur le meme telephone),
-une seule map, une partie de 4 minutes maximum.
+Deux modes : **solo contre l'IA** (trois niveaux) et **1v1 local** (pass-and-play sur le
+meme telephone). Une seule map, une partie de 4 minutes maximum.
 
 ---
 
@@ -99,6 +99,7 @@ kubb-kings/
 │   │   ├── config.ts   config Phaser
 │   │   ├── rules.ts    regles, equilibrage, geometrie du terrain et hitboxes
 │   │   ├── theme.ts    palette et constantes de rendu (pendant visuel de rules.ts)
+│   │   ├── ai.ts       adversaire solo (module pur, simulable hors navigateur)
 │   │   ├── juice.ts    feedback : particules, secousses, vibration, ralenti
 │   │   ├── audio.ts    sons synthetises par code (WebAudio)
 │   │   └── GameBridge.ts
@@ -158,6 +159,54 @@ React  <--(store Zustand : ecran, HUD, resultat)------------   Scenes Phaser
 - **Feu ami neutralise.** Un baton ne peut pas abattre les kubbs de sa propre equipe (cas
   possible sur un rebond de bande). Cela evite une elimination absurde due au hasard.
 - **Fin de tour automatique** quand le baton est a l&apos;arret (ou apres 4 s de vol).
+
+---
+
+## L'adversaire solo
+
+[`src/game/ai.ts`](src/game/ai.ts) est un **module pur** : aucun import Phaser, aucun
+acces a la scene, aleatoire injecte. Il recoit une photo du plateau et rend un lancer.
+On peut donc le simuler par milliers hors du navigateur, ce qui a servi a calibrer les
+niveaux.
+
+**L'IA ne triche pas.** Meme ligne de lancer, meme ouverture maximale, meme deviation
+aleatoire de &plusmn;5&deg; que le joueur. Elle enumere les couples
+(position de lancer, cible), balaie son cone d'incertitude, et garde le tir qui renverse
+quelque chose le plus souvent.
+
+**Elle ne se suicide pas sur le roi.** Un tir dont ne serait-ce qu'une direction du cone
+atteint le roi est rejete tant que le roi n'est pas une cible legale : perdre le roi coute
+la partie, gacher un tour ne coute qu'un tour. Verifie sur 100 tours d'IA en conditions
+reelles (rebonds de bande compris) : zero roi renverse trop tot.
+
+### Ce que le calibrage a appris
+
+Les valeurs des trois niveaux sortent d'un balayage parametre par parametre sur des
+milliers de matchs simules, pas d'une intuition. Le balayage a montre que **deux leviers
+sur quatre ne servaient a rien** :
+
+| Levier                          | Effet mesure                                            |
+| ------------------------------- | ------------------------------------------------------- |
+| Erreur de visee, de 0 a 5&deg;  | **aucun** &mdash; la deviation du jeu domine tout        |
+| Erreur de visee, au-dela de 6&deg; | net                                                  |
+| Erreur de dosage, jusqu'a 0.15  | **aucun**                                               |
+| Erreur de dosage, au-dela de 0.3 | net (le baton arrive trop mou et rebondit)             |
+| Jouer au hasard plutot qu'au mieux | **aucun**, meme a 80% de coups au hasard             |
+| Ignorer son cone d'incertitude  | **negligeable**                                         |
+
+Les deux derniers reglages ont donc ete **retires** plutot que gardes pour la forme.
+
+Conclusion a garder en tete pour l'equilibrage : a la distance du terrain, la deviation
+de &plusmn;5&deg; represente &plusmn;72 px de derive laterale, pour des kubbs de 36 px
+espaces de 120 px. **La precision n'est pas la variable qui decide d'un lancer** &mdash;
+ni pour l'IA, ni pour le joueur. Baisser `MAX_AIM_DEVIATION_DEG` est le seul moyen de
+rendre l'adresse payante.
+
+| Niveau      | Kubbs abattus en 12 lancers | Victoires par le roi |
+| ----------- | --------------------------- | -------------------- |
+| Facile      | 2,6                         | 1%                   |
+| Moyen       | 3,2                         | 5%                   |
+| Difficile   | 3,9                         | 31%                  |
 
 ---
 

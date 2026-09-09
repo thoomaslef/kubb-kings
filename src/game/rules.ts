@@ -27,6 +27,12 @@ export const BASELINE_INSET = 60;
  */
 export const THROWER_INSET = 130;
 
+/**
+ * Marge entre le bord du terrain et la position de lancer extreme.
+ * Partagee par la scene (qui trace la ligne) et l'IA (qui choisit ou se placer).
+ */
+export const THROW_LINE_MARGIN = 40;
+
 /** Nombre de kubbs par equipe, alignes sur la ligne de fond. */
 export const KUBBS_PER_TEAM = 5;
 /** Ecartement horizontal entre deux kubbs. */

@@ -1,12 +1,16 @@
 import { create } from 'zustand';
 import type { TeamId } from '../game/entities/Team';
+import type { Difficulty } from '../game/ai';
 import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM } from '../game/rules';
 
 /** Ecrans hors-jeu geres par React. */
 export type Screen = 'boot' | 'menu' | 'rules' | 'match' | 'result' | 'quit';
 
 /** Phase du tour courant, pilotee par MatchScene. */
-export type MatchPhase = 'aiming' | 'flying' | 'over';
+export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';
+
+/** Mode de jeu choisi au menu, conserve d'une partie a l'autre. */
+export type GameMode = 'local' | 'solo';
 
 export type WinReason =
   | 'king-down'
@@ -46,12 +50,17 @@ interface GameState {
   paused: boolean;
   hud: HudState;
   result: MatchResult | null;
+  /** Choix du menu : ils survivent a `resetHud`, contrairement au HUD. */
+  mode: GameMode;
+  difficulty: Difficulty;
 
   setScreen: (screen: Screen) => void;
   setPaused: (paused: boolean) => void;
   patchHud: (patch: Partial<HudState>) => void;
   resetHud: () => void;
   setResult: (result: MatchResult) => void;
+  setMode: (mode: GameMode) => void;
+  setDifficulty: (difficulty: Difficulty) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -59,12 +68,16 @@ export const useGameStore = create<GameState>((set) => ({
   paused: false,
   hud: initialHud(),
   result: null,
+  mode: 'solo',
+  difficulty: 'moyen',
 
   setScreen: (screen) => set({ screen }),
   setPaused: (paused) => set({ paused }),
   patchHud: (patch) => set((state) => ({ hud: { ...state.hud, ...patch } })),
   resetHud: () => set({ hud: initialHud(), result: null, paused: false }),
-  setResult: (result) => set({ result })
+  setResult: (result) => set({ result }),
+  setMode: (mode) => set({ mode }),
+  setDifficulty: (difficulty) => set({ difficulty })
 }));
 
 /** Acces hors composant React (depuis les scenes Phaser). */

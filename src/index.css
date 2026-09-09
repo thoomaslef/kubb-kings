@@ -177,6 +177,39 @@ body {
   color: var(--text);
 }
 
+/* ---------- Selecteur de niveau ---------- */
+
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.segmented__item {
+  flex: 1;
+  padding: 9px 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.segmented__item--on {
+  background: var(--gold);
+  color: #2a1e04;
+}
+
+.footnote--tight {
+  margin: -6px 0 2px;
+}
+
 /* ---------- HUD ---------- */
 
 .hud {
@@ -287,6 +320,11 @@ body {
   color: #2a1e04;
   font-size: 13px;
   font-weight: 700;
+}
+
+.hud__banner--ai {
+  background: rgba(226, 86, 74, 0.92);
+  color: #fff2f0;
 }
 
 /* ---------- Ecran de fin ---------- */

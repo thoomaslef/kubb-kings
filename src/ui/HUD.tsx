@@ -3,6 +3,7 @@ import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { TEAMS, OPPONENT } from '../game/entities/Team';
 import { isMuted, setMuted } from '../game/audio';
+import { AI_TEAM } from '../game/ai';
 
 function formatTime(ms: number) {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -17,9 +18,14 @@ export function HUD() {
   const setPaused = useGameStore((s) => s.setPaused);
   const setScreen = useGameStore((s) => s.setScreen);
 
+  const mode = useGameStore((s) => s.mode);
   const [muted, setMutedState] = useState(isMuted);
 
   const active = TEAMS[hud.activeTeam];
+  // En solo, l'adversaire n'est pas "l'equipe Rouge" mais l'IA : le HUD doit
+  // dire a qui on a affaire, et surtout quand elle est en train de jouer.
+  const activeIsAi = mode === 'solo' && hud.activeTeam === AI_TEAM;
+  const activeLabel = activeIsAi ? 'IA' : active.label;
   const targets = hud.kubbsStanding[OPPONENT[hud.activeTeam]];
   // Derniere ligne droite : le chrono se met a battre en rouge.
   const urgent = hud.timeLeftMs <= 10_000;
@@ -42,7 +48,7 @@ export function HUD() {
         <div className="hud__bar">
           <div className="hud__team" style={{ borderColor: active.cssColor }}>
             <span className="hud__dot" style={{ background: active.cssColor }} />
-            <strong>{active.label}</strong>
+            <strong>{activeLabel}</strong>
           </div>
 
           <div className="hud__stats">
@@ -72,6 +78,8 @@ export function HUD() {
             II
           </button>
         </div>
+
+        {hud.phase === 'ai-aiming' && <div className="hud__banner hud__banner--ai">L&apos;IA vise&hellip;</div>}
 
         {hud.canTargetKing && hud.phase === 'aiming' && (
           <div className="hud__banner">Le roi est a portee &mdash; visez-le pour gagner</div>
