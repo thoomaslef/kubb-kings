@@ -1,0 +1,82 @@
+import Phaser from 'phaser';
+import { TEAMS } from '../entities/Team';
+
+/**
+ * Genere toutes les textures du MVP par code (aucun asset externe a charger),
+ * puis enchaine sur le menu.
+ */
+export class BootScene extends Phaser.Scene {
+  constructor() {
+    super('BootScene');
+  }
+
+  create() {
+    this.buildBatonTexture();
+    this.buildKubbTextures();
+    this.buildKingTexture();
+    this.buildThrowerTextures();
+
+    this.scene.start('MenuScene');
+  }
+
+  private texture(key: string, width: number, height: number, draw: (g: Phaser.GameObjects.Graphics) => void) {
+    const g = this.make.graphics({ x: 0, y: 0 }, false);
+    draw(g);
+    g.generateTexture(key, width, height);
+    g.destroy();
+  }
+
+  private buildBatonTexture() {
+    this.texture('baton', 14, 62, (g) => {
+      g.fillStyle(0x8a5f34, 1);
+      g.fillRoundedRect(0, 0, 14, 62, 6);
+      g.fillStyle(0xc9975b, 1);
+      g.fillRoundedRect(2, 2, 10, 58, 5);
+      g.fillStyle(0xe0b57c, 1);
+      g.fillRect(5, 8, 3, 46);
+    });
+  }
+
+  private buildKubbTextures() {
+    (Object.keys(TEAMS) as Array<keyof typeof TEAMS>).forEach((id) => {
+      const { color } = TEAMS[id];
+      this.texture(`kubb-${id}`, 36, 36, (g) => {
+        g.fillStyle(0x000000, 0.25);
+        g.fillRoundedRect(2, 4, 34, 32, 6);
+        g.fillStyle(color, 1);
+        g.fillRoundedRect(0, 0, 34, 34, 6);
+        g.fillStyle(0xffffff, 0.22);
+        g.fillRoundedRect(4, 4, 26, 10, 4);
+      });
+    });
+  }
+
+  private buildKingTexture() {
+    this.texture('king', 48, 48, (g) => {
+      g.fillStyle(0x000000, 0.25);
+      g.fillCircle(25, 26, 20);
+      g.fillStyle(0xf2c14e, 1);
+      g.fillCircle(24, 24, 20);
+      g.fillStyle(0xfff0bd, 1);
+      g.fillCircle(24, 24, 12);
+      // Petite couronne stylisee
+      g.fillStyle(0x8a6b12, 1);
+      g.fillTriangle(14, 26, 19, 14, 24, 26);
+      g.fillTriangle(24, 26, 29, 14, 34, 26);
+    });
+  }
+
+  private buildThrowerTextures() {
+    (Object.keys(TEAMS) as Array<keyof typeof TEAMS>).forEach((id) => {
+      const { color } = TEAMS[id];
+      this.texture(`thrower-${id}`, 34, 34, (g) => {
+        g.fillStyle(color, 0.35);
+        g.fillCircle(17, 17, 16);
+        g.lineStyle(3, color, 1);
+        g.strokeCircle(17, 17, 13);
+        g.fillStyle(0xffffff, 0.9);
+        g.fillCircle(17, 17, 5);
+      });
+    });
+  }
+}
