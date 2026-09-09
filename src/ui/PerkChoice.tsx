@@ -20,6 +20,7 @@ function descParams(id: PerkId): Record<string, number> | undefined {
 export function PerkChoice() {
   const t = useT();
   const run = useGameStore((s) => s.run);
+  const setScreen = useGameStore((s) => s.setScreen);
   const advanceRun = useGameStore((s) => s.advanceRun);
   const addPerk = useGameStore((s) => s.addPerk);
 
@@ -40,6 +41,13 @@ export function PerkChoice() {
     bridge.send('restart-match');
   };
 
+  // Seul ecran qui n'avait aucun moyen de revenir au menu — entre deux
+  // manches, un joueur qui veut arreter la run etait coince ici.
+  const quitRun = () => {
+    bridge.send('leave-match');
+    setScreen('menu');
+  };
+
   if (!run) return null;
 
   // Rien a proposer (les trois bonus sont deja debloques) : l'effet ci-dessus
@@ -47,7 +55,14 @@ export function PerkChoice() {
   if (choices.length === 0) {
     return (
       <div className="overlay overlay--solid">
-        <p className="panel__text">{t('perk.screen.next')}</p>
+        <div className="panel">
+          <p className="panel__text">{t('perk.screen.next')}</p>
+          <div className="button-column">
+            <button className="btn btn--ghost" onClick={quitRun}>
+              {t('result.defi.abandonRun')}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -67,6 +82,9 @@ export function PerkChoice() {
               <span className="btn--perk__desc">{t(`perk.${id}.description`, descParams(id))}</span>
             </button>
           ))}
+          <button className="btn btn--ghost" onClick={quitRun}>
+            {t('result.defi.abandonRun')}
+          </button>
         </div>
       </div>
     </div>
