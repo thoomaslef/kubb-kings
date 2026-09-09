@@ -27,16 +27,23 @@ export const BASELINE_INSET = 60;
  */
 export const THROWER_INSET = 130;
 
-/**
- * Marge entre le bord du terrain et la position de lancer extreme.
- * Partagee par la scene (qui trace la ligne) et l'IA (qui choisit ou se placer).
- */
-export const THROW_LINE_MARGIN = 40;
-
 /** Nombre de kubbs par equipe, alignes sur la ligne de fond. */
 export const KUBBS_PER_TEAM = 5;
 /** Ecartement horizontal entre deux kubbs. */
 export const KUBB_SPACING = 120;
+
+/**
+ * Positions de lancer disponibles : uniquement a l'aplomb de ses propres
+ * kubbs, comme au vrai Kubb — pas n'importe ou sur une ligne continue.
+ * Memes 5 abscisses que Team.ts (qui aligne les kubbs sur la ligne de
+ * fond) : les deux equipes partagent la meme rangee, seule leur ligne Y
+ * differe. Partagees par la scene (qui les dessine et y accroche la
+ * visee) et l'IA (qui choisit parmi elles).
+ */
+export const THROW_POSITIONS: readonly number[] = Array.from({ length: KUBBS_PER_TEAM }, (_, i) => {
+  const first = -((KUBBS_PER_TEAM - 1) / 2) * KUBB_SPACING;
+  return FIELD_CENTER_X + first + i * KUBB_SPACING;
+});
 
 /** Duree maximale d'une partie (4 min) pour tenir dans la fenetre 3-5 min. */
 export const MATCH_DURATION_MS = 4 * 60 * 1000;

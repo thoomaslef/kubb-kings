@@ -29,10 +29,15 @@ import {
   MATCH_DURATION_MS,
   MAX_THROWS_PER_TEAM,
   THROW,
-  THROW_LINE_MARGIN,
+  THROW_POSITIONS,
   WIND,
   type FieldPresetId
 } from '../rules';
+
+/** La plus proche des 5 positions de lancer disponibles (voir THROW_POSITIONS). */
+function nearestThrowPosition(x: number): number {
+  return THROW_POSITIONS.reduce((best, p) => (Math.abs(p - x) < Math.abs(best - x) ? p : best));
+}
 
 /**
  * Scene de match : un tour = choisir sa position de lancer, viser, doser, lancer.
@@ -203,17 +208,14 @@ export class MatchScene extends Phaser.Scene {
   }
 
   /**
-   * Le point de contact choisit d'abord la position de lancer le long de la
-   * ligne de lancer (comme au Kubb, on lance depuis n'importe ou sur sa ligne).
+   * Le point de contact choisit d'abord la position de lancer, mais
+   * seulement parmi les 5 disponibles (l'aplomb de ses propres kubbs,
+   * comme au vrai Kubb) — pas n'importe ou sur une ligne continue.
    */
   private onPointerDown(pointer: Phaser.Input.Pointer) {
     if (this.phase !== 'aiming') return;
 
-    this.throwX[this.activeTeam] = Phaser.Math.Clamp(
-      pointer.worldX,
-      FIELD.x + THROW_LINE_MARGIN,
-      FIELD.x + FIELD.width - THROW_LINE_MARGIN
-    );
+    this.throwX[this.activeTeam] = nearestThrowPosition(pointer.worldX);
     this.throwerSprites[this.activeTeam].x = this.throwX[this.activeTeam];
 
     this.isDragging = true;
@@ -625,14 +627,13 @@ export class MatchScene extends Phaser.Scene {
     const color = TEAMS[this.activeTeam].color;
     const throwerY = TEAMS[this.activeTeam].throwerY;
 
-    // Ligne de lancer : rappelle qu'on peut se placer n'importe ou dessus.
-    g.lineStyle(2, color, 0.3);
-    g.lineBetween(
-      FIELD.x + THROW_LINE_MARGIN,
-      throwerY,
-      FIELD.x + FIELD.width - THROW_LINE_MARGIN,
-      throwerY
-    );
+    // Positions de lancer disponibles : un point par position, plus marque
+    // sur celle choisie — il n'y en a que 5, pas une ligne continue.
+    for (const x of THROW_POSITIONS) {
+      const isActive = Math.abs(x - origin.x) < 1;
+      g.fillStyle(color, isActive ? 0.6 : 0.22);
+      g.fillCircle(x, throwerY, isActive ? 7 : 5);
+    }
 
     // Fleche et jauge des que la visee est engagee — au doigt ou par l'IA.
     if (!this.isDragging && this.aimPower <= 0) {
@@ -716,9 +717,11 @@ export class MatchScene extends Phaser.Scene {
       // Ligne de fond : la ou sont alignes les kubbs.
       g.fillStyle(TEAMS[id].color, 0.5);
       g.fillRect(FIELD.x + 12, TEAMS[id].baselineY - 2, FIELD.width - 24, 4);
-      // Ligne de lancer : plus discrete, elle rappelle qu'on peut s'y placer librement.
+      // Positions de lancer : un point discret par position disponible (a
+      // l'aplomb des kubbs), pas une ligne continue — drawAim() les remet en
+      // evidence, plus marquees, pendant la visee.
       g.fillStyle(TEAMS[id].color, 0.18);
-      g.fillRect(FIELD.x + 12, TEAMS[id].throwerY - 1, FIELD.width - 24, 2);
+      for (const x of THROW_POSITIONS) g.fillCircle(x, TEAMS[id].throwerY, 4);
     });
 
     // Rond central autour du roi.

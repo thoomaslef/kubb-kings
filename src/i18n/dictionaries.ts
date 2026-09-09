@@ -133,7 +133,8 @@ const fr: Record<string, string> = {
   // ---- Rules screen
   'rules.title': 'Regles',
   'rules.item1': 'Chaque equipe aligne {n} kubbs sur sa ligne de fond. Un roi unique se tient au centre du terrain.',
-  'rules.item2': "Les equipes lancent a tour de role. Posez le doigt sur votre ligne de lancer : c'est de la que part le baton.",
+  'rules.item2':
+    "Les equipes lancent a tour de role, uniquement depuis l'aplomb de l'un de leurs 5 kubbs : touchez l'un d'eux sur votre ligne, c'est de la que part le baton.",
   'rules.item3': "Glissez vers la cible pour donner l'angle, la longueur du glissement donne la puissance. Relachez pour lancer.",
   'rules.item4':
     "Un baton ne fait tomber un kubb que s'il le percute assez fort. Chaque lancer part avec une legere deviation : personne ne vise parfaitement.",
@@ -328,7 +329,8 @@ const en: Record<string, string> = {
   // ---- Rules screen
   'rules.title': 'Rules',
   'rules.item1': 'Each team lines up {n} kubbs on its baseline. A single king stands at the center of the field.',
-  'rules.item2': "Teams throw in turn. Place your finger on your throwing line: that's where the baton starts from.",
+  'rules.item2':
+    "Teams throw in turn, only from directly behind one of their 5 kubbs: tap one of them on your line, that's where the baton starts from.",
   'rules.item3': "Drag toward the target to set the angle; the drag length sets the power. Release to throw.",
   'rules.item4':
     "A baton only knocks down a kubb if it hits hard enough. Every throw starts with a slight deviation: nobody aims perfectly.",

@@ -1,7 +1,6 @@
 import { BATON_BODY } from './physics/matterConfig';
 import {
   AIM,
-  FIELD,
   FIELD_CENTER_X,
   FIELD_CENTER_Y,
   HITBOX,
@@ -9,7 +8,7 @@ import {
   MAX_AIM_DEVIATION_DEG,
   OBSTACLE_RADIUS,
   THROW,
-  THROW_LINE_MARGIN,
+  THROW_POSITIONS,
   WIND
 } from './rules';
 
@@ -287,8 +286,6 @@ function firstObstacle(
 
 // -------------------------------------------------------------------- decision
 
-/** Positions de lancer envisagees le long de la ligne. */
-const POSITION_SAMPLES = 17;
 /**
  * Echantillons par source d'erreur. On balaie les DEUX independamment plutot
  * qu'un cone unique : la somme de deux tirages uniformes n'est pas uniforme,
@@ -342,13 +339,10 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
 
   const forward = board.direction === -1 ? -Math.PI / 2 : Math.PI / 2;
   const maxDelta = AIM.maxAngleDeg * DEG;
-  const minX = FIELD.x + THROW_LINE_MARGIN;
-  const maxX = FIELD.x + FIELD.width - THROW_LINE_MARGIN;
 
   const candidates: Candidate[] = [];
 
-  for (let i = 0; i < POSITION_SAMPLES; i += 1) {
-    const throwX = minX + ((maxX - minX) * i) / (POSITION_SAMPLES - 1);
+  for (const throwX of THROW_POSITIONS) {
     const origin: Point = { x: throwX, y: board.throwerY };
 
     for (const target of targets) {
@@ -426,7 +420,7 @@ export function safeThrow(board: AiBoard, rng: Rng = Math.random): AiThrow {
   const forward = board.direction === -1 ? -Math.PI / 2 : Math.PI / 2;
   // -1 : on se place a gauche et on tire encore plus a gauche. +1 : l'inverse.
   const side = rng() < 0.5 ? -1 : 1;
-  const throwX = side < 0 ? FIELD.x + THROW_LINE_MARGIN : FIELD.x + FIELD.width - THROW_LINE_MARGIN;
+  const throwX = side < 0 ? THROW_POSITIONS[0] : THROW_POSITIONS[THROW_POSITIONS.length - 1];
 
   // On s'ecarte franchement de l'axe : le roi se tient au centre.
   const angle = forward - side * AIM.maxAngleDeg * 0.8 * DEG;

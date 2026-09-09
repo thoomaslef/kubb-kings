@@ -146,7 +146,9 @@ React  <--(store Zustand : ecran, HUD, resultat)------------   Scenes Phaser
 - Les equipes lancent a tour de role, un baton par tour. En 2v2, les deux joueurs
   d'une equipe alternent lequel des deux est au lancer a chaque fois que revient le
   tour de leur camp — l'alternance des tours elle-meme ne change pas.
-- **Placement** : le point de contact choisit la position de lancer le long de la ligne de lancer.
+- **Placement** : le point de contact choisit la position de lancer, uniquement parmi les
+  **5 positions disponibles** (l&apos;aplomb de ses propres kubbs — `THROW_POSITIONS` dans
+  [`src/game/rules.ts`](src/game/rules.ts)), pas une ligne continue.
 - **Visee** : le glissement donne l&apos;angle (bride a &plusmn;75&deg; vers l&apos;avant).
 - **Puissance** : la longueur du glissement, affichee par une jauge verte &rarr; rouge.
 - **Effet leger** : chaque lancer part avec une deviation aleatoire de **&plusmn;2,5&deg;**.
@@ -165,7 +167,12 @@ React  <--(store Zustand : ecran, HUD, resultat)------------   Scenes Phaser
 - **Un seul roi, au centre.** L&apos;enonce parle de « 1 roi au centre du terrain » : c&apos;est
   la regle reelle du Kubb, et deux rois ne peuvent pas tenir le meme centre. Le roi est donc
   unique et partage. Consequence de design : il est sur la trajectoire des tirs vers le kubb
-  central, d&apos;ou la possibilite de **choisir sa position de lancer** pour le contourner.
+  central, d&apos;ou l&apos;interet de choisir, parmi ses 5 positions de lancer, celle qui le
+  contourne le mieux.
+- **Position de lancer restreinte aux 5 kubbs.** Une ligne continue rendait le jeu trop facile :
+  on trouvait toujours un angle degage vers n&apos;importe quelle cible. Restreint aux 5 points
+  a l&apos;aplomb de ses propres kubbs (comme au vrai Kubb), le choix de la cible et celui de
+  la position s&apos;influencent vraiment l&apos;un l&apos;autre.
 - **Feu ami neutralise.** Un baton ne peut pas abattre les kubbs de sa propre equipe (cas
   possible sur un rebond de bande). Cela evite une elimination absurde due au hasard.
 - **Fin de tour automatique** quand le baton est a l&apos;arret (ou apres 4 s de vol).
