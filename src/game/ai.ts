@@ -37,9 +37,6 @@ export type Difficulty = 'facile' | 'moyen' | 'difficile';
 export const AI_TEAM = 'red' as const;
 
 export interface AiProfile {
-  label: string;
-  /** Ce que le joueur lit dans le menu. */
-  hint: string;
   /**
    * Erreur de visee propre a l'IA, en degres, EN PLUS de la deviation du jeu
    * (MAX_AIM_DEVIATION_DEG, actuellement +/-2.5 deg).
@@ -72,22 +69,16 @@ export interface AiProfile {
  */
 export const AI_PROFILES: Record<Difficulty, AiProfile> = {
   facile: {
-    label: 'Facile',
-    hint: 'Vise large, dose au hasard',
     aimErrorDeg: 12,
     powerErrorRatio: 0.45,
     thinkMs: 500
   },
   moyen: {
-    label: 'Moyen',
-    hint: 'Correct, mais gache des lancers',
     aimErrorDeg: 7,
     powerErrorRatio: 0.24,
     thinkMs: 650
   },
   difficile: {
-    label: 'Difficile',
-    hint: 'Ne gache presque rien',
     aimErrorDeg: 3.5,
     powerErrorRatio: 0.03,
     thinkMs: 850

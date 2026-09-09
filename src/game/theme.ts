@@ -52,17 +52,7 @@ export type KubbSkin = 'bois' | 'marbre' | 'metal';
 
 export const KUBB_SKINS: KubbSkin[] = ['bois', 'marbre', 'metal'];
 
-export const KUBB_SKIN_LABELS: Record<KubbSkin, string> = {
-  bois: 'Bois',
-  marbre: 'Marbre',
-  metal: 'Metal'
-};
-
-export const KUBB_SKIN_HINTS: Record<KubbSkin, string> = {
-  bois: "Le look d'origine, brut de sciage",
-  marbre: 'Blocs en pierre veinee',
-  metal: 'Blocs metalliques et reflets nets'
-};
+// Libelles et indices : src/i18n/dictionaries.ts (skin.<id>.label / .hint).
 
 /**
  * Ombres portees. Une source de lumiere unique, en haut a gauche : toutes les

@@ -107,7 +107,10 @@ kubb-kings/
 │   │   ├── tutorial.ts persistance du tutoriel (localStorage, cf. Tutorial.tsx)
 │   │   ├── roguelite.ts mode Defi : echelle de manches, bonus, meilleure serie
 │   │   ├── tournament.ts tournoi local : arbre a elimination directe (module pur)
+│   │   ├── diagnostics.ts journal d'erreurs local (localStorage, cf. About.tsx)
+│   │   ├── bootGame.ts import dynamique de Phaser (cf. GameCanvas.tsx)
 │   │   └── GameBridge.ts
+│   ├── i18n/           dictionnaires fr/en, translate(), hook useT()
 │   ├── ui/             composants React (App, Menu, Rules, HUD, Tutorial, ResultScreen…)
 │   ├── store/          Zustand
 │   ├── main.tsx
@@ -440,6 +443,27 @@ Le son se coupe depuis le HUD ; la preference est conservee d&apos;une partie a 
   le code du jeu (le plus gros du bundle) sont importes dynamiquement, dans un chunk separe
   du shell React — celui-ci peut donc s&apos;afficher (ecran de chargement) avant que le
   moteur de jeu ne soit telecharge.
+
+---
+
+## Localisation (i18n)
+
+Francais et anglais, choix persiste (`localStorage`), detecte a la premiere visite depuis la
+langue du navigateur ([`src/i18n/`](src/i18n)) :
+
+- `dictionaries.ts` : toutes les chaines affichees au joueur, cles a plat namespacees par
+  ecran (`menu.*`, `hud.*`&hellip;) ou par donnee (`difficulty.*`, `terrain.*`, `skin.*`,
+  `team.*`, `perk.*` — anciens libelles deplaces ici depuis `ai.ts` / `rules.ts` /
+  `theme.ts` / `teamData.ts` / `roguelite.ts`, qui ne gardent que les donnees
+  fonctionnelles).
+- `translate(lang, key, params?)` : fonction pure, utilisable aussi bien dans un composant
+  React que dans `MatchScene.ts` (bandeaux de tour et textes flottants, dessines directement
+  sur le canevas Phaser, hors de tout rendu React).
+- `useT()` : le hook React equivalent, reactif a un changement de langue.
+
+Les pages legales ([`public/legal/`](public/legal), [`src/ui/Legal.tsx`](src/ui/Legal.tsx))
+restent volontairement en francais uniquement : droit francais applicable, identite reelle
+de l&apos;editeur — pas un choix a faire dependre de la langue d&apos;affichage du jeu.
 
 ---
 

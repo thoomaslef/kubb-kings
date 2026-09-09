@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import type { TournamentSize } from '../game/tournament';
+import { useT } from '../i18n/useT';
+import { translate } from '../i18n/translate';
 
 const SIZES: TournamentSize[] = [4, 8];
 
@@ -11,6 +13,8 @@ const SIZES: TournamentSize[] = [4, 8];
  * construction de buildBracket — pas besoin de le recalculer ici.
  */
 export function TournamentSetup() {
+  const t = useT();
+  const lang = useGameStore((s) => s.lang);
   const setScreen = useGameStore((s) => s.setScreen);
   const setMode = useGameStore((s) => s.setMode);
   const startTournament = useGameStore((s) => s.startTournament);
@@ -26,7 +30,9 @@ export function TournamentSetup() {
   };
 
   const start = () => {
-    const finalNames = names.slice(0, size).map((n, i) => n.trim() || `Joueur ${i + 1}`);
+    const finalNames = names
+      .slice(0, size)
+      .map((n, i) => n.trim() || translate(lang, 'tournament.setup.playerPlaceholder', { n: i + 1 }));
     setMode('local');
     startTournament(finalNames);
     beginTournamentMatch(0, 0, finalNames[0], finalNames[1]);
@@ -36,13 +42,10 @@ export function TournamentSetup() {
   return (
     <div className="overlay overlay--solid">
       <div className="panel panel--scroll">
-        <h2 className="panel__title">Tournoi local</h2>
-        <p className="panel__text">
-          Elimination directe, pass-and-play : chacun joue sur le meme telephone, a tour de
-          role.
-        </p>
+        <h2 className="panel__title">{t('tournament.setup.title')}</h2>
+        <p className="panel__text">{t('tournament.setup.intro')}</p>
 
-        <div className="segmented" role="group" aria-label="Taille du tournoi">
+        <div className="segmented" role="group" aria-label={t('tournament.setup.sizeAria')}>
           {SIZES.map((n) => (
             <button
               key={n}
@@ -50,7 +53,7 @@ export function TournamentSetup() {
               aria-pressed={n === size}
               onClick={() => setSize(n)}
             >
-              {n} joueurs
+              {t('tournament.setup.players', { n })}
             </button>
           ))}
         </div>
@@ -60,7 +63,7 @@ export function TournamentSetup() {
             <input
               key={i}
               className="text-input"
-              placeholder={`Joueur ${i + 1}`}
+              placeholder={t('tournament.setup.playerPlaceholder', { n: i + 1 })}
               value={name}
               onChange={(e) => setName(i, e.target.value)}
             />
@@ -69,10 +72,10 @@ export function TournamentSetup() {
 
         <div className="button-column">
           <button className="btn btn--primary" onClick={start}>
-            Commencer le tournoi
+            {t('tournament.setup.start')}
           </button>
           <button className="btn btn--ghost" onClick={() => setScreen('menu')}>
-            Annuler
+            {t('tournament.setup.cancel')}
           </button>
         </div>
       </div>

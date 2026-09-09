@@ -13,34 +13,13 @@ import type { FieldPresetId } from './rules';
 
 export type PerkId = 'lancer-bonus' | 'bras-vif' | 'second-souffle';
 
-export interface Perk {
-  id: PerkId;
-  label: string;
-  description: string;
-}
+/** Libelles et descriptions : src/i18n/dictionaries.ts (perk.<id>.label / .description). */
+export const PERK_IDS: readonly PerkId[] = ['lancer-bonus', 'bras-vif', 'second-souffle'];
 
 /** Lancers supplementaires offerts par "Bras infatigable". */
 export const LANCER_BONUS_THROWS = 2;
 /** Multiplicateur de puissance offert par "Bras vif". */
 export const BRAS_VIF_MULTIPLIER = 1.15;
-
-export const PERKS: Record<PerkId, Perk> = {
-  'lancer-bonus': {
-    id: 'lancer-bonus',
-    label: 'Bras infatigable',
-    description: `+${LANCER_BONUS_THROWS} lancers sur toute la manche`
-  },
-  'bras-vif': {
-    id: 'bras-vif',
-    label: 'Bras vif',
-    description: `+${Math.round((BRAS_VIF_MULTIPLIER - 1) * 100)}% de puissance au bout du glissement`
-  },
-  'second-souffle': {
-    id: 'second-souffle',
-    label: 'Second souffle',
-    description: "Le premier lancer qui ne renverse rien n'est pas compte"
-  }
-};
 
 /**
  * Echelle des manches. Seuls le niveau de l'IA et le terrain changent d'une
@@ -67,7 +46,7 @@ export const LADDER: readonly Stage[] = [
  * directement, sans ecran de choix.
  */
 export function pickPerkChoices(owned: readonly PerkId[], rng: () => number = Math.random): PerkId[] {
-  const remaining = (Object.keys(PERKS) as PerkId[]).filter((id) => !owned.includes(id));
+  const remaining = PERK_IDS.filter((id) => !owned.includes(id));
 
   // Melange de Fisher-Yates, pour ne pas toujours proposer les memes dans le meme ordre.
   for (let i = remaining.length - 1; i > 0; i -= 1) {

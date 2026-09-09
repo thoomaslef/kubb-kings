@@ -5,6 +5,8 @@ import type { PerkId } from '../game/roguelite';
 import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId } from '../game/rules';
 import type { KubbSkin } from '../game/theme';
 import { buildBracket, recordWinner, type TournamentState } from '../game/tournament';
+import { getInitialLang, persistLang } from '../i18n/langPersistence';
+import type { Lang } from '../i18n/translate';
 
 /** Ecrans hors-jeu geres par React. */
 export type Screen =
@@ -113,6 +115,8 @@ interface GameState {
    * null en dehors d'un tournoi.
    */
   tournamentPending: TournamentPending | null;
+  /** Langue d'affichage, persistee (voir i18n/langPersistence.ts). */
+  lang: Lang;
 
   setScreen: (screen: Screen) => void;
   setPaused: (paused: boolean) => void;
@@ -141,6 +145,7 @@ interface GameState {
   reportTournamentResult: () => void;
   /** Quitte le tournoi en cours (abandon, ou apres le sacre du champion). */
   resetTournament: () => void;
+  setLang: (lang: Lang) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -156,6 +161,7 @@ export const useGameStore = create<GameState>((set) => ({
   run: null,
   tournament: null,
   tournamentPending: null,
+  lang: getInitialLang(),
 
   setScreen: (screen) => set({ screen }),
   setPaused: (paused) => set({ paused }),
@@ -187,7 +193,11 @@ export const useGameStore = create<GameState>((set) => ({
         tournamentPending: null
       };
     }),
-  resetTournament: () => set({ tournament: null, tournamentPending: null })
+  resetTournament: () => set({ tournament: null, tournamentPending: null }),
+  setLang: (lang) => {
+    persistLang(lang);
+    set({ lang });
+  }
 }));
 
 /** Acces hors composant React (depuis les scenes Phaser). */

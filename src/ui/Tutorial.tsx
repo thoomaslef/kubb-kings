@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { isTutorialDone, markTutorialDone } from '../game/tutorial';
+import { useT } from '../i18n/useT';
 
 type Step = 'intro' | 'toast' | 'hidden';
 
@@ -15,6 +16,7 @@ type Step = 'intro' | 'toast' | 'hidden';
  * depuis l'ecran des regles remet le drapeau a zero.
  */
 export function Tutorial() {
+  const t = useT();
   const phase = useGameStore((s) => s.hud.phase);
 
   // Calcule une seule fois au montage : si le tutoriel a deja ete vu, le
@@ -63,16 +65,14 @@ export function Tutorial() {
       {step === 'intro' && (
         <div className="tutorial__card">
           <ul className="tutorial__list">
-            <li>Touchez votre ligne pour vous placer</li>
-            <li>Glissez vers la cible, relachez pour lancer</li>
-            <li>Le roi, au centre, est interdit tant que l&apos;adversaire tient debout</li>
+            <li>{t('tutorial.step1')}</li>
+            <li>{t('tutorial.step2')}</li>
+            <li>{t('tutorial.step3')}</li>
           </ul>
         </div>
       )}
 
-      {step === 'toast' && (
-        <div className="tutorial__toast">Un lancer par tour &mdash; un kubb tombe reste hors jeu.</div>
-      )}
+      {step === 'toast' && <div className="tutorial__toast">{t('tutorial.toast')}</div>}
     </div>
   );
 }

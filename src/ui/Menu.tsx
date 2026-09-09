@@ -3,13 +3,18 @@ import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { AI_PROFILES, type Difficulty } from '../game/ai';
 import { FIELD_PRESETS, type FieldPresetId } from '../game/rules';
-import { KUBB_SKINS, KUBB_SKIN_LABELS, KUBB_SKIN_HINTS } from '../game/theme';
+import { KUBB_SKINS } from '../game/theme';
 import { LADDER, getBestStage } from '../game/roguelite';
+import { useT } from '../i18n/useT';
+import type { Lang } from '../i18n/translate';
 
 const LEVELS = Object.keys(AI_PROFILES) as Difficulty[];
 const PRESETS = Object.keys(FIELD_PRESETS) as FieldPresetId[];
+const LANGS: Lang[] = ['fr', 'en'];
+const LANG_AUTONYM: Record<Lang, string> = { fr: 'Français', en: 'English' };
 
 export function Menu() {
+  const t = useT();
   const setScreen = useGameStore((s) => s.setScreen);
   const difficulty = useGameStore((s) => s.difficulty);
   const setDifficulty = useGameStore((s) => s.setDifficulty);
@@ -19,6 +24,8 @@ export function Menu() {
   const setKubbSkin = useGameStore((s) => s.setKubbSkin);
   const windEnabled = useGameStore((s) => s.windEnabled);
   const setWindEnabled = useGameStore((s) => s.setWindEnabled);
+  const lang = useGameStore((s) => s.lang);
+  const setLang = useGameStore((s) => s.setLang);
   const setMode = useGameStore((s) => s.setMode);
   const startRun = useGameStore((s) => s.startRun);
 
@@ -43,14 +50,14 @@ export function Menu() {
         <h1 className="title">
           KUBB<span className="title__accent">: Kings</span>
         </h1>
-        <p className="subtitle">Le duel de lancer, sur un seul telephone.</p>
+        <p className="subtitle">{t('menu.subtitle')}</p>
 
         <div className="button-column">
           <button className="btn btn--primary" onClick={() => play('solo')}>
-            Solo &mdash; contre l&apos;IA
+            {t('menu.solo')}
           </button>
 
-          <div className="segmented" role="group" aria-label="Niveau de l&apos;IA">
+          <div className="segmented" role="group" aria-label={t('menu.aiLevelAria')}>
             {LEVELS.map((level) => (
               <button
                 key={level}
@@ -58,32 +65,34 @@ export function Menu() {
                 aria-pressed={level === difficulty}
                 onClick={() => setDifficulty(level)}
               >
-                {AI_PROFILES[level].label}
+                {t(`difficulty.${level}.label`)}
               </button>
             ))}
           </div>
-          <p className="footnote footnote--tight">{AI_PROFILES[difficulty].hint}</p>
+          <p className="footnote footnote--tight">{t(`difficulty.${difficulty}.hint`)}</p>
 
           <button className="btn" onClick={() => play('local')}>
-            1v1 local &mdash; a deux
+            {t('menu.local1v1')}
           </button>
           <button className="btn" onClick={() => play('2v2')}>
-            2v2 local &mdash; a quatre
+            {t('menu.local2v2')}
           </button>
           <button className="btn" onClick={playDefi}>
-            Defi &mdash; {LADDER.length} manches, de plus en plus dures
+            {t('menu.defi', { n: LADDER.length })}
           </button>
           <button className="btn" onClick={() => setScreen('tournament-setup')}>
-            Tournoi local &mdash; 4 ou 8 joueurs
+            {t('menu.tournament')}
           </button>
           {bestStage > 0 && (
             <p className="footnote footnote--tight">
-              Meilleure serie : {bestStage}/{LADDER.length} manche{bestStage > 1 ? 's' : ''} franchie
-              {bestStage > 1 ? 's' : ''}
+              {t(bestStage > 1 ? 'menu.bestStage.many' : 'menu.bestStage.one', {
+                stage: bestStage,
+                total: LADDER.length
+              })}
             </p>
           )}
 
-          <div className="segmented" role="group" aria-label="Terrain">
+          <div className="segmented" role="group" aria-label={t('menu.terrainAria')}>
             {PRESETS.map((id) => (
               <button
                 key={id}
@@ -91,35 +100,31 @@ export function Menu() {
                 aria-pressed={id === fieldPreset}
                 onClick={() => setFieldPreset(id)}
               >
-                {FIELD_PRESETS[id].label}
+                {t(`terrain.${id}.label`)}
               </button>
             ))}
           </div>
-          <p className="footnote footnote--tight">{FIELD_PRESETS[fieldPreset].hint}</p>
+          <p className="footnote footnote--tight">{t(`terrain.${fieldPreset}.hint`)}</p>
 
-          <div className="segmented" role="group" aria-label="Meteo">
+          <div className="segmented" role="group" aria-label={t('menu.windAria')}>
             <button
               className={`segmented__item${!windEnabled ? ' segmented__item--on' : ''}`}
               aria-pressed={!windEnabled}
               onClick={() => setWindEnabled(false)}
             >
-              Sans vent
+              {t('menu.windOff')}
             </button>
             <button
               className={`segmented__item${windEnabled ? ' segmented__item--on' : ''}`}
               aria-pressed={windEnabled}
               onClick={() => setWindEnabled(true)}
             >
-              Avec vent
+              {t('menu.windOn')}
             </button>
           </div>
-          <p className="footnote footnote--tight">
-            {windEnabled
-              ? 'Une brise constante devie les lancers — sens tire au debut de chaque partie'
-              : 'Terrain calme'}
-          </p>
+          <p className="footnote footnote--tight">{t(windEnabled ? 'menu.windOnHint' : 'menu.windOffHint')}</p>
 
-          <div className="segmented" role="group" aria-label="Skin des kubbs">
+          <div className="segmented" role="group" aria-label={t('menu.skinAria')}>
             {KUBB_SKINS.map((skin) => (
               <button
                 key={skin}
@@ -127,26 +132,39 @@ export function Menu() {
                 aria-pressed={skin === kubbSkin}
                 onClick={() => setKubbSkin(skin)}
               >
-                {KUBB_SKIN_LABELS[skin]}
+                {t(`skin.${skin}.label`)}
               </button>
             ))}
           </div>
-          <p className="footnote footnote--tight">{KUBB_SKIN_HINTS[kubbSkin]}</p>
+          <p className="footnote footnote--tight">{t(`skin.${kubbSkin}.hint`)}</p>
+
+          <div className="segmented" role="group" aria-label={t('menu.langAria')}>
+            {LANGS.map((code) => (
+              <button
+                key={code}
+                className={`segmented__item${code === lang ? ' segmented__item--on' : ''}`}
+                aria-pressed={code === lang}
+                onClick={() => setLang(code)}
+              >
+                {LANG_AUTONYM[code]}
+              </button>
+            ))}
+          </div>
 
           <button className="btn" onClick={() => setScreen('rules')}>
-            Regles
+            {t('menu.rules')}
           </button>
           <button className="btn btn--ghost" onClick={() => setScreen('quit')}>
-            Quitter
+            {t('menu.quit')}
           </button>
         </div>
 
-        <p className="footnote">Pass-and-play &middot; 4 minutes max</p>
+        <p className="footnote">{t('menu.footer')}</p>
         <button className="link-btn" onClick={() => setScreen('about')}>
-          A propos
+          {t('menu.about')}
         </button>
         <button className="link-btn" onClick={() => setScreen('legal')}>
-          Confidentialite &amp; mentions legales
+          {t('menu.legal')}
         </button>
       </div>
     </div>

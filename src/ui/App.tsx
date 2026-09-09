@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { GameCanvas } from './GameCanvas';
 import { Menu } from './Menu';
@@ -19,6 +20,14 @@ import { Boot } from './Boot';
  */
 export function App() {
   const screen = useGameStore((s) => s.screen);
+  const lang = useGameStore((s) => s.lang);
+
+  // index.html fixe lang="fr" au chargement (page statique) : ce n'est plus
+  // exact des que le joueur choisit l'anglais, important pour les lecteurs
+  // d'ecran et le SEO.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   return (
     <div className="app">

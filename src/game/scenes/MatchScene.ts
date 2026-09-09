@@ -18,6 +18,7 @@ import { PALETTE, BORDER_WIDTH } from '../theme';
 import { AI_PROFILES, AI_TEAM, decideThrow, type AiProfile } from '../ai';
 import { BRAS_VIF_MULTIPLIER, LADDER, LANCER_BONUS_THROWS, type PerkId } from '../roguelite';
 import * as sfx from '../audio';
+import { translate } from '../../i18n/translate';
 import {
   AIM,
   FIELD,
@@ -300,7 +301,14 @@ export class MatchScene extends Phaser.Scene {
 
     if (refunded) {
       this.secondSouffleUsed = true;
-      if (lastBatonPos) this.juice.floatingText(lastBatonPos.x, lastBatonPos.y, 'SECOND SOUFFLE !', '#f2c14e');
+      if (lastBatonPos) {
+        this.juice.floatingText(
+          lastBatonPos.x,
+          lastBatonPos.y,
+          translate(gameStore.getState().lang, 'match.secondSouffle'),
+          '#f2c14e'
+        );
+      }
     } else {
       this.throwsLeft[this.activeTeam] -= 1;
     }
@@ -339,12 +347,14 @@ export class MatchScene extends Phaser.Scene {
 
   /**
    * Texte du bandeau de tour. En solo on ne parle plus d'equipes de couleur :
-   * il y a le joueur et il y a l'IA.
+   * il y a le joueur et il y a l'IA. Traduit directement (pas de hook React
+   * ici : ce texte est dessine sur le canevas Phaser, hors de tout rendu).
    */
   private turnLabel(team: TeamId): string {
-    if (this.ai) return this.isAiTeam(team) ? "AU TOUR DE L'IA" : 'A VOUS DE JOUER';
-    const base = `AU TOUR DE L'EQUIPE ${TEAMS[team].label.toUpperCase()}`;
-    return this.mode === '2v2' ? `${base} — JOUEUR ${this.playerIndex[team]}` : base;
+    const lang = gameStore.getState().lang;
+    if (this.ai) return translate(lang, this.isAiTeam(team) ? 'match.aiTurn' : 'match.yourTurn');
+    const base = translate(lang, 'match.teamTurn', { team: translate(lang, `team.${team}.label`).toUpperCase() });
+    return this.mode === '2v2' ? translate(lang, 'match.teamTurnPlayer', { base, n: this.playerIndex[team] }) : base;
   }
 
   // --------------------------------------------------------------------- IA
@@ -490,7 +500,10 @@ export class MatchScene extends Phaser.Scene {
       this.juice.floatingText(
         x,
         y,
-        this.teams[kubb.team].standingCount === 0 ? 'DERNIER !' : 'ABATTU !',
+        translate(
+          gameStore.getState().lang,
+          this.teams[kubb.team].standingCount === 0 ? 'match.knockedLast' : 'match.knockedDown'
+        ),
         TEAMS[this.activeTeam].cssColor
       );
       this.syncHud();
@@ -518,7 +531,7 @@ export class MatchScene extends Phaser.Scene {
     this.juice.floatingText(
       x,
       y - 46,
-      legal ? 'LE ROI TOMBE !' : 'ROI TOUCHE TROP TOT',
+      translate(gameStore.getState().lang, legal ? 'match.kingFalls' : 'match.kingTooEarly'),
       legal ? '#f2c14e' : '#ff5a4a'
     );
 

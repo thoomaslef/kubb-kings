@@ -68,11 +68,15 @@ export function champion(state: TournamentState): string | null {
   return final.winner;
 }
 
-/** Nom du tour, du plus lointain (quarts) au plus proche (finale). */
-export function roundLabel(round: number, totalRounds: number): string {
+/**
+ * Cle i18n du nom de tour (tournament.round.*, src/i18n/dictionaries.ts), du
+ * plus lointain (quarts) au plus proche (finale) — pas le texte final, pour
+ * rester traduisible par l'appelant (TournamentBracket.tsx) via t().
+ */
+export function roundLabelKey(round: number, totalRounds: number): { key: string; params?: { n: number } } {
   const remaining = totalRounds - round;
-  if (remaining === 1) return 'Finale';
-  if (remaining === 2) return 'Demi-finales';
-  if (remaining === 3) return 'Quarts de finale';
-  return `Tour ${round + 1}`;
+  if (remaining === 1) return { key: 'tournament.round.final' };
+  if (remaining === 2) return { key: 'tournament.round.semifinals' };
+  if (remaining === 3) return { key: 'tournament.round.quarterfinals' };
+  return { key: 'tournament.round.n', params: { n: round + 1 } };
 }

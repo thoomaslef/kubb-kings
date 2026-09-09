@@ -4,33 +4,39 @@ import { bridge } from '../game/GameBridge';
 import { TEAMS, OPPONENT } from '../game/entities/teamData';
 import { AI_TEAM } from '../game/ai';
 import { LADDER, setBestStageIfHigher } from '../game/roguelite';
+import { translate, type Lang } from '../i18n/translate';
+import { useT } from '../i18n/useT';
 import type { MatchResult } from '../store/useGameStore';
 
 /** En solo (et en Defi, qui en est une variante) le joueur n'est pas "l'equipe Bleue" : c'est lui. */
-function headline(result: MatchResult, soloLike: boolean) {
-  if (result.winner === 'draw') return 'Match nul';
-  if (soloLike) return result.winner === AI_TEAM ? 'Defaite' : 'Victoire !';
-  return `Victoire de l'equipe ${TEAMS[result.winner].label}`;
+function headline(lang: Lang, result: MatchResult, soloLike: boolean) {
+  if (result.winner === 'draw') return translate(lang, 'result.draw');
+  if (soloLike) return translate(lang, result.winner === AI_TEAM ? 'result.defeat' : 'result.victory');
+  return translate(lang, 'result.teamVictory', { team: translate(lang, `team.${result.winner}.label`) });
 }
 
-function detail(result: MatchResult) {
+function detail(lang: Lang, result: MatchResult) {
   switch (result.reason) {
     case 'king-down':
-      return 'Le roi est tombe dans les regles.';
+      return translate(lang, 'result.detail.kingDown');
     case 'king-early':
       return result.winner === 'draw'
         ? ''
-        : `L'equipe ${TEAMS[OPPONENT[result.winner]].label} a touche le roi avant d'avoir abattu tous les kubbs adverses.`;
+        : translate(lang, 'result.detail.kingEarly', {
+            team: translate(lang, `team.${OPPONENT[result.winner]}.label`)
+          });
     case 'timeout':
-      return 'Temps ecoule : le plus grand nombre de kubbs abattus l’emporte.';
+      return translate(lang, 'result.detail.timeout');
     case 'throws-exhausted':
-      return 'Plus de lancers : le plus grand nombre de kubbs abattus l’emporte.';
+      return translate(lang, 'result.detail.throwsExhausted');
     default:
       return '';
   }
 }
 
 export function ResultScreen() {
+  const t = useT();
+  const lang = useGameStore((s) => s.lang);
   const result = useGameStore((s) => s.result);
   const setScreen = useGameStore((s) => s.setScreen);
   const mode = useGameStore((s) => s.mode);
@@ -95,39 +101,42 @@ export function ResultScreen() {
         <h2 className="panel__title" style={{ color: accent }}>
           {isTournamentMatch
             ? tournamentWinnerName
-              ? `${tournamentWinnerName} remporte ce match !`
-              : 'Match nul'
+              ? t('result.tournament.win', { name: tournamentWinnerName })
+              : t('result.tournament.draw')
             : isDefi && wonMatch && !runComplete
-              ? `Manche ${stagesCleared} franchie !`
-              : headline(result, soloLike)}
+              ? t('result.defi.stageCleared', { n: stagesCleared })
+              : headline(lang, result, soloLike)}
         </h2>
         <p className="panel__text">
           {isTournamentMatch
             ? tournamentWinnerName
-              ? detail(result)
-              : 'Rejouez ce match pour departager.'
+              ? detail(lang, result)
+              : t('result.tournament.replayHint')
             : isDefi
               ? runComplete
-                ? `Run terminee : les ${LADDER.length} manches sont passees. Bravo.`
+                ? t('result.defi.runComplete', { total: LADDER.length })
                 : wonMatch
-                  ? detail(result)
-                  : `Run terminee a la manche ${stageIndex + 1} — ${stagesCleared} manche${
-                      stagesCleared === 1 ? '' : 's'
-                    } franchie${stagesCleared === 1 ? '' : 's'}.`
-              : detail(result)}
+                  ? detail(lang, result)
+                  : t(stagesCleared === 1 ? 'result.defi.runOver.one' : 'result.defi.runOver.many', {
+                      stage: stageIndex + 1,
+                      cleared: stagesCleared
+                    })
+              : detail(lang, result)}
         </p>
 
         <div className="score-row">
           <div className="score-cell" style={{ borderColor: TEAMS.blue.cssColor }}>
             <span className="score-cell__value">{result.knockedDown.blue}</span>
             <span className="score-cell__label">
-              kubbs abattus &mdash; {isTournamentMatch ? tournamentPending.blueName : soloLike ? 'Vous' : 'Bleue'}
+              {t('result.knockedLabel')} &mdash;{' '}
+              {isTournamentMatch ? tournamentPending.blueName : soloLike ? t('result.you') : t('team.blue.label')}
             </span>
           </div>
           <div className="score-cell" style={{ borderColor: TEAMS.red.cssColor }}>
             <span className="score-cell__value">{result.knockedDown.red}</span>
             <span className="score-cell__label">
-              kubbs abattus &mdash; {isTournamentMatch ? tournamentPending.redName : soloLike ? 'IA' : 'Rouge'}
+              {t('result.knockedLabel')} &mdash;{' '}
+              {isTournamentMatch ? tournamentPending.redName : soloLike ? t('result.ai') : t('team.red.label')}
             </span>
           </div>
         </div>
@@ -137,19 +146,19 @@ export function ResultScreen() {
             tournamentWinnerName ? (
               <>
                 <button className="btn btn--primary" onClick={continueTournament}>
-                  Voir le tableau
+                  {t('result.tournament.seeBracket')}
                 </button>
                 <button className="btn btn--ghost" onClick={quitTournament}>
-                  Abandonner le tournoi
+                  {t('result.tournament.forfeit')}
                 </button>
               </>
             ) : (
               <>
                 <button className="btn btn--primary" onClick={() => bridge.send('restart-match')}>
-                  Rejouer ce match
+                  {t('result.tournament.replay')}
                 </button>
                 <button className="btn btn--ghost" onClick={quitTournament}>
-                  Abandonner le tournoi
+                  {t('result.tournament.forfeit')}
                 </button>
               </>
             )
@@ -157,29 +166,29 @@ export function ResultScreen() {
             wonMatch && !runComplete ? (
               <>
                 <button className="btn btn--primary" onClick={() => setScreen('perk')}>
-                  Manche suivante
+                  {t('result.defi.nextStage')}
                 </button>
                 <button className="btn btn--ghost" onClick={quitRun}>
-                  Abandonner la run
+                  {t('result.defi.abandonRun')}
                 </button>
               </>
             ) : (
               <>
                 <button className="btn btn--primary" onClick={newRun}>
-                  Nouvelle run
+                  {t('result.defi.newRun')}
                 </button>
                 <button className="btn btn--ghost" onClick={quitRun}>
-                  Menu
+                  {t('result.menu')}
                 </button>
               </>
             )
           ) : (
             <>
               <button className="btn btn--primary" onClick={() => bridge.send('restart-match')}>
-                Rejouer
+                {t('result.replay')}
               </button>
               <button className="btn btn--ghost" onClick={quitRun}>
-                Menu
+                {t('result.menu')}
               </button>
             </>
           )}

@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { recordCrash } from '../game/diagnostics';
+import { useGameStore } from '../store/useGameStore';
+import { translate } from '../i18n/translate';
 
 interface Props {
   children: ReactNode;
@@ -31,17 +33,18 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (!this.state.hasError) return this.props.children;
 
+    // Classe, pas de hook : lecture directe du store (pas reactive, mais un
+    // rechargement est le seul bouton propose ici de toute facon).
+    const lang = useGameStore.getState().lang;
+
     return (
       <div className="overlay overlay--solid">
         <div className="panel">
-          <h2 className="panel__title">Oups&hellip;</h2>
-          <p className="panel__text">
-            Une erreur inattendue est survenue. Votre progression (meilleure serie,
-            preferences) n&apos;est pas affectee : elle reste enregistree sur cet appareil.
-          </p>
+          <h2 className="panel__title">{translate(lang, 'error.title')}</h2>
+          <p className="panel__text">{translate(lang, 'error.text')}</p>
           <div className="button-column">
             <button className="btn btn--primary" onClick={this.reload}>
-              Recharger le jeu
+              {translate(lang, 'error.reload')}
             </button>
           </div>
         </div>

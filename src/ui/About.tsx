@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { getCrashLog, clearCrashLog, formatCrashLogForCopy } from '../game/diagnostics';
 import { version } from '../../package.json';
+import { useT } from '../i18n/useT';
 
 /**
  * Version, credits, contact — et un journal d'erreurs local que le joueur
@@ -9,8 +10,12 @@ import { version } from '../../package.json';
  * recevoir des rapports de crash a distance (site statique) : c'est le
  * meilleur substitut honnete, plutot qu'un SDK tiers pour le faire a notre
  * place.
+ *
+ * Identite et contact restent en francais (voir Legal.tsx) : seuls les
+ * libelles autour changent de langue.
  */
 export function About() {
+  const t = useT();
   const setScreen = useGameStore((s) => s.setScreen);
   const [crashCount, setCrashCount] = useState(() => getCrashLog().length);
   const [copied, setCopied] = useState(false);
@@ -35,39 +40,36 @@ export function About() {
   return (
     <div className="overlay overlay--solid">
       <div className="panel panel--scroll">
-        <h2 className="panel__title">A propos</h2>
+        <h2 className="panel__title">{t('about.title')}</h2>
 
         <p className="panel__text">
-          <strong>KUBB: Kings</strong> &mdash; version {version}
+          <strong>KUBB: Kings</strong> &mdash; {version}
           <br />
-          Cree par Tommy Studio (Thomas Lefevre)
+          {t('about.createdBy', { name: 'Tommy Studio (Thomas Lefevre)' })}
           <br />
-          Contact : thomas@tommy-studio.pro
+          {t('about.contact', { email: 'thomas@tommy-studio.pro' })}
         </p>
 
-        <h3 className="legal-heading">Journal d&apos;erreurs</h3>
+        <h3 className="legal-heading">{t('about.crashLogTitle')}</h3>
         <p className="panel__text">
-          {crashCount === 0
-            ? "Aucune erreur enregistree sur cet appareil."
-            : `${crashCount} erreur${crashCount > 1 ? 's' : ''} enregistree${
-                crashCount > 1 ? 's' : ''
-              } sur cet appareil. Si le jeu se comporte mal, copiez ce journal et envoyez-le a
-              l'adresse ci-dessus.`}
+          {t(crashCount === 0 ? 'about.crashLog.none' : crashCount === 1 ? 'about.crashLog.one' : 'about.crashLog.many', {
+            n: crashCount
+          })}
         </p>
 
         <div className="button-column">
           {crashCount > 0 && (
             <>
               <button className="btn" onClick={copyLog}>
-                {copied ? 'Copie !' : 'Copier le journal'}
+                {copied ? t('about.copied') : t('about.copyLog')}
               </button>
               <button className="btn btn--ghost" onClick={clearLog}>
-                Effacer le journal
+                {t('about.clearLog')}
               </button>
             </>
           )}
           <button className="btn btn--primary" onClick={() => setScreen('menu')}>
-            Retour
+            {t('about.back')}
           </button>
         </div>
       </div>

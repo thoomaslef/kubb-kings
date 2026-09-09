@@ -2,54 +2,32 @@ import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { KUBBS_PER_TEAM, MAX_THROWS_PER_TEAM } from '../game/rules';
 import { resetTutorial } from '../game/tutorial';
+import { useT } from '../i18n/useT';
 
 export function Rules() {
+  const t = useT();
   const setScreen = useGameStore((s) => s.setScreen);
   const [tutorialReset, setTutorialReset] = useState(false);
 
   return (
     <div className="overlay overlay--solid">
       <div className="panel panel--scroll">
-        <h2 className="panel__title">Regles</h2>
+        <h2 className="panel__title">{t('rules.title')}</h2>
 
         <ol className="rules-list">
-          <li>
-            Chaque equipe aligne <strong>{KUBBS_PER_TEAM} kubbs</strong> sur sa ligne de fond. Un{' '}
-            <strong>roi</strong> unique se tient au centre du terrain.
-          </li>
-          <li>
-            Les equipes lancent a tour de role. <strong>Posez le doigt</strong> sur votre ligne de
-            lancer : c&apos;est de la que part le baton.
-          </li>
-          <li>
-            <strong>Glissez</strong> vers la cible pour donner l&apos;angle, la{' '}
-            <strong>longueur du glissement</strong> donne la puissance. Relachez pour lancer.
-          </li>
-          <li>
-            Un baton ne fait tomber un kubb que s&apos;il le percute assez fort. Chaque lancer part
-            avec une legere deviation : personne ne vise parfaitement.
-          </li>
-          <li>
-            Un kubb tombe est <strong>hors jeu</strong>. Quand tous les kubbs adverses sont a terre,
-            vous pouvez viser le roi.
-          </li>
-          <li>
-            Le roi se tient sur la ligne mediane : contournez-le tant que vous n&apos;avez pas le
-            droit de le viser. Le toucher <strong>trop tot</strong> = defaite immediate de
-            l&apos;equipe qui a lance.
-          </li>
-          <li>
-            Faire tomber le roi dans les regles = <strong>victoire</strong>.
-          </li>
-          <li>
-            Partie limitee a <strong>4 minutes</strong> et <strong>{MAX_THROWS_PER_TEAM} lancers</strong>{' '}
-            par equipe. Au buzzer, l&apos;equipe qui a abattu le plus de kubbs l&apos;emporte.
-          </li>
+          <li>{t('rules.item1', { n: KUBBS_PER_TEAM })}</li>
+          <li>{t('rules.item2')}</li>
+          <li>{t('rules.item3')}</li>
+          <li>{t('rules.item4')}</li>
+          <li>{t('rules.item5')}</li>
+          <li>{t('rules.item6')}</li>
+          <li>{t('rules.item7')}</li>
+          <li>{t('rules.item8', { n: MAX_THROWS_PER_TEAM })}</li>
         </ol>
 
         <div className="button-column">
           <button className="btn btn--primary" onClick={() => setScreen('menu')}>
-            Retour
+            {t('rules.back')}
           </button>
           <button
             className="btn btn--ghost"
@@ -58,7 +36,7 @@ export function Rules() {
               setTutorialReset(true);
             }}
           >
-            {tutorialReset ? 'Reapparaitra a la prochaine partie' : 'Revoir le tutoriel'}
+            {t(tutorialReset ? 'rules.tutorialWillReplay' : 'rules.replayTutorial')}
           </button>
         </div>
       </div>

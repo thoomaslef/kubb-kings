@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
-import { PERKS, LADDER, pickPerkChoices } from '../game/roguelite';
+import { LADDER, LANCER_BONUS_THROWS, BRAS_VIF_MULTIPLIER, pickPerkChoices, type PerkId } from '../game/roguelite';
+import { useT } from '../i18n/useT';
+
+/** Parametres d'interpolation du texte de description (perk.<id>.description). */
+function descParams(id: PerkId): Record<string, number> | undefined {
+  if (id === 'lancer-bonus') return { n: LANCER_BONUS_THROWS };
+  if (id === 'bras-vif') return { pct: Math.round((BRAS_VIF_MULTIPLIER - 1) * 100) };
+  return undefined;
+}
 
 /**
  * Entre deux manches du mode Defi : un bonus au choix, applique au joueur
@@ -10,6 +18,7 @@ import { PERKS, LADDER, pickPerkChoices } from '../game/roguelite';
  * afficher cet ecran, pour ne pas presenter un choix qui n'en est pas un.
  */
 export function PerkChoice() {
+  const t = useT();
   const run = useGameStore((s) => s.run);
   const advanceRun = useGameStore((s) => s.advanceRun);
   const addPerk = useGameStore((s) => s.addPerk);
@@ -38,7 +47,7 @@ export function PerkChoice() {
   if (choices.length === 0) {
     return (
       <div className="overlay overlay--solid">
-        <p className="panel__text">Manche suivante&hellip;</p>
+        <p className="panel__text">{t('perk.screen.next')}</p>
       </div>
     );
   }
@@ -48,16 +57,14 @@ export function PerkChoice() {
   return (
     <div className="overlay overlay--solid">
       <div className="panel">
-        <h2 className="panel__title">Choisissez un bonus</h2>
-        <p className="panel__text">
-          Avant la manche {nextStage}/{LADDER.length} &mdash; il reste sur vous jusqu&apos;a la fin de la run.
-        </p>
+        <h2 className="panel__title">{t('perk.screen.title')}</h2>
+        <p className="panel__text">{t('perk.screen.subtitle', { n: nextStage, total: LADDER.length })}</p>
 
         <div className="button-column">
           {choices.map((id) => (
             <button key={id} className="btn btn--perk" onClick={() => choose(id)}>
-              <span className="btn--perk__label">{PERKS[id].label}</span>
-              <span className="btn--perk__desc">{PERKS[id].description}</span>
+              <span className="btn--perk__label">{t(`perk.${id}.label`)}</span>
+              <span className="btn--perk__desc">{t(`perk.${id}.description`, descParams(id))}</span>
             </button>
           ))}
         </div>

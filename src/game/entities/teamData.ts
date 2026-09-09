@@ -12,7 +12,6 @@ export type TeamId = 'blue' | 'red';
 
 export interface TeamConfig {
   id: TeamId;
-  label: string;
   /** Couleur Phaser (0xRRGGBB). */
   color: number;
   /** Meme couleur pour l'UI React. */
@@ -25,10 +24,10 @@ export interface TeamConfig {
   direction: -1 | 1;
 }
 
+// Libelles ("Bleue"/"Rouge") : src/i18n/dictionaries.ts (team.<id>.label).
 export const TEAMS: Record<TeamId, TeamConfig> = {
   red: {
     id: 'red',
-    label: 'Rouge',
     color: 0xe2564a,
     cssColor: '#e2564a',
     baselineY: FIELD.y + BASELINE_INSET,
@@ -37,7 +36,6 @@ export const TEAMS: Record<TeamId, TeamConfig> = {
   },
   blue: {
     id: 'blue',
-    label: 'Bleue',
     color: 0x4a90e2,
     cssColor: '#4a90e2',
     baselineY: FIELD.y + FIELD.height - BASELINE_INSET,
