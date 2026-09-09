@@ -12,6 +12,11 @@ export function GameCanvas() {
     const game = new Phaser.Game(createGameConfig(hostRef.current));
     gameRef.current = game;
 
+    // Poignee de debug en dev : window.__kubb.scene.getScene('MatchScene')
+    if (import.meta.env.DEV) {
+      (window as unknown as { __kubb?: Phaser.Game }).__kubb = game;
+    }
+
     // Une scene en pause ne tourne plus : l'ordre doit venir de l'exterieur.
     const unsubscribe = useGameStore.subscribe((state, prev) => {
       if (state.paused === prev.paused) return;

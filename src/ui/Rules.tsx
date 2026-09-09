@@ -15,17 +15,25 @@ export function Rules() {
             <strong>roi</strong> unique se tient au centre du terrain.
           </li>
           <li>
-            Les equipes lancent a tour de role. <strong>Glissez</strong> vers la cible pour donner
-            l&apos;angle, la <strong>longueur du glissement</strong> donne la puissance.
+            Les equipes lancent a tour de role. <strong>Posez le doigt</strong> sur votre ligne de
+            lancer : c&apos;est de la que part le baton.
           </li>
-          <li>Un baton ne fait tomber un kubb que s&apos;il le percute assez fort.</li>
+          <li>
+            <strong>Glissez</strong> vers la cible pour donner l&apos;angle, la{' '}
+            <strong>longueur du glissement</strong> donne la puissance. Relachez pour lancer.
+          </li>
+          <li>
+            Un baton ne fait tomber un kubb que s&apos;il le percute assez fort. Chaque lancer part
+            avec une legere deviation : personne ne vise parfaitement.
+          </li>
           <li>
             Un kubb tombe est <strong>hors jeu</strong>. Quand tous les kubbs adverses sont a terre,
             vous pouvez viser le roi.
           </li>
           <li>
-            Toucher le roi <strong>trop tot</strong> = defaite immediate de l&apos;equipe qui a
-            lance.
+            Le roi se tient sur la ligne mediane : contournez-le tant que vous n&apos;avez pas le
+            droit de le viser. Le toucher <strong>trop tot</strong> = defaite immediate de
+            l&apos;equipe qui a lance.
           </li>
           <li>
             Faire tomber le roi dans les regles = <strong>victoire</strong>.

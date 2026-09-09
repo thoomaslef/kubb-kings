@@ -6,7 +6,7 @@ import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM } from '../game/
 export type Screen = 'boot' | 'menu' | 'rules' | 'match' | 'result' | 'quit';
 
 /** Phase du tour courant, pilotee par MatchScene. */
-export type MatchPhase = 'aiming' | 'flying' | 'resolving' | 'over';
+export type MatchPhase = 'aiming' | 'flying' | 'over';
 
 export type WinReason =
   | 'king-down'

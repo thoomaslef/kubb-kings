@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { bridge } from '../GameBridge';
-import { gameStore, type MatchPhase } from '../../store/useGameStore';
+import { gameStore, type MatchPhase, type MatchResult, type WinReason } from '../../store/useGameStore';
 import { TEAMS, OPPONENT, Team, throwerPosition, type TeamId } from '../entities/Team';
 import type { Kubb } from '../entities/Kubb';
+import { King } from '../entities/King';
 import { Baton } from '../entities/Baton';
 import { WALL_BODY } from '../physics/matterConfig';
 import {
@@ -16,9 +17,14 @@ import {
   THROW
 } from '../rules';
 
+/** Marge entre le bord du terrain et la position de lancer extreme. */
+const THROW_LINE_MARGIN = 40;
+
 /**
- * ETAPE 3 : boucle de lancer + kubbs et detection de chute.
- * Le roi et les conditions de victoire arrivent a l'etape 4.
+ * Scene de match : un tour = choisir sa position de lancer, viser, doser, lancer.
+ *
+ * Le roi est unique et se tient sur la ligne mediane (regle classique du Kubb) :
+ * il faut donc contourner le centre du terrain tant qu'on n'a pas le droit de le viser.
  */
 export class MatchScene extends Phaser.Scene {
   private phase: MatchPhase = 'aiming';
@@ -27,7 +33,13 @@ export class MatchScene extends Phaser.Scene {
   private timeLeftMs = MATCH_DURATION_MS;
 
   private teams!: Record<TeamId, Team>;
+  private king!: King;
   private baton: Baton | null = null;
+
+  /** Position de lancer courante de chaque equipe, le long de sa ligne de lancer. */
+  private throwX: Record<TeamId, number> = { blue: FIELD_CENTER_X, red: FIELD_CENTER_X };
+  private throwerSprites!: Record<TeamId, Phaser.GameObjects.Image>;
+
   private aimGfx!: Phaser.GameObjects.Graphics;
   private isDragging = false;
   private aimAngle = 0;
@@ -46,25 +58,24 @@ export class MatchScene extends Phaser.Scene {
     this.activeTeam = 'blue';
     this.throwsLeft = { blue: MAX_THROWS_PER_TEAM, red: MAX_THROWS_PER_TEAM };
     this.timeLeftMs = MATCH_DURATION_MS;
+    this.throwX = { blue: FIELD_CENTER_X, red: FIELD_CENTER_X };
     this.baton = null;
     this.isDragging = false;
+    this.aimPower = 0;
     this.lastShownSecond = -1;
 
     gameStore.getState().setScreen('match');
 
     this.drawField();
     this.createWalls();
-    this.drawThrowers();
+    this.createThrowers();
 
-    this.teams = {
-      blue: new Team(this, 'blue'),
-      red: new Team(this, 'red')
-    };
+    this.teams = { blue: new Team(this, 'blue'), red: new Team(this, 'red') };
+    this.king = new King(this, FIELD_CENTER_X, FIELD_CENTER_Y);
 
     this.aimGfx = this.add.graphics().setDepth(5);
 
     this.matter.world.on(Phaser.Physics.Matter.Events.COLLISION_START, this.onCollisionStart, this);
-
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
     this.input.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
@@ -73,9 +84,11 @@ export class MatchScene extends Phaser.Scene {
     bridge.on('leave-match', this.handleLeave, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       bridge.off('leave-match', this.handleLeave, this);
-      this.matter.world.off(Phaser.Physics.Matter.Events.COLLISION_START, this.onCollisionStart, this);
+      // Le monde Matter est deja detruit quand SHUTDOWN est emis : on garde le garde-fou.
+      this.matter.world?.off(Phaser.Physics.Matter.Events.COLLISION_START, this.onCollisionStart, this);
     });
 
+    this.aimAngle = this.forwardAngle();
     this.syncHud();
     this.drawAim();
   }
@@ -83,7 +96,7 @@ export class MatchScene extends Phaser.Scene {
   update(_time: number, delta: number) {
     if (this.phase === 'over') return;
 
-    this.tickClock(delta);
+    if (this.tickClock(delta)) return;
 
     if (this.phase === 'flying' && this.baton) {
       this.flightMs += delta;
@@ -96,12 +109,35 @@ export class MatchScene extends Phaser.Scene {
     }
   }
 
-  // ---------------------------------------------------------------- visee
+  // ------------------------------------------------------------------ visee
 
+  /** Angle "tout droit" vers le camp adverse. */
+  private forwardAngle(): number {
+    return TEAMS[this.activeTeam].direction === -1 ? -Math.PI / 2 : Math.PI / 2;
+  }
+
+  private origin(): { x: number; y: number } {
+    return { x: this.throwX[this.activeTeam], y: TEAMS[this.activeTeam].throwerY };
+  }
+
+  /**
+   * Le point de contact choisit d'abord la position de lancer le long de la
+   * ligne de lancer (comme au Kubb, on lance depuis n'importe ou sur sa ligne).
+   */
   private onPointerDown(pointer: Phaser.Input.Pointer) {
     if (this.phase !== 'aiming') return;
+
+    this.throwX[this.activeTeam] = Phaser.Math.Clamp(
+      pointer.worldX,
+      FIELD.x + THROW_LINE_MARGIN,
+      FIELD.x + FIELD.width - THROW_LINE_MARGIN
+    );
+    this.throwerSprites[this.activeTeam].x = this.throwX[this.activeTeam];
+
     this.isDragging = true;
-    this.updateAim(pointer);
+    this.aimAngle = this.forwardAngle();
+    this.aimPower = AIM.minPower;
+    this.drawAim();
   }
 
   private onPointerMove(pointer: Phaser.Input.Pointer) {
@@ -115,11 +151,11 @@ export class MatchScene extends Phaser.Scene {
     this.launch();
   }
 
-  /** Angle = direction lanceur -> doigt (bride vers le camp adverse). Puissance = longueur du glissement. */
+  /** Angle = position de lancer -> doigt (bride vers l'avant). Puissance = longueur du glissement. */
   private updateAim(pointer: Phaser.Input.Pointer) {
-    const origin = throwerPosition(this.activeTeam);
+    const origin = this.origin();
     const raw = Phaser.Math.Angle.Between(origin.x, origin.y, pointer.worldX, pointer.worldY);
-    const forward = TEAMS[this.activeTeam].direction === -1 ? -Math.PI / 2 : Math.PI / 2;
+    const forward = this.forwardAngle();
     const maxDelta = Phaser.Math.DegToRad(AIM.maxAngleDeg);
 
     const delta = Phaser.Math.Angle.Wrap(raw - forward);
@@ -132,7 +168,7 @@ export class MatchScene extends Phaser.Scene {
   }
 
   private launch() {
-    const origin = throwerPosition(this.activeTeam);
+    const origin = this.origin();
     this.baton = new Baton(this, origin.x, origin.y);
     this.baton.launch(this.aimAngle, this.aimPower);
 
@@ -147,7 +183,6 @@ export class MatchScene extends Phaser.Scene {
   private endThrow() {
     this.baton?.destroy();
     this.baton = null;
-
     this.throwsLeft[this.activeTeam] -= 1;
 
     if (this.throwsLeft.blue <= 0 && this.throwsLeft.red <= 0) {
@@ -160,16 +195,13 @@ export class MatchScene extends Phaser.Scene {
     this.activeTeam = this.throwsLeft[next] > 0 ? next : this.activeTeam;
 
     this.phase = 'aiming';
+    this.aimAngle = this.forwardAngle();
     this.drawAim();
     this.syncHud();
   }
 
   // ------------------------------------------------------------- collisions
 
-  /**
-   * Un kubb ne tombe que si le baton le percute au-dessus du seuil de vitesse,
-   * et seulement s'il appartient au camp adverse.
-   */
   private onCollisionStart(event: Phaser.Physics.Matter.Events.CollisionStartEvent) {
     if (this.phase !== 'flying' || !this.baton) return;
 
@@ -177,10 +209,21 @@ export class MatchScene extends Phaser.Scene {
       const involvesBaton = pair.bodyA.label === 'baton' || pair.bodyB.label === 'baton';
       if (!involvesBaton) continue;
 
+      const hardEnough = this.baton.impactSpeed >= KNOCKDOWN_IMPACT_SPEED;
+
+      if (this.isKing(pair.bodyA) || this.isKing(pair.bodyB)) {
+        if (hardEnough && this.king.isStanding) {
+          this.resolveKingHit();
+          return;
+        }
+        continue;
+      }
+
       const kubb = this.asKubb(pair.bodyA) ?? this.asKubb(pair.bodyB);
       if (!kubb || !kubb.isStanding) continue;
+      // Une equipe ne peut pas abattre ses propres kubbs.
       if (kubb.team === this.activeTeam) continue;
-      if (this.baton.impactSpeed < KNOCKDOWN_IMPACT_SPEED) continue;
+      if (!hardEnough) continue;
 
       kubb.knockDown(this);
       this.cameras.main.shake(140, 0.006);
@@ -188,73 +231,112 @@ export class MatchScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Roi touche : victoire si tous les kubbs adverses sont deja tombes,
+   * defaite immediate sinon (regle classique du Kubb).
+   */
+  private resolveKingHit() {
+    const legal = this.teams[OPPONENT[this.activeTeam]].standingCount === 0;
+    this.king.knockDown(this);
+    this.cameras.main.shake(320, 0.012);
+
+    this.finish({
+      winner: legal ? this.activeTeam : OPPONENT[this.activeTeam],
+      reason: legal ? 'king-down' : 'king-early',
+      knockedDown: this.knockedDown()
+    });
+  }
+
   private asKubb(body: MatterJS.BodyType): Kubb | undefined {
     const owner = body.gameObject as Phaser.GameObjects.GameObject | null;
     return owner?.getData?.('kubb') as Kubb | undefined;
   }
 
-  /** Fin de partie sans roi abattu : le plus grand nombre de kubbs adverses l'emporte. */
-  private finishOnPoints(reason: 'timeout' | 'throws-exhausted') {
-    const knockedDown = {
-      blue: this.teams.red.downCount,
-      red: this.teams.blue.downCount
-    };
+  private isKing(body: MatterJS.BodyType): boolean {
+    return body.label === 'king';
+  }
+
+  // ------------------------------------------------------------ fin de match
+
+  /** Kubbs adverses abattus par chaque equipe. */
+  private knockedDown(): Record<TeamId, number> {
+    return { blue: this.teams.red.downCount, red: this.teams.blue.downCount };
+  }
+
+  /** Fin sans roi abattu : le plus grand nombre de kubbs adverses l'emporte. */
+  private finishOnPoints(reason: Extract<WinReason, 'timeout' | 'throws-exhausted'>) {
+    const knockedDown = this.knockedDown();
     const winner =
       knockedDown.blue === knockedDown.red ? 'draw' : knockedDown.blue > knockedDown.red ? 'blue' : 'red';
-
     this.finish({ winner, reason, knockedDown });
   }
 
-  private finish(result: {
-    winner: TeamId | 'draw';
-    reason: 'king-down' | 'king-early' | 'timeout' | 'throws-exhausted';
-    knockedDown: Record<TeamId, number>;
-  }) {
+  private finish(result: MatchResult) {
     this.phase = 'over';
+    this.isDragging = false;
+    this.baton?.destroy();
+    this.baton = null;
     this.aimGfx.clear();
     this.syncHud();
-    this.time.delayedCall(700, () => this.scene.start('ResultScene', result));
+    this.time.delayedCall(750, () => this.scene.start('ResultScene', result));
   }
 
   // ---------------------------------------------------------------- horloge
 
-  private tickClock(delta: number) {
+  /** Renvoie true si le temps ecoule vient de terminer le match. */
+  private tickClock(delta: number): boolean {
     this.timeLeftMs = Math.max(0, this.timeLeftMs - delta);
+
     const second = Math.ceil(this.timeLeftMs / 1000);
     if (second !== this.lastShownSecond) {
       this.lastShownSecond = second;
       gameStore.getState().patchHud({ timeLeftMs: this.timeLeftMs });
     }
+
+    // On laisse toujours le lancer en cours se terminer avant de siffler la fin.
+    if (this.timeLeftMs <= 0 && this.phase === 'aiming') {
+      this.finishOnPoints('timeout');
+      return true;
+    }
+    return false;
   }
 
-  // ---------------------------------------------------------------- rendu
+  // ------------------------------------------------------------------ rendu
 
   private drawAim() {
     const g = this.aimGfx;
     g.clear();
     if (this.phase !== 'aiming') return;
 
-    const origin = throwerPosition(this.activeTeam);
+    const origin = this.origin();
     const color = TEAMS[this.activeTeam].color;
-    const dirX = Math.cos(this.aimAngle);
-    const dirY = Math.sin(this.aimAngle);
+    const throwerY = TEAMS[this.activeTeam].throwerY;
+
+    // Ligne de lancer : rappelle qu'on peut se placer n'importe ou dessus.
+    g.lineStyle(2, color, 0.3);
+    g.lineBetween(
+      FIELD.x + THROW_LINE_MARGIN,
+      throwerY,
+      FIELD.x + FIELD.width - THROW_LINE_MARGIN,
+      throwerY
+    );
 
     if (!this.isDragging) {
-      // Invite au geste : petit halo pulsant autour du lanceur.
       g.lineStyle(2, color, 0.5);
       g.strokeCircle(origin.x, origin.y, 26);
       return;
     }
 
-    // Trajectoire pointillee, longueur proportionnelle a la puissance.
+    const dirX = Math.cos(this.aimAngle);
+    const dirY = Math.sin(this.aimAngle);
     const length = 90 + this.aimPower * 430;
+
     g.lineStyle(4, color, 0.85);
     for (let d = 34; d < length; d += 26) {
       const end = Math.min(d + 13, length);
       g.lineBetween(origin.x + dirX * d, origin.y + dirY * d, origin.x + dirX * end, origin.y + dirY * end);
     }
 
-    // Pointe de fleche.
     const tipX = origin.x + dirX * length;
     const tipY = origin.y + dirY * length;
     const wing = 14;
@@ -275,19 +357,16 @@ export class MatchScene extends Phaser.Scene {
     const g = this.aimGfx;
     const width = 170;
     const height = 12;
-    const gaugeY = y - TEAMS[this.activeTeam].direction * 32 - height / 2;
+    const gaugeY = y - TEAMS[this.activeTeam].direction * 34 - height / 2;
     const gaugeX = x - width / 2;
 
     g.fillStyle(0x000000, 0.45);
     g.fillRoundedRect(gaugeX - 2, gaugeY - 2, width + 4, height + 4, 8);
 
-    // Vert -> jaune -> rouge selon la puissance.
     const low = Phaser.Display.Color.ValueToColor(0x5ecf7a);
     const high = Phaser.Display.Color.ValueToColor(0xe2564a);
     const mix = Phaser.Display.Color.Interpolate.ColorWithColor(low, high, 100, this.aimPower * 100);
-    const fill = Phaser.Display.Color.GetColor(mix.r, mix.g, mix.b);
-
-    g.fillStyle(fill, 1);
+    g.fillStyle(Phaser.Display.Color.GetColor(mix.r, mix.g, mix.b), 1);
     g.fillRoundedRect(gaugeX, gaugeY, Math.max(height, width * this.aimPower), height, 6);
   }
 
@@ -324,22 +403,22 @@ export class MatchScene extends Phaser.Scene {
   /** Bandes statiques : le baton reste sur le terrain au lieu de partir dans le vide. */
   private createWalls() {
     const t = 60;
-    const w = FIELD.width;
-    const h = FIELD.height;
+    const { width: w, height: h } = FIELD;
     this.matter.add.rectangle(FIELD_CENTER_X, FIELD.y - t / 2, w + t * 2, t, WALL_BODY);
     this.matter.add.rectangle(FIELD_CENTER_X, FIELD.y + h + t / 2, w + t * 2, t, WALL_BODY);
     this.matter.add.rectangle(FIELD.x - t / 2, FIELD_CENTER_Y, t, h + t * 2, WALL_BODY);
     this.matter.add.rectangle(FIELD.x + w + t / 2, FIELD_CENTER_Y, t, h + t * 2, WALL_BODY);
   }
 
-  private drawThrowers() {
-    (Object.keys(TEAMS) as TeamId[]).forEach((id) => {
+  private createThrowers() {
+    const make = (id: TeamId) => {
       const pos = throwerPosition(id);
-      this.add.image(pos.x, pos.y, `thrower-${id}`).setDepth(2);
-    });
+      return this.add.image(pos.x, pos.y, `thrower-${id}`).setDepth(2);
+    };
+    this.throwerSprites = { blue: make('blue'), red: make('red') };
   }
 
-  // ---------------------------------------------------------------- divers
+  // ------------------------------------------------------------------ divers
 
   private syncHud() {
     gameStore.getState().patchHud({
@@ -350,7 +429,8 @@ export class MatchScene extends Phaser.Scene {
         red: this.teams.red.standingCount
       },
       throwsLeft: { ...this.throwsLeft },
-      timeLeftMs: this.timeLeftMs
+      timeLeftMs: this.timeLeftMs,
+      canTargetKing: this.teams[OPPONENT[this.activeTeam]].standingCount === 0
     });
   }
 
