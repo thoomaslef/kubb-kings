@@ -32,6 +32,41 @@ Autres commandes :
 | `npm run build`     | Verification TypeScript + build de production |
 | `npm run preview`   | Sert le build de production                   |
 | `npm run typecheck` | Verification TypeScript seule                 |
+| `npm run icons`     | Regenere les icones PWA (`public/*.png`)      |
+
+> `npm run preview` sert le build sous `/kubb-kings/`, comme GitHub Pages :
+> l&apos;URL locale est donc **http://localhost:4173/kubb-kings/**.
+
+---
+
+## Jouer depuis un telephone
+
+Le jeu est deploye sur **GitHub Pages** a chaque push sur `main`, par
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) :
+
+**https://thoomaslef.github.io/kubb-kings/**
+
+> **A faire une seule fois** dans le depot : *Settings &rarr; Pages &rarr;
+> Build and deployment &rarr; Source* : **GitHub Actions**. Sans ce reglage le
+> workflow s&apos;execute mais la publication echoue.
+
+### Installable et hors ligne
+
+- **Manifest** ([`public/manifest.webmanifest`](public/manifest.webmanifest)) :
+  « Ajouter a l&apos;ecran d&apos;accueil » installe le jeu en **plein ecran**,
+  portrait, sans barre d&apos;adresse.
+- **Service worker** ([`public/sw.js`](public/sw.js)) : une fois la page ouverte
+  une premiere fois, le jeu se relance **sans reseau**.
+  - `index.html` : reseau d&apos;abord, cache en secours &rarr; un nouveau
+    deploiement est pris en compte des la premiere ouverture en ligne.
+  - Assets : cache d&apos;abord &rarr; leurs noms sont hashes par Vite, donc
+    immuables. Le worker les decouvre en lisant le HTML, ce qui evite une etape
+    de build supplementaire.
+- **Icones** : generees par [`scripts/make-icons.mjs`](scripts/make-icons.mjs),
+  un rasteriseur PNG sans aucune dependance. Les PNG sont commites (un manifest
+  ne peut pas pointer vers du code) mais restent reproductibles.
+
+Le `base` de Vite est `/kubb-kings/` au build et en preview, `/` en dev.
 
 ---
 
@@ -46,8 +81,9 @@ Autres commandes :
 | **React 18**   | Ecrans hors-jeu uniquement (menu, regles, HUD, resultat)      |
 | **Zustand**    | Etat global partage entre Phaser et React                     |
 
-Aucun asset externe : toutes les textures **et tous les sons** sont generes par code
-(`BootScene` pour les textures, WebAudio pour l&apos;audio).
+Aucun asset externe : toutes les textures, **tous les sons** et **jusqu&apos;aux icones
+de l&apos;application** sont generes par code (`BootScene` pour les textures, WebAudio
+pour l&apos;audio, `scripts/make-icons.mjs` pour les icones).
 
 ---
 
@@ -70,7 +106,11 @@ kubb-kings/
 │   ├── store/          Zustand
 │   ├── main.tsx
 │   └── index.css
-├── public/
+├── public/             manifest, service worker, icones generees
+├── scripts/
+│   └── make-icons.mjs  generateur d'icones PWA (rasteriseur PNG sans dependance)
+├── .github/workflows/
+│   └── deploy.yml      build + deploiement GitHub Pages
 ├── index.html
 ├── vite.config.ts
 └── package.json
