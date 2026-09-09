@@ -120,10 +120,16 @@ export function HUD() {
           </button>
         </div>
 
-        {hud.phase === 'ai-aiming' && <div className="hud__banner hud__banner--ai">{t('hud.aiAiming')}</div>}
+        {hud.stage === 'opening' ? (
+          <div className="hud__banner">{t('hud.openingThrow')}</div>
+        ) : (
+          <>
+            {hud.phase === 'ai-aiming' && <div className="hud__banner hud__banner--ai">{t('hud.aiAiming')}</div>}
 
-        {hud.canTargetKing && hud.phase === 'aiming' && (
-          <div className="hud__banner">{t(kingTipExpanded ? 'hud.kingTipExpanded' : 'hud.kingTipShort')}</div>
+            {hud.canTargetKing && hud.phase === 'aiming' && (
+              <div className="hud__banner">{t(kingTipExpanded ? 'hud.kingTipExpanded' : 'hud.kingTipShort')}</div>
+            )}
+          </>
         )}
       </div>
 

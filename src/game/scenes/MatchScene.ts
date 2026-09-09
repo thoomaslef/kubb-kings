@@ -15,7 +15,7 @@ import { Obstacle } from '../entities/Obstacle';
 import { WALL_BODY } from '../physics/matterConfig';
 import { Juice } from '../juice';
 import { PALETTE, BORDER_WIDTH } from '../theme';
-import { AI_PROFILES, AI_TEAM, decideThrow, type AiProfile } from '../ai';
+import { AI_PROFILES, AI_TEAM, decideApproachThrow, decideThrow, type AiProfile } from '../ai';
 import { BRAS_VIF_MULTIPLIER, LADDER, LANCER_BONUS_THROWS, type PerkId } from '../roguelite';
 import * as sfx from '../audio';
 import { translate } from '../../i18n/translate';
@@ -48,6 +48,19 @@ function nearestThrowPosition(x: number, positions: readonly number[]): number {
  */
 export class MatchScene extends Phaser.Scene {
   private phase: MatchPhase = 'aiming';
+  /**
+   * 'opening' : tir d'ouverture qui determine qui commence (chaque equipe
+   * tire une fois vers le roi, s'en approcher sans le toucher fait gagner
+   * la priorite). 'match' : partie normale, une fois ce tirage tranche.
+   */
+  private matchStage: 'opening' | 'match' = 'opening';
+  /** Resultat du tir d'ouverture de chaque equipe, rempli au fur et a mesure. */
+  private openingResults: Partial<Record<TeamId, { touched: boolean; distance: number }>> = {};
+  /**
+   * Le tir d'ouverture en cours a-t-il touche le roi (meme un frolement) ?
+   * Remis a zero a chaque tir d'ouverture.
+   */
+  private openingTouchedKingThisThrow = false;
   private mode: GameMode = 'local';
   private activeTeam: TeamId = 'blue';
   private throwsLeft: Record<TeamId, number> = { blue: 0, red: 0 };
@@ -113,6 +126,9 @@ export class MatchScene extends Phaser.Scene {
 
   create() {
     this.phase = 'aiming';
+    this.matchStage = 'opening';
+    this.openingResults = {};
+    this.openingTouchedKingThisThrow = false;
     this.activeTeam = 'blue';
     this.throwsLeft = { blue: MAX_THROWS_PER_TEAM, red: MAX_THROWS_PER_TEAM };
     this.timeLeftMs = MATCH_DURATION_MS;
@@ -172,11 +188,7 @@ export class MatchScene extends Phaser.Scene {
       this.matter.world?.off(Phaser.Physics.Matter.Events.COLLISION_START, this.onCollisionStart, this);
     });
 
-    this.aimAngle = this.forwardAngle();
-    this.syncHud();
-    this.drawAim();
-
-    if (this.isAiTeam(this.activeTeam)) this.beginAiTurn();
+    this.beginOpeningThrow('blue');
   }
 
   update(_time: number, delta: number) {
@@ -339,6 +351,11 @@ export class MatchScene extends Phaser.Scene {
       this.playerIndex[this.activeTeam] = this.playerIndex[this.activeTeam] === 1 ? 2 : 1;
     }
 
+    if (this.matchStage === 'opening') {
+      this.resolveOpeningThrow(lastBatonPos);
+      return;
+    }
+
     if (this.throwsLeft.blue <= 0 && this.throwsLeft.red <= 0) {
       this.finishOnPoints('throws-exhausted');
       return;
@@ -364,6 +381,89 @@ export class MatchScene extends Phaser.Scene {
     this.syncHud();
 
     if (this.isAiTeam(this.activeTeam)) this.beginAiTurn();
+  }
+
+  // --------------------------------------------------------- tir d'ouverture
+
+  /**
+   * Lance le tir d'ouverture d'une equipe : reutilise exactement les memes
+   * mecanismes de visee/lancer que le jeu normal (onPointerDown/Move/Up,
+   * launch(), la collision, endThrow()) — seule la resolution en fin de tir
+   * differe (resolveOpeningThrow au lieu de l'alternance normale des tours).
+   */
+  private beginOpeningThrow(team: TeamId) {
+    this.activeTeam = team;
+    this.phase = 'aiming';
+    this.openingTouchedKingThisThrow = false;
+    this.aimAngle = this.forwardAngle();
+    this.aimPower = 0;
+    this.drawAim();
+    this.syncHud();
+
+    // Rouge tire apres bleu : un bandeau de passage, comme un vrai changement
+    // de tour, pour que ce soit clair sur un meme appareil (1v1/2v2 local).
+    if (team === 'red') {
+      this.juice.turnBanner(this.turnLabel('red'), TEAMS.red.color, FIELD_CENTER_Y, this.scale.width);
+    }
+
+    if (this.isAiTeam(team)) this.beginAiOpeningTurn();
+  }
+
+  /**
+   * Resout le tir d'ouverture qui vient de se terminer : enregistre son
+   * resultat (roi touche ou non, distance d'arret), puis soit passe au tir
+   * de l'autre equipe, soit tranche qui commence la partie — a egalite
+   * (les deux ont touche le roi), on recommence entierement depuis bleu.
+   */
+  private resolveOpeningThrow(lastBatonPos: { x: number; y: number } | null) {
+    const distance = lastBatonPos
+      ? Phaser.Math.Distance.Between(lastBatonPos.x, lastBatonPos.y, FIELD_CENTER_X, FIELD_CENTER_Y)
+      : Infinity;
+    this.openingResults[this.activeTeam] = { touched: this.openingTouchedKingThisThrow, distance };
+
+    if (this.activeTeam === 'blue') {
+      this.beginOpeningThrow('red');
+      return;
+    }
+
+    const blueResult = this.openingResults.blue;
+    const redResult = this.openingResults.red;
+    if (!blueResult || !redResult) return;
+
+    if (blueResult.touched && redResult.touched) {
+      this.openingResults = {};
+      this.juice.floatingText(
+        FIELD_CENTER_X,
+        FIELD_CENTER_Y - 70,
+        translate(gameStore.getState().lang, 'match.openingBothTouched'),
+        '#f2c14e'
+      );
+      this.time.delayedCall(1200, () => this.beginOpeningThrow('blue'));
+      return;
+    }
+
+    const winner: TeamId = blueResult.touched
+      ? 'red'
+      : redResult.touched
+        ? 'blue'
+        : blueResult.distance <= redResult.distance
+          ? 'blue'
+          : 'red';
+
+    this.beginMatch(winner);
+  }
+
+  /** Le tirage au sort est tranche : demarre la partie normale avec l'equipe gagnante. */
+  private beginMatch(winner: TeamId) {
+    this.matchStage = 'match';
+    this.activeTeam = winner;
+    this.phase = 'aiming';
+    this.aimAngle = this.forwardAngle();
+    this.juice.turnBanner(this.turnLabel(winner), TEAMS[winner].color, FIELD_CENTER_Y, this.scale.width);
+    this.drawAim();
+    this.syncHud();
+
+    if (this.isAiTeam(winner)) this.beginAiTurn();
   }
 
   /**
@@ -418,6 +518,48 @@ export class MatchScene extends Phaser.Scene {
           kingStanding: this.king.isStanding,
           obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
           ownStanding: this.teams[AI_TEAM].kubbs.map((k) => k.isStanding),
+          ...(this.wind ? { wind: this.wind } : {})
+        },
+        profile
+      );
+
+      this.throwX[AI_TEAM] = shot.throwX;
+      this.aimAngle = shot.angle;
+
+      this.aiTween = this.tweens.add({
+        targets: this.throwerSprites[AI_TEAM],
+        x: shot.throwX,
+        duration: 280,
+        ease: 'Sine.easeInOut',
+        onComplete: () => this.animateAiAim(shot.power)
+      });
+    });
+  }
+
+  /**
+   * Tour d'IA pendant le tir d'ouverture : meme mise en scene que beginAiTurn
+   * (reflexion, deplacement, jauge, lancer via animateAiAim), mais une
+   * decision differente — decideApproachThrow, pas decideThrow — puisqu'il
+   * n'y a ici ni kubb ni victoire en jeu, juste le roi a approcher.
+   */
+  private beginAiOpeningTurn() {
+    const profile = this.ai;
+    if (!profile) return;
+
+    this.phase = 'ai-aiming';
+    this.aimPower = 0;
+    this.aimAngle = this.forwardAngle();
+    this.drawAim();
+    this.syncHud();
+
+    this.aiTimer = this.time.delayedCall(profile.thinkMs, () => {
+      if (this.phase !== 'ai-aiming') return;
+
+      const shot = decideApproachThrow(
+        {
+          throwerY: TEAMS[AI_TEAM].throwerY,
+          direction: TEAMS[AI_TEAM].direction,
+          obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
           ...(this.wind ? { wind: this.wind } : {})
         },
         profile
@@ -500,6 +642,22 @@ export class MatchScene extends Phaser.Scene {
       }
 
       if (this.isKing(pair.bodyA) || this.isKing(pair.bodyB)) {
+        // Tir d'ouverture : meme un frolement disqualifie (regle du tirage
+        // au sort), mais le roi ne tombe jamais et la partie ne se termine
+        // pas ici — resolveOpeningThrow tranche a la fin du lancer.
+        if (this.matchStage === 'opening') {
+          if (!this.openingTouchedKingThisThrow) {
+            this.openingTouchedKingThisThrow = true;
+            this.juice.floatingText(
+              this.king.sprite.x,
+              this.king.sprite.y,
+              translate(gameStore.getState().lang, 'match.openingTouched'),
+              '#ff5a4a'
+            );
+          }
+          this.playBounce(speed);
+          continue;
+        }
         if (hardEnough && this.king.isStanding) {
           this.resolveKingHit();
           return;
@@ -865,6 +1023,7 @@ export class MatchScene extends Phaser.Scene {
     gameStore.getState().patchHud({
       activeTeam: this.activeTeam,
       phase: this.phase,
+      stage: this.matchStage,
       kubbsStanding: {
         blue: this.teams.blue.standingCount,
         red: this.teams.red.standingCount

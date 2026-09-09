@@ -187,7 +187,43 @@ React  <--(store Zustand : ecran, HUD, resultat)------------   Scenes Phaser
   forcee des kubbs propres) et 21 matchs en navigateur avec la physique Matter reelle.
 - **Feu ami neutralise.** Un baton ne peut pas abattre les kubbs de sa propre equipe (cas
   possible sur un rebond de bande). Cela evite une elimination absurde due au hasard.
+- **Ricochet + kubb adverse abattu = redresse un kubb tombe.** Si le baton touche une bande
+  avant d&apos;abattre un kubb adverse, ca redresse le premier kubb tombe de son propre camp
+  (toujours le plus a gauche). Recompense un tir indirect plus difficile a placer ; applique
+  au joueur comme a l&apos;IA (meme code de collision). Verifie en navigateur (test direct de
+  `Kubb.reviveUp`/`reviveLeftmostKubb`, puis 9 matchs avec tirs volontairement risques) :
+  zero erreur, redresses effectivement observes en jeu reel.
 - **Fin de tour automatique** quand le baton est a l&apos;arret (ou apres 4 s de vol).
+
+---
+
+## Tir d&apos;ouverture : qui commence ?
+
+Avant que la partie ne debute vraiment, chaque equipe tire une fois vers le roi pour
+determiner qui commence — comme au vrai Kubb : le camp qui s&apos;en approche le plus **sans
+le toucher** a la priorite. Toucher le roi (meme un frolement) fait perdre ce tirage, sauf
+si l&apos;adversaire le touche aussi, auquel cas on recommence entierement. Ces deux lancers
+comptent dans le total de 12 par equipe (`MatchScene.beginOpeningThrow` / `resolveOpeningThrow`
+/ `beginMatch`), le roi ne tombe jamais et la partie ne se termine pas pendant ce tirage.
+
+- **IA dediee.** `decideApproachThrow` (dans [`src/game/ai.ts`](src/game/ai.ts)) balaie
+  position x angle x puissance, simule la trajectoire COURBEE reelle (`simulateWindFlight`,
+  pas une approximation en ligne droite) et retient le candidat le plus proche du roi dont
+  le cone d&apos;incertitude entier (erreur du niveau + deviation du jeu + pire cas de
+  puissance) reste hors de portee — `APPROACH_SAFETY_MARGIN` absorbe le residu de
+  discretisation d&apos;un tel balayage.
+- **Bug trouve et corrige avant tout affichage** : la premiere version du controle de
+  securite ignorait que l&apos;imprecision de puissance (appliquee apres coup) permet a un
+  tir plus fort d&apos;aller plus loin sur la meme trajectoire — un candidat juge sur pouvait
+  donc, une fois execute, toucher reellement le roi. Corrige en verifiant le pire cas de
+  puissance des la selection du candidat, pas seulement l&apos;angle.
+- **Verifie** : 1620 tirs d&apos;ouverture simules hors-navigateur (27 combinaisons terrain x
+  vent x niveau, 60 chacune) — zero contact avec le roi, et une nette progression par
+  niveau (le plus proche en moyenne : ~110 px en Difficile, ~190 px en Moyen, ~215 px en
+  Facile). Puis en navigateur : les 3 cas de decision (plus proche gagne, un seul touche,
+  les deux touchent -> on recommence) verifies directement, un flux complet de bout en bout
+  (lancers reels, decompte des lancers, transition vers la partie), et 6 matchs solo
+  Difficile avec l&apos;IA reelle sur les 3 terrains — zero erreur partout.
 
 ---
 

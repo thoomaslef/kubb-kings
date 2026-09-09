@@ -66,6 +66,11 @@ export interface MatchResult {
 export interface HudState {
   activeTeam: TeamId;
   phase: MatchPhase;
+  /**
+   * 'opening' pendant le tir d'ouverture qui determine qui commence (chaque
+   * equipe tire une fois vers le roi), 'match' une fois la partie lancee.
+   */
+  stage: 'opening' | 'match';
   /** Kubbs encore debout de chaque equipe (= cibles restantes pour l'adversaire). */
   kubbsStanding: Record<TeamId, number>;
   throwsLeft: Record<TeamId, number>;
@@ -84,6 +89,7 @@ export interface HudState {
 const initialHud = (): HudState => ({
   activeTeam: 'blue',
   phase: 'aiming',
+  stage: 'opening',
   kubbsStanding: { blue: KUBBS_PER_TEAM, red: KUBBS_PER_TEAM },
   throwsLeft: { blue: MAX_THROWS_PER_TEAM, red: MAX_THROWS_PER_TEAM },
   timeLeftMs: MATCH_DURATION_MS,

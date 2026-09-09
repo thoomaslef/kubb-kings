@@ -15,6 +15,7 @@ export function Rules() {
         <h2 className="panel__title">{t('rules.title')}</h2>
 
         <ol className="rules-list">
+          <li>{t('rules.itemOpening')}</li>
           <li>{t('rules.item1', { n: KUBBS_PER_TEAM })}</li>
           <li>{t('rules.item2')}</li>
           <li>{t('rules.item3')}</li>

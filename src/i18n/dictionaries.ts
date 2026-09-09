@@ -89,6 +89,7 @@ const fr: Record<string, string> = {
   'hud.aiAiming': "L'IA vise…",
   'hud.kingTipExpanded': 'Le roi est a portee : le viser maintenant fait gagner la partie',
   'hud.kingTipShort': 'Le roi est a portee — visez-le pour gagner',
+  'hud.openingThrow': "Tir d'ouverture : approchez le roi le plus possible SANS le toucher",
   'hud.resume': 'Reprendre',
   'hud.leaveMatch': 'Quitter la partie',
 
@@ -146,6 +147,8 @@ const fr: Record<string, string> = {
     "Partie limitee a 4 minutes et {n} lancers par equipe. Au buzzer, l'equipe qui a abattu le plus de kubbs l'emporte.",
   'rules.item9':
     "Un tir qui ricoche sur une bande avant d'abattre un kubb adverse redresse en recompense l'un de vos propres kubbs tombes, toujours le plus a gauche.",
+  'rules.itemOpening':
+    "Avant la partie, chaque equipe tire une fois vers le roi pour savoir qui commence : le plus proche SANS le toucher est prioritaire. Toucher le roi fait perdre ce tirage — sauf si l'adversaire le touche aussi, auquel cas on recommence.",
   'rules.back': 'Retour',
   'rules.replayTutorial': 'Revoir le tutoriel',
   'rules.tutorialWillReplay': 'Reapparaitra a la prochaine partie',
@@ -208,6 +211,8 @@ const fr: Record<string, string> = {
   'match.knockedLast': 'DERNIER !',
   'match.knockedDown': 'ABATTU !',
   'match.kubbRevived': 'KUBB RELEVE !',
+  'match.openingTouched': 'TOUCHE !',
+  'match.openingBothTouched': 'EGALITE, ON REJOUE !',
   'match.kingFalls': 'LE ROI TOMBE !',
   'match.kingTooEarly': 'ROI TOUCHE TROP TOT'
 };
@@ -288,6 +293,7 @@ const en: Record<string, string> = {
   'hud.aiAiming': 'AI is aiming…',
   'hud.kingTipExpanded': 'The king is in range: hitting it now wins the match',
   'hud.kingTipShort': 'The king is in range — aim for it to win',
+  'hud.openingThrow': "Opening throw: get as close to the king as you can WITHOUT touching it",
   'hud.resume': 'Resume',
   'hud.leaveMatch': 'Leave the match',
 
@@ -345,6 +351,8 @@ const en: Record<string, string> = {
     'Match capped at 4 minutes and {n} throws per team. At the buzzer, the team with the most kubbs down wins.',
   'rules.item9':
     "A throw that bounces off a wall before knocking down an opposing kubb revives one of your own fallen kubbs as a reward — always the leftmost one.",
+  'rules.itemOpening':
+    "Before the match, each team throws once at the king to decide who starts: whoever gets closest WITHOUT touching it goes first. Touching the king loses this toss — unless the other team also touches it, in which case it's replayed.",
   'rules.back': 'Back',
   'rules.replayTutorial': 'Replay the tutorial',
   'rules.tutorialWillReplay': 'Will show again next match',
@@ -406,6 +414,8 @@ const en: Record<string, string> = {
   'match.secondSouffle': 'SECOND WIND!',
   'match.knockedLast': 'LAST ONE!',
   'match.knockedDown': 'DOWN!',
+  'match.openingTouched': 'HIT!',
+  'match.openingBothTouched': 'TIE, THROW AGAIN!',
   'match.kubbRevived': 'KUBB REVIVED!',
   'match.kingFalls': 'THE KING FALLS!',
   'match.kingTooEarly': 'KING HIT TOO SOON'

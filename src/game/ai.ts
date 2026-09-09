@@ -177,7 +177,7 @@ export interface FlightStep extends Point {
  * route, une derive laterale pouvant l'en rapprocher avant meme d'atteindre
  * la distance visee.
  */
-export function simulateWindFlight(origin: Point, angle: number, power: number, windDir: 1 | -1): FlightStep[] {
+export function simulateWindFlight(origin: Point, angle: number, power: number, windDir: 1 | -1 | 0): FlightStep[] {
   const k = BATON_BODY.frictionAir;
   const accel = WIND.accelPerStep * windDir;
   let vx = Math.cos(angle) * THROW.maxSpeed * power;
@@ -440,5 +440,162 @@ export function safeThrow(board: AiBoard, rng: Rng = Math.random): AiThrow {
     angle,
     power,
     aimedAt: { x: throwX + Math.cos(angle) * 200, y: board.throwerY + Math.sin(angle) * 200 }
+  };
+}
+
+// ------------------------------------------------------------ tir d'ouverture
+
+/** Photo du plateau pour le tir d'ouverture : ni kubb ni victoire en jeu, juste le roi a approcher. */
+export interface ApproachBoard {
+  throwerY: number;
+  direction: -1 | 1;
+  /** Rochers du terrain choisi, s'il y en a — un tir qui les percute est gache. */
+  obstacles?: Point[];
+  wind?: 1 | -1;
+}
+
+const APPROACH_ANGLE_STEPS = 11;
+const APPROACH_POWER_STEPS = 6;
+/**
+ * Echantillons de securite verifies sur chaque candidat. L'erreur IA et la
+ * deviation du jeu n'entrent JAMAIS dans la simulation autrement que par
+ * leur somme (angle + (aimError + deviation)), donc balayer lineairement
+ * cette somme de -max a +max couvre exactement les memes extremes qu'une
+ * grille (aimError x deviation) complete, pour une fraction du cout. Impair
+ * pour retomber exactement sur le tir nominal (offset 0) en son centre —
+ * c'est cette trajectoire-la qui sert a estimer le point d'arret.
+ *
+ * Un balayage reste discret : entre deux echantillons, la distance au roi
+ * peut descendre plus bas que ce qui a ete mesure. Comme ce tir cherche
+ * DELIBEREMENT le candidat le plus proche du roi qui passe le test, il finit
+ * presque toujours pile a la limite de ce que le balayage a verifie — c'est
+ * exactement la ou un tel trou se paie le plus cher. APPROACH_SAFETY_MARGIN
+ * (plus bas) absorbe cet ecart, mesure par simulation (scripts/scratchpad).
+ */
+const APPROACH_SAFETY_STEPS = 61;
+/**
+ * Marge de securite ajoutee a KING_HIT_RADIUS pour ce seul controle interne
+ * (jamais pour le rendu ni la detection de contact reelle, qui restent sur
+ * KING_HIT_RADIUS) : absorbe le trou residuel entre deux echantillons de
+ * APPROACH_SAFETY_STEPS (le pire cas de powerError, lui, est verifie a part
+ * via safetyPower plus bas — sans cela un tir juste assez faible pour ne
+ * jamais approcher le roi passait le controle, puis touchait bel et bien
+ * une fois renforce par l'imprecision du niveau). Valeur issue d'un
+ * balayage en simulation (scripts/scratchpad) : sans elle,
+ * le tir le plus proche autorise touchait encore le roi dans plusieurs % des
+ * cas (niveaux faciles/moyens, grand cone d'erreur) ; avec elle, ce taux
+ * retombe a un niveau residuel juge acceptable pour ce mini-jeu non decisif
+ * (contrairement a decideThrow, toucher le roi ici ne perd la partie que si
+ * l'adversaire ne le touche pas aussi).
+ */
+const APPROACH_SAFETY_MARGIN = 45;
+
+interface ApproachCandidate {
+  throwX: number;
+  angle: number;
+  power: number;
+  restDistance: number;
+}
+
+/**
+ * Lancer du tir d'ouverture, qui determine qui commence la partie : chaque
+ * equipe tire une fois vers le roi, celle qui l'approche le plus SANS le
+ * toucher (meme un frolement disqualifie, cf. MatchScene::onCollisionStart)
+ * commence. Contrairement a decideThrow il n'y a ici ni kubb ni defaite
+ * immediate en jeu — seule compte la distance finale d'arret du baton au
+ * roi, tant que ni lui ni son cone d'incertitude ne l'a touche en chemin.
+ *
+ * Balaie position x angle x puissance, rejette tout candidat dont le cone
+ * d'incertitude (erreur IA + deviation du jeu, comme decideThrow) passe a
+ * portee du roi a un instant quelconque de sa trajectoire COURBEE reelle
+ * (simulateWindFlight, pas une approximation en ligne droite), puis retient
+ * parmi les candidats surs celui dont le point d'arret nominal est le plus
+ * proche du roi.
+ */
+export function decideApproachThrow(board: ApproachBoard, profile: AiProfile, rng: Rng = Math.random): AiThrow {
+  const king: Point = { x: FIELD_CENTER_X, y: FIELD_CENTER_Y };
+  const forward = board.direction === -1 ? -Math.PI / 2 : Math.PI / 2;
+  const maxDelta = AIM.maxAngleDeg * DEG;
+  const wind = board.wind ?? 0;
+  const rockObstacles: Obstacle[] = (board.obstacles ?? []).map((p) => ({
+    p,
+    radius: BLOCK_HIT_RADIUS,
+    kind: 'block' as const
+  }));
+
+  const candidates: ApproachCandidate[] = [];
+
+  for (const throwX of THROW_POSITIONS) {
+    const origin: Point = { x: throwX, y: board.throwerY };
+
+    for (let ai = 0; ai < APPROACH_ANGLE_STEPS; ai += 1) {
+      const angle = forward + ((2 * ai) / (APPROACH_ANGLE_STEPS - 1) - 1) * maxDelta;
+
+      // Un rocher sur le chemin rend le point d'arret imprevisible (les
+      // rebonds ne sont pas simules ici) : ce candidat est ecarte, comme un
+      // tir gache dans decideThrow.
+      if (firstObstacle(origin, angle, rockObstacles) !== null) continue;
+
+      for (let pi = 0; pi < APPROACH_POWER_STEPS; pi += 1) {
+        const power = AIM.minPower + ((1 - AIM.minPower) * pi) / (APPROACH_POWER_STEPS - 1);
+        // Le lancer reellement execute peut recevoir jusqu'a +powerErrorRatio
+        // de puissance en plus (imprecision du niveau, appliquee apres ce
+        // controle) : un baton plus fort va plus loin sur la MEME droite, et
+        // peut donc atteindre un point plus proche du roi que celui-ci n'a
+        // jamais teste si on ne verifiait qu'avec la puissance nominale.
+        const safetyPower = Math.min(1, power * (1 + profile.powerErrorRatio));
+
+        const maxOffset = profile.aimErrorDeg + MAX_AIM_DEVIATION_DEG;
+        let safe = true;
+        let nominalPath: FlightStep[] | null = null;
+
+        for (let s = 0; s < APPROACH_SAFETY_STEPS && safe; s += 1) {
+          const offset = ((2 * s) / (APPROACH_SAFETY_STEPS - 1) - 1) * maxOffset;
+          const path = simulateWindFlight(origin, angle + offset * DEG, safetyPower, wind);
+
+          let closest = Infinity;
+          for (const step of path) {
+            const dist = Math.hypot(step.x - king.x, step.y - king.y);
+            if (dist < closest) closest = dist;
+          }
+          if (closest <= KING_HIT_RADIUS + APPROACH_SAFETY_MARGIN) safe = false;
+
+          if (offset === 0) nominalPath = simulateWindFlight(origin, angle, power, wind);
+        }
+
+        if (!safe || !nominalPath) continue;
+
+        const last = nominalPath[nominalPath.length - 1];
+        candidates.push({ throwX, angle, power, restDistance: Math.hypot(last.x - king.x, last.y - king.y) });
+      }
+    }
+  }
+
+  if (candidates.length === 0) {
+    // Repli : rien n'est juge sur sur toutes les positions/angles/puissances
+    // essayees — on s'ecarte franchement, comme safeThrow, garanti de manquer
+    // le roi (mais loin de lui : un tir d'ouverture perdu d'avance).
+    const side = rng() < 0.5 ? -1 : 1;
+    const throwX = side < 0 ? THROW_POSITIONS[0] : THROW_POSITIONS[THROW_POSITIONS.length - 1];
+    const angle = forward - side * AIM.maxAngleDeg * 0.8 * DEG;
+    const power = AIM.minPower * 2;
+    return {
+      throwX,
+      angle,
+      power,
+      aimedAt: { x: throwX + Math.cos(angle) * 200, y: board.throwerY + Math.sin(angle) * 200 }
+    };
+  }
+
+  candidates.sort((a, b) => a.restDistance - b.restDistance);
+  const best = candidates[0];
+
+  const aimError = (rng() * 2 - 1) * profile.aimErrorDeg * DEG;
+  const powerError = 1 + (rng() * 2 - 1) * profile.powerErrorRatio;
+  return {
+    throwX: best.throwX,
+    angle: best.angle + aimError,
+    power: Math.max(AIM.minPower, Math.min(1, best.power * powerError)),
+    aimedAt: king
   };
 }
