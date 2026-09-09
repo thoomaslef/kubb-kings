@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { KUBB_BODY } from '../physics/matterConfig';
 import { HITBOX } from '../rules';
-import { SHADOW } from '../theme';
+import { SHADOW, type KubbSkin } from '../theme';
 import type { TeamId } from './Team';
 
 /**
@@ -14,12 +14,14 @@ import type { TeamId } from './Team';
 export class Kubb {
   readonly sprite: Phaser.Physics.Matter.Image;
   readonly team: TeamId;
+  private readonly skin: KubbSkin;
   /** Ombre portee, sprite independant qui suit le bloc. */
   private readonly shadow: Phaser.GameObjects.Image;
   private downed = false;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, team: TeamId) {
+  constructor(scene: Phaser.Scene, x: number, y: number, team: TeamId, skin: KubbSkin) {
     this.team = team;
+    this.skin = skin;
 
     this.shadow = scene.add
       .image(x + SHADOW.offsetX, y + SHADOW.offsetY, 'shadow')
@@ -27,7 +29,7 @@ export class Kubb {
       .setAlpha(SHADOW.alpha)
       .setScale(SHADOW.scale.kubb);
 
-    this.sprite = scene.matter.add.image(x, y, `kubb-${team}`, undefined, {
+    this.sprite = scene.matter.add.image(x, y, `kubb-${team}-${skin}`, undefined, {
       ...KUBB_BODY,
       chamfer: { radius: 5 },
       shape: { type: 'rectangle', width: HITBOX.kubb, height: HITBOX.kubb }
@@ -56,7 +58,7 @@ export class Kubb {
     this.sprite.destroy();
 
     const fallen = scene.add
-      .image(x, y, `kubb-down-${this.team}`)
+      .image(x, y, `kubb-down-${this.team}-${this.skin}`)
       .setDepth(1)
       .setRotation(rotation)
       .setScale(0.68, 1.05);

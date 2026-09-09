@@ -3,6 +3,7 @@ import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { AI_PROFILES, type Difficulty } from '../game/ai';
 import { FIELD_PRESETS, type FieldPresetId } from '../game/rules';
+import { KUBB_SKINS, KUBB_SKIN_LABELS, KUBB_SKIN_HINTS } from '../game/theme';
 import { LADDER, getBestStage } from '../game/roguelite';
 
 const LEVELS = Object.keys(AI_PROFILES) as Difficulty[];
@@ -14,6 +15,8 @@ export function Menu() {
   const setDifficulty = useGameStore((s) => s.setDifficulty);
   const fieldPreset = useGameStore((s) => s.fieldPreset);
   const setFieldPreset = useGameStore((s) => s.setFieldPreset);
+  const kubbSkin = useGameStore((s) => s.kubbSkin);
+  const setKubbSkin = useGameStore((s) => s.setKubbSkin);
   const setMode = useGameStore((s) => s.setMode);
   const startRun = useGameStore((s) => s.startRun);
 
@@ -88,6 +91,20 @@ export function Menu() {
             ))}
           </div>
           <p className="footnote footnote--tight">{FIELD_PRESETS[fieldPreset].hint}</p>
+
+          <div className="segmented" role="group" aria-label="Skin des kubbs">
+            {KUBB_SKINS.map((skin) => (
+              <button
+                key={skin}
+                className={`segmented__item${skin === kubbSkin ? ' segmented__item--on' : ''}`}
+                aria-pressed={skin === kubbSkin}
+                onClick={() => setKubbSkin(skin)}
+              >
+                {KUBB_SKIN_LABELS[skin]}
+              </button>
+            ))}
+          </div>
+          <p className="footnote footnote--tight">{KUBB_SKIN_HINTS[kubbSkin]}</p>
 
           <button className="btn" onClick={() => setScreen('rules')}>
             Regles

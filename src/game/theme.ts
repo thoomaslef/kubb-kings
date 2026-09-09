@@ -34,8 +34,35 @@ export const PALETTE = {
   /** Rochers des terrains a obstacles. */
   rock: 0x6b6f72,
   rockLight: 0x8b9094,
-  rockDark: 0x45484a
+  rockDark: 0x45484a,
+  /** Base claire des blocs "marbre" — la teinte d'equipe reste dans le cadre et les veines. */
+  marble: 0xe9e6de,
+  /** Base neutre des blocs "metal". */
+  metal: 0x9aa0a6,
+  metalLight: 0xd8dce0,
+  metalDark: 0x5a6066
 } as const;
+
+/**
+ * Habillage cosmetique des kubbs, choisi au menu. N'a aucune incidence sur
+ * les collisions (HITBOX dans rules.ts) ni sur l'IA (ai.ts ne connait pas
+ * cette notion) : uniquement une texture differente.
+ */
+export type KubbSkin = 'bois' | 'marbre' | 'metal';
+
+export const KUBB_SKINS: KubbSkin[] = ['bois', 'marbre', 'metal'];
+
+export const KUBB_SKIN_LABELS: Record<KubbSkin, string> = {
+  bois: 'Bois',
+  marbre: 'Marbre',
+  metal: 'Metal'
+};
+
+export const KUBB_SKIN_HINTS: Record<KubbSkin, string> = {
+  bois: "Le look d'origine, brut de sciage",
+  marbre: 'Blocs en pierre veinee',
+  metal: 'Blocs metalliques et reflets nets'
+};
 
 /**
  * Ombres portees. Une source de lumiere unique, en haut a gauche : toutes les

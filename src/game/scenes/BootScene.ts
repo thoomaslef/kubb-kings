@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { TEAMS } from '../entities/Team';
-import { PALETTE } from '../theme';
+import { PALETTE, KUBB_SKINS, type KubbSkin } from '../theme';
 import { OBSTACLE_RADIUS } from '../rules';
 
 /**
@@ -122,48 +122,145 @@ export class BootScene extends Phaser.Scene {
   private buildKubbTextures() {
     (Object.keys(TEAMS) as Array<keyof typeof TEAMS>).forEach((id) => {
       const { color } = TEAMS[id];
-      const { light, dark, deep } = this.shades(color);
+      const shades = this.shades(color);
 
-      // Debout : bloc vu de tres legerement au-dessus. La face du dessus,
-      // plus claire, donne le relief ; le biseau du bas l'assoit au sol.
-      this.texture(`kubb-${id}`, 40, 40, (g) => {
-        g.fillStyle(deep, 1);
-        g.fillRoundedRect(0, 0, 40, 40, 8);
-        g.fillStyle(color, 1);
-        g.fillRoundedRect(1, 1, 38, 36, 7);
+      KUBB_SKINS.forEach((skin) => {
+        // Debout : bloc vu de tres legerement au-dessus. La face du dessus,
+        // plus claire, donne le relief ; le biseau du bas l'assoit au sol.
+        this.texture(`kubb-${id}-${skin}`, 40, 40, (g) => this.drawKubbStanding(g, skin, color, shades));
 
-        g.fillStyle(light, 0.62);
-        g.fillRoundedRect(4, 4, 32, 13, 5);
-
-        // Fil du bois.
-        g.fillStyle(dark, 0.2);
-        for (let y = 20; y < 34; y += 5) g.fillRect(6, y, 28, 1);
-
-        g.fillStyle(deep, 0.55);
-        g.fillRoundedRect(1, 30, 38, 7, 4);
-      });
-
-      // Couche : bloc bascule sur le flanc, deteint, hors jeu.
-      this.texture(`kubb-down-${id}`, 48, 32, (g) => {
-        // Un bloc hors jeu doit se lire "eteint" : moins sature ET plus sombre.
-        // Desaturer seul le fait virer au blanc et le rend plus visible que debout.
-        const muted = Phaser.Display.Color.ValueToColor(color)
-          .clone()
-          .desaturate(34)
-          .darken(26).color;
-
-        g.fillStyle(deep, 0.55);
-        g.fillRoundedRect(0, 2, 48, 30, 7);
-        g.fillStyle(muted, 1);
-        g.fillRoundedRect(1, 1, 46, 28, 6);
-
-        // Face de bout, visible maintenant que le bloc est couche.
-        g.fillStyle(dark, 0.4);
-        g.fillRoundedRect(33, 2, 13, 26, 5);
-        g.fillStyle(deep, 0.25);
-        for (let x = 6; x < 30; x += 6) g.fillRect(x, 5, 1, 20);
+        // Couche : bloc bascule sur le flanc, deteint, hors jeu.
+        this.texture(`kubb-down-${id}-${skin}`, 48, 32, (g) => this.drawKubbFallen(g, skin, color, shades));
       });
     });
+  }
+
+  /**
+   * Un meme squelette (cadre + face + biseau) pour les trois habillages —
+   * seuls les remplissages et details changent, jamais les dimensions : la
+   * hitbox (rules.ts::HITBOX) ne depend d'aucun de ces choix visuels.
+   */
+  private drawKubbStanding(
+    g: Phaser.GameObjects.Graphics,
+    skin: KubbSkin,
+    color: number,
+    shades: { light: number; dark: number; deep: number }
+  ) {
+    const { light, dark, deep } = shades;
+
+    if (skin === 'marbre') {
+      g.fillStyle(deep, 1);
+      g.fillRoundedRect(0, 0, 40, 40, 8);
+      g.fillStyle(PALETTE.marble, 1);
+      g.fillRoundedRect(1, 1, 38, 36, 7);
+
+      g.fillStyle(0xffffff, 0.5);
+      g.fillRoundedRect(4, 4, 32, 13, 5);
+
+      // Veines irregulieres, teintees par la couleur d'equipe.
+      g.lineStyle(1, dark, 0.5);
+      g.lineBetween(6, 12, 16, 22);
+      g.lineBetween(16, 22, 14, 30);
+      g.lineBetween(22, 8, 30, 18);
+      g.lineBetween(30, 18, 26, 28);
+
+      g.fillStyle(deep, 0.55);
+      g.fillRoundedRect(1, 30, 38, 7, 4);
+      return;
+    }
+
+    if (skin === 'metal') {
+      g.fillStyle(deep, 1);
+      g.fillRoundedRect(0, 0, 40, 40, 8);
+      g.fillStyle(PALETTE.metal, 1);
+      g.fillRoundedRect(1, 1, 38, 36, 7);
+
+      // Reflet metallique en bandes, plutot que le fil de bois.
+      g.fillStyle(PALETTE.metalLight, 0.75);
+      g.fillRect(4, 4, 32, 6);
+      g.fillStyle(PALETTE.metalDark, 0.35);
+      g.fillRect(4, 25, 32, 3);
+
+      // Bande d'equipe pleine couleur : seul un cadre suffirait moins a se
+      // reperer au premier coup d'oeil sur une surface aussi neutre.
+      g.fillStyle(color, 1);
+      g.fillRoundedRect(1, 30, 38, 7, 4);
+      return;
+    }
+
+    // 'bois' — look d'origine.
+    g.fillStyle(deep, 1);
+    g.fillRoundedRect(0, 0, 40, 40, 8);
+    g.fillStyle(color, 1);
+    g.fillRoundedRect(1, 1, 38, 36, 7);
+
+    g.fillStyle(light, 0.62);
+    g.fillRoundedRect(4, 4, 32, 13, 5);
+
+    // Fil du bois.
+    g.fillStyle(dark, 0.2);
+    for (let y = 20; y < 34; y += 5) g.fillRect(6, y, 28, 1);
+
+    g.fillStyle(deep, 0.55);
+    g.fillRoundedRect(1, 30, 38, 7, 4);
+  }
+
+  private drawKubbFallen(
+    g: Phaser.GameObjects.Graphics,
+    skin: KubbSkin,
+    color: number,
+    shades: { light: number; dark: number; deep: number }
+  ) {
+    const { dark, deep } = shades;
+
+    if (skin === 'marbre') {
+      const muted = Phaser.Display.Color.ValueToColor(PALETTE.marble).clone().darken(10).color;
+
+      g.fillStyle(deep, 0.55);
+      g.fillRoundedRect(0, 2, 48, 30, 7);
+      g.fillStyle(muted, 1);
+      g.fillRoundedRect(1, 1, 46, 28, 6);
+
+      // Face de bout, visible maintenant que le bloc est couche.
+      g.fillStyle(dark, 0.35);
+      g.fillRoundedRect(33, 2, 13, 26, 5);
+      g.lineStyle(1, dark, 0.4);
+      g.lineBetween(6, 6, 14, 16);
+      g.lineBetween(18, 4, 24, 14);
+      g.lineBetween(24, 18, 30, 26);
+      return;
+    }
+
+    if (skin === 'metal') {
+      g.fillStyle(deep, 0.6);
+      g.fillRoundedRect(0, 2, 48, 30, 7);
+      g.fillStyle(PALETTE.metalDark, 1);
+      g.fillRoundedRect(1, 1, 46, 28, 6);
+
+      g.fillStyle(PALETTE.metal, 0.6);
+      g.fillRect(2, 4, 44, 4);
+
+      // Face de bout teintee d'equipe : reste identifiable une fois couche.
+      g.fillStyle(color, 0.85);
+      g.fillRoundedRect(33, 2, 13, 26, 5);
+      return;
+    }
+
+    // 'bois' — look d'origine.
+    // Un bloc hors jeu doit se lire "eteint" : moins sature ET plus sombre.
+    // Desaturer seul le fait virer au blanc et le rend plus visible que debout.
+    const muted = Phaser.Display.Color.ValueToColor(color).clone().desaturate(34).darken(26).color;
+
+    g.fillStyle(deep, 0.55);
+    g.fillRoundedRect(0, 2, 48, 30, 7);
+    g.fillStyle(muted, 1);
+    g.fillRoundedRect(1, 1, 46, 28, 6);
+
+    // Face de bout, visible maintenant que le bloc est couche.
+    g.fillStyle(dark, 0.4);
+    g.fillRoundedRect(33, 2, 13, 26, 5);
+    g.fillStyle(deep, 0.25);
+    for (let x = 6; x < 30; x += 6) g.fillRect(x, 5, 1, 20);
   }
 
   // -------------------------------------------------------------------- roi

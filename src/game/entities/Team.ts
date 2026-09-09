@@ -7,6 +7,7 @@ import {
   KUBBS_PER_TEAM,
   KUBB_SPACING
 } from '../rules';
+import type { KubbSkin } from '../theme';
 import { Kubb } from './Kubb';
 
 export type TeamId = 'blue' | 'red';
@@ -63,14 +64,14 @@ export class Team {
   readonly id: TeamId;
   readonly kubbs: Kubb[];
 
-  constructor(scene: Phaser.Scene, id: TeamId) {
+  constructor(scene: Phaser.Scene, id: TeamId, skin: KubbSkin) {
     this.id = id;
     const { baselineY } = TEAMS[id];
     const first = -((KUBBS_PER_TEAM - 1) / 2) * KUBB_SPACING;
 
     this.kubbs = Array.from(
       { length: KUBBS_PER_TEAM },
-      (_, i) => new Kubb(scene, FIELD_CENTER_X + first + i * KUBB_SPACING, baselineY, id)
+      (_, i) => new Kubb(scene, FIELD_CENTER_X + first + i * KUBB_SPACING, baselineY, id, skin)
     );
   }
 

@@ -5,7 +5,7 @@ suedois : deux equipes se lancent des batons pour abattre les blocs adverses, pu
 
 Quatre modes : **solo contre l'IA** (trois niveaux), **1v1 local**, **2v2 local**
 (pass-and-play sur le meme telephone) et **Defi**, un roguelite en 5 manches contre
-l'IA. Plusieurs terrains, une partie de 4 minutes maximum.
+l'IA. Plusieurs terrains, trois skins de blocs, une partie de 4 minutes maximum.
 
 ---
 
@@ -193,6 +193,26 @@ du temps plutot que de leur foncer dedans.
 
 ---
 
+## Skins de blocs
+
+Trois habillages, choisis au menu, generes dans
+[`src/game/scenes/BootScene.ts`](src/game/scenes/BootScene.ts) (`drawKubbStanding` /
+`drawKubbFallen`) : une texture par (equipe x skin), toujours par code, sans asset externe.
+
+| Skin        | Look                                                              |
+| ----------- | ------------------------------------------------------------------ |
+| **Bois**    | Look d&apos;origine : fil du bois, biseau au sol                    |
+| **Marbre**  | Base claire veinee, cadre et veines teintes par la couleur d&apos;equipe |
+| **Metal**   | Corps acier avec reflet, cadre et bande de couleur d&apos;equipe    |
+
+Purement cosmetique : la hitbox (`HITBOX.kubb` dans `rules.ts`) et les corps Matter ne
+changent jamais, et `ai.ts` n&apos;a aucune notion de skin — aucune verification par
+simulation n&apos;est necessaire pour cette fonctionnalite. Stocke dans le store
+(`kubbSkin` / `setKubbSkin`), thread depuis `MatchScene` jusqu&apos;a chaque
+`Kubb` via `Team`.
+
+---
+
 ## Tutoriel de premiere partie
 
 L&apos;ecran des regles ([`src/ui/Rules.tsx`](src/ui/Rules.tsx)) est un mur de texte : personne
@@ -327,7 +347,7 @@ Le jeu et son habillage sont separes, et chacun a son fichier de reglage :
 | Fichier                                    | Ce qu&apos;on y regle                                                      |
 | ------------------------------------------ | -------------------------------------------------------------------------- |
 | [`src/game/rules.ts`](src/game/rules.ts)   | Seuil d&apos;impact, deviation, vitesse max, duree, lancers, terrain, hitboxes |
-| [`src/game/theme.ts`](src/game/theme.ts)   | Palette, ombres portees, cadre du terrain                                    |
+| [`src/game/theme.ts`](src/game/theme.ts)   | Palette, ombres portees, cadre du terrain, skins de blocs                    |
 | [`src/game/juice.ts`](src/game/juice.ts)   | Intensite des secousses, du ralenti, de la trainee, des vibrations           |
 
 **Les hitboxes sont independantes des textures** (`HITBOX` dans `rules.ts`) : on peut
@@ -354,10 +374,7 @@ Le son se coupe depuis le HUD ; la preference est conservee d&apos;une partie a 
 Volontairement non developpes, mais le decoupage `scenes / entities / physics / store`
 est prevu pour les accueillir :
 
-- mode 2v2
+- meteo (vent)
 - multijoueur en ligne, classement mondial
-- meteo, obstacles, terrains multiples
-- mecanique roguelite (deblocages apres victoire)
-- skins de blocs, boutique
 - tournois
 - portage natif iOS / Android (Capacitor)

@@ -3,6 +3,7 @@ import type { TeamId } from '../game/entities/Team';
 import type { Difficulty } from '../game/ai';
 import type { PerkId } from '../game/roguelite';
 import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId } from '../game/rules';
+import type { KubbSkin } from '../game/theme';
 
 /** Ecrans hors-jeu geres par React. */
 export type Screen = 'boot' | 'menu' | 'rules' | 'match' | 'result' | 'perk' | 'quit';
@@ -75,6 +76,8 @@ interface GameState {
   mode: GameMode;
   difficulty: Difficulty;
   fieldPreset: FieldPresetId;
+  /** Habillage visuel des kubbs — purement cosmetique, sans effet sur l'IA. */
+  kubbSkin: KubbSkin;
   /** null hors mode 'defi' — pas de run en cours. */
   run: RunState | null;
 
@@ -86,6 +89,7 @@ interface GameState {
   setMode: (mode: GameMode) => void;
   setDifficulty: (difficulty: Difficulty) => void;
   setFieldPreset: (preset: FieldPresetId) => void;
+  setKubbSkin: (skin: KubbSkin) => void;
   /** (Re)demarre une run a la manche 1, sans bonus. */
   startRun: () => void;
   /** Passe a la manche suivante ; no-op hors run active. */
@@ -102,6 +106,7 @@ export const useGameStore = create<GameState>((set) => ({
   mode: 'solo',
   difficulty: 'moyen',
   fieldPreset: 'classique',
+  kubbSkin: 'bois',
   run: null,
 
   setScreen: (screen) => set({ screen }),
@@ -112,6 +117,7 @@ export const useGameStore = create<GameState>((set) => ({
   setMode: (mode) => set({ mode }),
   setDifficulty: (difficulty) => set({ difficulty }),
   setFieldPreset: (preset) => set({ fieldPreset: preset }),
+  setKubbSkin: (skin) => set({ kubbSkin: skin }),
   startRun: () => set({ run: { stageIndex: 0, perks: [] } }),
   advanceRun: () =>
     set((state) => (state.run ? { run: { ...state.run, stageIndex: state.run.stageIndex + 1 } } : state)),

@@ -105,7 +105,7 @@ export class MatchScene extends Phaser.Scene {
     this.aiTimer = null;
     this.aiTween = null;
 
-    const { mode, difficulty, fieldPreset, run } = gameStore.getState();
+    const { mode, difficulty, fieldPreset, kubbSkin, run } = gameStore.getState();
     this.mode = mode;
     // En Defi, le niveau et le terrain viennent de l'echelle (roguelite.ts),
     // pas des selecteurs du menu casual — mais l'IA reste exactement la
@@ -127,7 +127,7 @@ export class MatchScene extends Phaser.Scene {
     this.createThrowers();
     this.createObstacles();
 
-    this.teams = { blue: new Team(this, 'blue'), red: new Team(this, 'red') };
+    this.teams = { blue: new Team(this, 'blue', kubbSkin), red: new Team(this, 'red', kubbSkin) };
     this.king = new King(this, FIELD_CENTER_X, FIELD_CENTER_Y);
 
     this.aimGfx = this.add.graphics().setDepth(5);
