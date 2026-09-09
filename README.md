@@ -102,8 +102,9 @@ kubb-kings/
 │   │   ├── ai.ts       adversaire solo (module pur, simulable hors navigateur)
 │   │   ├── juice.ts    feedback : particules, secousses, vibration, ralenti
 │   │   ├── audio.ts    sons synthetises par code (WebAudio)
+│   │   ├── tutorial.ts persistance du tutoriel (localStorage, cf. Tutorial.tsx)
 │   │   └── GameBridge.ts
-│   ├── ui/             composants React (App, Menu, Rules, HUD, ResultScreen…)
+│   ├── ui/             composants React (App, Menu, Rules, HUD, Tutorial, ResultScreen…)
 │   ├── store/          Zustand
 │   ├── main.tsx
 │   └── index.css
@@ -159,6 +160,31 @@ React  <--(store Zustand : ecran, HUD, resultat)------------   Scenes Phaser
 - **Feu ami neutralise.** Un baton ne peut pas abattre les kubbs de sa propre equipe (cas
   possible sur un rebond de bande). Cela evite une elimination absurde due au hasard.
 - **Fin de tour automatique** quand le baton est a l&apos;arret (ou apres 4 s de vol).
+
+---
+
+## Tutoriel de premiere partie
+
+L&apos;ecran des regles ([`src/ui/Rules.tsx`](src/ui/Rules.tsx)) est un mur de texte : personne
+ne le lit avant de jouer. L&apos;onboarding reel se joue **pendant** la toute premiere partie
+(solo ou 1v1 local, peu importe), en trois temps :
+
+1. **Avant le premier lancer** ([`src/ui/Tutorial.tsx`](src/ui/Tutorial.tsx)) : une carte au bas
+   de l&apos;ecran resume le geste (se placer, viser, lancer) et rappelle que le roi est interdit
+   tant que l&apos;adversaire tient debout. Elle disparait au premier toucher, ou que ce soit sur
+   l&apos;ecran &mdash; jamais en travers de la visee.
+2. **Apres ce premier lancer** : un toast bref rappelle qu&apos;on ne lance qu&apos;une fois par
+   tour et qu&apos;un kubb tombe reste hors jeu, puis s&apos;efface seul.
+3. **La premiere fois que le roi devient visable** : le bandeau qui existe deja normalement
+   (`HUD.tsx`) se fait plus explicite pour cette occurrence-la seulement, puis redevient son
+   texte court habituel.
+
+Chaque etape est gardee par un signal de jeu reel (`hud.phase`, `hud.canTargetKing`) plutot que
+par un minuteur arbitraire : elle attend que la situation se produise vraiment. Un seul drapeau
+`localStorage` ([`src/game/tutorial.ts`](src/game/tutorial.ts)) retient que la premiere partie a
+eu lieu &mdash; termine ou quittee en cours de route, peu importe, elle ne rejoue jamais deux
+fois. **"Revoir le tutoriel"**, dans l&apos;ecran des regles, remet ce drapeau a zero pour la
+partie suivante.
 
 ---
 

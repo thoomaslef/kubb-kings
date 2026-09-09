@@ -3,6 +3,7 @@ import { GameCanvas } from './GameCanvas';
 import { Menu } from './Menu';
 import { Rules } from './Rules';
 import { HUD } from './HUD';
+import { Tutorial } from './Tutorial';
 import { ResultScreen } from './ResultScreen';
 import { QuitScreen } from './QuitScreen';
 
@@ -18,7 +19,12 @@ export function App() {
       <GameCanvas />
       {screen === 'menu' && <Menu />}
       {screen === 'rules' && <Rules />}
-      {screen === 'match' && <HUD />}
+      {screen === 'match' && (
+        <>
+          <HUD />
+          <Tutorial />
+        </>
+      )}
       {screen === 'result' && <ResultScreen />}
       {screen === 'quit' && <QuitScreen />}
     </div>

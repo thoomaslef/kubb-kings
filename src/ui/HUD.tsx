@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { TEAMS, OPPONENT } from '../game/entities/Team';
 import { isMuted, setMuted } from '../game/audio';
 import { AI_TEAM } from '../game/ai';
+import { isKingTipSeen, markKingTipSeen } from '../game/tutorial';
 
 function formatTime(ms: number) {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -20,6 +21,18 @@ export function HUD() {
 
   const mode = useGameStore((s) => s.mode);
   const [muted, setMutedState] = useState(isMuted);
+
+  // La toute premiere fois que le roi devient visable, le bandeau se fait
+  // plus bavard : c'est le seul reste du tutoriel qui vit dans le HUD plutot
+  // que dans <Tutorial />, pour rester le meme bandeau qu'en temps normal.
+  const [kingTipExpanded] = useState(() => !isKingTipSeen());
+  const kingTipMarked = useRef(false);
+  useEffect(() => {
+    if (hud.canTargetKing && hud.phase === 'aiming' && !kingTipMarked.current) {
+      kingTipMarked.current = true;
+      markKingTipSeen();
+    }
+  }, [hud.canTargetKing, hud.phase]);
 
   const active = TEAMS[hud.activeTeam];
   // En solo, l'adversaire n'est pas "l'equipe Rouge" mais l'IA : le HUD doit
@@ -82,7 +95,11 @@ export function HUD() {
         {hud.phase === 'ai-aiming' && <div className="hud__banner hud__banner--ai">L&apos;IA vise&hellip;</div>}
 
         {hud.canTargetKing && hud.phase === 'aiming' && (
-          <div className="hud__banner">Le roi est a portee &mdash; visez-le pour gagner</div>
+          <div className="hud__banner">
+            {kingTipExpanded
+              ? 'Le roi est a portee : le viser maintenant fait gagner la partie'
+              : 'Le roi est a portee — visez-le pour gagner'}
+          </div>
         )}
       </div>
 

@@ -327,6 +327,86 @@ body {
   color: #fff2f0;
 }
 
+/* ---------- Tutoriel de premiere partie ---------- */
+
+/* Coquille non interactive : le toucher doit toujours atteindre le terrain
+   en dessous, meme quand une carte du tutoriel est affichee. */
+.tutorial {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Ancree en bas, comme la seule chose affichee a cet instant du tutoriel. */
+.tutorial__card {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+  animation: tutorial-in 0.25s ease-out;
+}
+
+.tutorial__list {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.tutorial__list li {
+  margin-bottom: 6px;
+}
+
+.tutorial__list li:last-child {
+  margin-bottom: 0;
+  color: var(--gold);
+}
+
+/*
+ * Ancre en haut, sous la barre du HUD : le toast apparait au tour suivant,
+ * quand un bandeau de bas d'ecran (tour de l'IA, roi a portee) est deja
+ * susceptible d'occuper le bas — les deux ne doivent jamais se chevaucher.
+ */
+.tutorial__toast {
+  position: absolute;
+  left: 50%;
+  top: max(132px, calc(env(safe-area-inset-top) + 124px));
+  transform: translateX(-50%);
+  max-width: calc(100% - 28px);
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: rgba(9, 20, 15, 0.9);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13px;
+  text-align: center;
+  animation: tutorial-in 0.2s ease-out;
+}
+
+@keyframes tutorial-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial__card,
+  .tutorial__toast {
+    animation: none;
+  }
+}
+
 /* ---------- Ecran de fin ---------- */
 
 .score-row {

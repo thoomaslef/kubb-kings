@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { KUBBS_PER_TEAM, MAX_THROWS_PER_TEAM } from '../game/rules';
+import { resetTutorial } from '../game/tutorial';
 
 export function Rules() {
   const setScreen = useGameStore((s) => s.setScreen);
+  const [tutorialReset, setTutorialReset] = useState(false);
 
   return (
     <div className="overlay overlay--solid">
@@ -44,9 +47,20 @@ export function Rules() {
           </li>
         </ol>
 
-        <button className="btn btn--primary" onClick={() => setScreen('menu')}>
-          Retour
-        </button>
+        <div className="button-column">
+          <button className="btn btn--primary" onClick={() => setScreen('menu')}>
+            Retour
+          </button>
+          <button
+            className="btn btn--ghost"
+            onClick={() => {
+              resetTutorial();
+              setTutorialReset(true);
+            }}
+          >
+            {tutorialReset ? 'Reapparaitra a la prochaine partie' : 'Revoir le tutoriel'}
+          </button>
+        </div>
       </div>
     </div>
   );
