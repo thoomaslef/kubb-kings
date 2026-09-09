@@ -37,6 +37,20 @@ export const MATCH_DURATION_MS = 4 * 60 * 1000;
 /** Nombre de lancers par equipe. Garde-fou si le timer n'est pas atteint. */
 export const MAX_THROWS_PER_TEAM = 12;
 
+/**
+ * Dimensions des corps physiques, en pixels de design.
+ *
+ * Volontairement independantes des textures : le rendu peut etre retouche
+ * sans que les collisions bougent. Ce sont les valeurs du MVP, reprises telles
+ * quelles depuis les anciennes tailles de texture.
+ */
+export const HITBOX = {
+  kubb: 36,
+  batonWidth: 14,
+  batonLength: 62,
+  kingRadius: 20
+} as const;
+
 /** Vitesse d'impact minimale (px/step Matter) pour faire tomber un kubb. */
 export const KNOCKDOWN_IMPACT_SPEED = 6;
 /** Deviation aleatoire appliquee a chaque lancer, en degres. */

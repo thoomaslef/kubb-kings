@@ -1,0 +1,53 @@
+/**
+ * Palette et constantes de rendu.
+ *
+ * Pendant visuel de `rules.ts` : rien ici n'a d'effet sur les regles ni sur la
+ * physique. Les corps Matter ont leurs propres dimensions (HITBOX dans
+ * `rules.ts`), pour qu'on puisse retoucher les textures sans deplacer
+ * l'equilibrage.
+ */
+
+export const PALETTE = {
+  /** Pelouse : le fond, puis les deux nuances qui la mouchettent. */
+  grass: 0x2f6b46,
+  grassLight: 0x3f8055,
+  grassDark: 0x265c3b,
+  blade: 0x4b9463,
+  /** Traces de tonte, en surimpression sur la pelouse. */
+  mow: 0xffffff,
+  /** Lignes de craie du terrain. */
+  chalk: 0xf2f7f0,
+  /** Cadre en bois autour du terrain. */
+  wood: 0x6b4a2c,
+  woodLight: 0x93693e,
+  woodDark: 0x3f2a19,
+  /** Bois clair des batons. */
+  batonWood: 0xc9975b,
+  batonWoodLight: 0xe8c896,
+  batonWoodDark: 0x7a5230,
+  /** Or du roi. */
+  gold: 0xf2c14e,
+  goldLight: 0xffeeb8,
+  goldDark: 0x8a6b12,
+  /** Teinte des pieces couchees, hors jeu. */
+  fallen: 0x6f7a72
+} as const;
+
+/**
+ * Ombres portees. Une source de lumiere unique, en haut a gauche : toutes les
+ * ombres partent donc vers le bas a droite, ce qui suffit a donner du relief a
+ * une vue de dessus.
+ */
+export const SHADOW = {
+  offsetX: 5,
+  offsetY: 7,
+  alpha: 0.42,
+  /**
+   * Echelle du sprite d'ombre. Volontairement plus large que la piece :
+   * une ombre entierement cachee derriere son objet ne se voit pas.
+   */
+  scale: { kubb: 1.05, king: 1.2, baton: 0.85 }
+} as const;
+
+/** Cote du cadre en bois qui entoure le terrain, en pixels de design. */
+export const BORDER_WIDTH = 14;

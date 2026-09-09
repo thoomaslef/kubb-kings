@@ -74,6 +74,11 @@ export class Team {
     );
   }
 
+  /** Recale les ombres portees des kubbs encore debout. */
+  syncShadows() {
+    this.kubbs.forEach((kubb) => kubb.syncShadow());
+  }
+
   get standingCount(): number {
     return this.kubbs.reduce((total, kubb) => total + (kubb.isStanding ? 1 : 0), 0);
   }

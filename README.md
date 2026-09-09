@@ -46,7 +46,8 @@ Autres commandes :
 | **React 18**   | Ecrans hors-jeu uniquement (menu, regles, HUD, resultat)      |
 | **Zustand**    | Etat global partage entre Phaser et React                     |
 
-Aucun asset externe : toutes les textures sont generees par code dans `BootScene`.
+Aucun asset externe : toutes les textures **et tous les sons** sont generes par code
+(`BootScene` pour les textures, WebAudio pour l&apos;audio).
 
 ---
 
@@ -60,7 +61,10 @@ kubb-kings/
 │   │   ├── entities/   Baton, Kubb, King, Team
 │   │   ├── physics/    matterConfig.ts (gravite, restitution, frottements)
 │   │   ├── config.ts   config Phaser
-│   │   ├── rules.ts    constantes de regles et geometrie du terrain
+│   │   ├── rules.ts    regles, equilibrage, geometrie du terrain et hitboxes
+│   │   ├── theme.ts    palette et constantes de rendu (pendant visuel de rules.ts)
+│   │   ├── juice.ts    feedback : particules, secousses, vibration, ralenti
+│   │   ├── audio.ts    sons synthetises par code (WebAudio)
 │   │   └── GameBridge.ts
 │   ├── ui/             composants React (App, Menu, Rules, HUD, ResultScreen…)
 │   ├── store/          Zustand
@@ -115,8 +119,34 @@ React  <--(store Zustand : ecran, HUD, resultat)------------   Scenes Phaser
   possible sur un rebond de bande). Cela evite une elimination absurde due au hasard.
 - **Fin de tour automatique** quand le baton est a l&apos;arret (ou apres 4 s de vol).
 
-Tout l&apos;equilibrage est regroupe dans [`src/game/rules.ts`](src/game/rules.ts) :
-seuil d&apos;impact, deviation, vitesse maximale, duree, nombre de lancers, geometrie du terrain.
+---
+
+## Ressenti et rendu
+
+Le jeu et son habillage sont separes, et chacun a son fichier de reglage :
+
+| Fichier                                    | Ce qu&apos;on y regle                                                      |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| [`src/game/rules.ts`](src/game/rules.ts)   | Seuil d&apos;impact, deviation, vitesse max, duree, lancers, terrain, hitboxes |
+| [`src/game/theme.ts`](src/game/theme.ts)   | Palette, ombres portees, cadre du terrain                                    |
+| [`src/game/juice.ts`](src/game/juice.ts)   | Intensite des secousses, du ralenti, de la trainee, des vibrations           |
+
+**Les hitboxes sont independantes des textures** (`HITBOX` dans `rules.ts`) : on peut
+redessiner une piece sans deplacer une seule collision.
+
+**Le feedback n&apos;a aucun effet sur les regles.** Toutes les methodes de `Juice`
+peuvent etre retirees sans changer l&apos;issue d&apos;une partie :
+
+- son de bois a l&apos;impact, souffle du lancer, ricochet sur les bandes, buzzer,
+  fanfare de fin, bip de compte a rebours sous 10 s ;
+- eclats de bois, poussiere et halo a chaque kubb abattu, echelonnes sur la force
+  du choc ;
+- trainee remanente derriere le baton en vol ;
+- vibration haptique (silencieuse la ou `navigator.vibrate` n&apos;existe pas) ;
+- chute du roi : ralenti du monde Matter, zoom camera, flash et gerbe doree ;
+- halo pulsant autour du roi tant que l&apos;equipe active a le droit de le viser.
+
+Le son se coupe depuis le HUD ; la preference est conservee d&apos;une partie a l&apos;autre.
 
 ---
 

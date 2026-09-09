@@ -7,6 +7,7 @@ import { King } from '../entities/King';
 import { Baton } from '../entities/Baton';
 import { WALL_BODY } from '../physics/matterConfig';
 import { Juice } from '../juice';
+import { PALETTE, BORDER_WIDTH } from '../theme';
 import * as sfx from '../audio';
 import {
   AIM,
@@ -109,6 +110,7 @@ export class MatchScene extends Phaser.Scene {
   update(_time: number, delta: number) {
     if (this.phase === 'over') return;
 
+    this.syncShadows();
     if (this.tickClock(delta)) return;
 
     if (this.phase === 'flying' && this.baton) {
@@ -455,34 +457,91 @@ export class MatchScene extends Phaser.Scene {
     g.fillRoundedRect(gaugeX, gaugeY, Math.max(height, width * this.aimPower), height, 6);
   }
 
+  /**
+   * Terrain : pelouse texturee, traces de tonte, lignes de craie, cadre en
+   * bois et vignette. Purement decoratif — les bandes physiques sont posees
+   * separement par createWalls().
+   */
   private drawField() {
-    const g = this.add.graphics();
+    // Pelouse : la tuile generee au boot est repetee, plutot qu'un aplat vert.
+    this.add.tileSprite(FIELD.x, FIELD.y, FIELD.width, FIELD.height, 'grass').setOrigin(0, 0).setDepth(0);
 
-    g.fillStyle(0x1d4030, 1);
-    g.fillRoundedRect(FIELD.x - 8, FIELD.y - 8, FIELD.width + 16, FIELD.height + 16, 18);
-    g.fillStyle(0x2f6b46, 1);
-    g.fillRoundedRect(FIELD.x, FIELD.y, FIELD.width, FIELD.height, 14);
+    const g = this.add.graphics().setDepth(0);
 
-    g.fillStyle(0x000000, 0.05);
+    // Traces de tonte : bandes alternees, juste assez marquees pour se voir.
     for (let y = FIELD.y; y < FIELD.y + FIELD.height; y += 128) {
-      g.fillRect(FIELD.x, y, FIELD.width, 64);
+      g.fillStyle(PALETTE.mow, 0.045);
+      g.fillRect(FIELD.x, y, FIELD.width, Math.min(64, FIELD.y + FIELD.height - y));
     }
 
-    g.lineStyle(3, 0xffffff, 0.28);
-    for (let x = FIELD.x + 10; x < FIELD.x + FIELD.width - 10; x += 28) {
-      g.lineBetween(x, FIELD_CENTER_Y, x + 14, FIELD_CENTER_Y);
+    // Ligne mediane, tracee a la craie.
+    g.fillStyle(PALETTE.chalk, 0.32);
+    for (let x = FIELD.x + 12; x < FIELD.x + FIELD.width - 24; x += 30) {
+      g.fillRect(x, FIELD_CENTER_Y - 2, 16, 4);
     }
 
     (Object.keys(TEAMS) as TeamId[]).forEach((id) => {
-      g.lineStyle(3, TEAMS[id].color, 0.55);
-      g.lineBetween(FIELD.x + 10, TEAMS[id].baselineY, FIELD.x + FIELD.width - 10, TEAMS[id].baselineY);
+      // Ligne de fond : la ou sont alignes les kubbs.
+      g.fillStyle(TEAMS[id].color, 0.5);
+      g.fillRect(FIELD.x + 12, TEAMS[id].baselineY - 2, FIELD.width - 24, 4);
+      // Ligne de lancer : plus discrete, elle rappelle qu'on peut s'y placer librement.
+      g.fillStyle(TEAMS[id].color, 0.18);
+      g.fillRect(FIELD.x + 12, TEAMS[id].throwerY - 1, FIELD.width - 24, 2);
     });
 
-    g.lineStyle(3, 0xffffff, 0.18);
-    g.strokeRoundedRect(FIELD.x, FIELD.y, FIELD.width, FIELD.height, 14);
+    // Rond central autour du roi.
+    g.lineStyle(2, PALETTE.gold, 0.28);
+    g.strokeCircle(FIELD_CENTER_X, FIELD_CENTER_Y, 54);
 
-    g.lineStyle(2, 0xf2c14e, 0.35);
-    g.strokeCircle(FIELD_CENTER_X, FIELD_CENTER_Y, 46);
+    this.drawVignette(g);
+    this.drawBorder();
+  }
+
+  /** Assombrit les bords : donne du volume a une vue de dessus tres plate. */
+  private drawVignette(g: Phaser.GameObjects.Graphics) {
+    const steps = 24;
+    for (let i = 0; i < steps; i += 1) {
+      g.lineStyle(2, 0x061109, 0.04 * (1 - i / steps));
+      g.strokeRect(FIELD.x + i, FIELD.y + i, FIELD.width - i * 2, FIELD.height - i * 2);
+    }
+  }
+
+  /**
+   * Cadre en bois autour du terrain. Dessine par-dessus les pieces (depth 6.5)
+   * pour que le baton passe dessous quand il vient mourir contre une bande.
+   */
+  private drawBorder() {
+    const g = this.add.graphics().setDepth(6.5);
+    const b = BORDER_WIDTH;
+    const x = FIELD.x - b;
+    const y = FIELD.y - b;
+    const w = FIELD.width + b * 2;
+    const h = FIELD.height + b * 2;
+    const right = FIELD.x + FIELD.width;
+    const bottom = FIELD.y + FIELD.height;
+
+    g.fillStyle(PALETTE.wood, 1);
+    g.fillRect(x, y, w, b);
+    g.fillRect(x, bottom, w, b);
+    g.fillRect(x, FIELD.y, b, FIELD.height);
+    g.fillRect(right, FIELD.y, b, FIELD.height);
+
+    // Joints entre planches.
+    g.lineStyle(1, PALETTE.woodDark, 0.45);
+    for (let px = x; px <= x + w; px += 46) {
+      g.lineBetween(px, y, px, y + b);
+      g.lineBetween(px, bottom, px, bottom + b);
+    }
+    for (let py = FIELD.y; py <= bottom; py += 46) {
+      g.lineBetween(x, py, x + b, py);
+      g.lineBetween(right, py, right + b, py);
+    }
+
+    // Aretes : lumiere sur le chant exterieur, ombre sur le chant interieur.
+    g.lineStyle(2, PALETTE.woodLight, 0.5);
+    g.strokeRect(x + 1, y + 1, w - 2, h - 2);
+    g.lineStyle(2, PALETTE.woodDark, 0.75);
+    g.strokeRect(FIELD.x, FIELD.y, FIELD.width, FIELD.height);
   }
 
   /** Bandes statiques : le baton reste sur le terrain au lieu de partir dans le vide. */
@@ -504,6 +563,14 @@ export class MatchScene extends Phaser.Scene {
   }
 
   // ------------------------------------------------------------------ divers
+
+  /** Les ombres sont des sprites independants : elles suivent leur piece. */
+  private syncShadows() {
+    this.teams.blue.syncShadows();
+    this.teams.red.syncShadows();
+    this.king.syncShadow();
+    this.baton?.syncShadow();
+  }
 
   private syncHud() {
     const canTargetKing = this.teams[OPPONENT[this.activeTeam]].standingCount === 0;

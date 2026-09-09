@@ -6,7 +6,7 @@ import { MenuScene } from './scenes/MenuScene';
 import { MatchScene } from './scenes/MatchScene';
 import { ResultScene } from './scenes/ResultScene';
 
-export const GAME_BACKGROUND = '#12261c';
+export const GAME_BACKGROUND = '#0d1a14';
 
 export function createGameConfig(parent: HTMLElement): Phaser.Types.Core.GameConfig {
   return {

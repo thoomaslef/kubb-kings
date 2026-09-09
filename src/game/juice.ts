@@ -256,8 +256,10 @@ export class Juice {
    * de fond adverse est assez haut pour que le texte passe sous le HUD.
    */
   floatingText(x: number, y: number, label: string, color: string) {
-    const safeX = Phaser.Math.Clamp(x, 130, this.scene.scale.width - 130);
-    const safeY = Phaser.Math.Clamp(y, 250, this.scene.scale.height - 90);
+    // Le texte monte de 70 px pendant son fondu : la borne haute tient compte
+    // de cette course, sinon un impact sur la ligne de fond finit sous le HUD.
+    const safeX = Phaser.Math.Clamp(x, 180, this.scene.scale.width - 180);
+    const safeY = Phaser.Math.Clamp(y, 290, this.scene.scale.height - 90);
 
     const text = this.scene.add
       .text(safeX, safeY, label, {
