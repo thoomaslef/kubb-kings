@@ -443,6 +443,18 @@ Le son se coupe depuis le HUD ; la preference est conservee d&apos;une partie a 
 
 ---
 
+## SEO et partage
+
+[`index.html`](index.html) n&apos;avait qu&apos;un `<title>` : un lien partage sur les
+reseaux n&apos;affichait ni image ni description. Ajoutes : description, balises Open
+Graph et Twitter Card (URL absolues vers le domaine de production, comme l&apos;exige Open
+Graph — Vite ne les reecrit pas comme il le fait pour le manifest/favicon), URL
+canonique. [`public/robots.txt`](public/robots.txt) et
+[`public/sitemap.xml`](public/sitemap.xml) excluent `/legal/` (deja `noindex`
+individuellement) du referencement.
+
+---
+
 ## Informations legales
 
 Politique de confidentialite, CGU et mentions legales, en double forme :

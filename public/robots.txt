@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /legal/
+
+Sitemap: https://thoomaslef.github.io/kubb-kings/sitemap.xml
