@@ -139,7 +139,7 @@ React  <--(store Zustand : ecran, HUD, resultat)------------   Scenes Phaser
 - **Placement** : le point de contact choisit la position de lancer le long de la ligne de lancer.
 - **Visee** : le glissement donne l&apos;angle (bride a &plusmn;75&deg; vers l&apos;avant).
 - **Puissance** : la longueur du glissement, affichee par une jauge verte &rarr; rouge.
-- **Effet leger** : chaque lancer part avec une deviation aleatoire de **&plusmn;5&deg;**.
+- **Effet leger** : chaque lancer part avec une deviation aleatoire de **&plusmn;2,5&deg;**.
 - Un kubb ne tombe que si la **vitesse d&apos;impact** depasse le seuil : un baton en fin de
   course rebondit sans rien renverser.
 - Un kubb tombe est **hors jeu** et reste couche au sol.
@@ -170,20 +170,24 @@ On peut donc le simuler par milliers hors du navigateur, ce qui a servi a calibr
 niveaux.
 
 **L'IA ne triche pas.** Meme ligne de lancer, meme ouverture maximale, meme deviation
-aleatoire de &plusmn;5&deg; que le joueur. Elle enumere les couples
+aleatoire que le joueur (&plusmn;2,5&deg;, voir plus bas). Elle enumere les couples
 (position de lancer, cible), balaie son cone d'incertitude, et garde le tir qui renverse
 quelque chose le plus souvent.
 
 **Elle ne se suicide pas sur le roi.** Un tir dont ne serait-ce qu'une direction du cone
 atteint le roi est rejete tant que le roi n'est pas une cible legale : perdre le roi coute
-la partie, gacher un tour ne coute qu'un tour. Verifie sur 100 tours d'IA en conditions
-reelles (rebonds de bande compris) : zero roi renverse trop tot.
+la partie, gacher un tour ne coute qu'un tour. Verifie sur des centaines de tours d'IA en
+conditions reelles (rebonds de bande compris), a chaque etape du calibrage : zero roi
+renverse trop tot.
 
 ### Ce que le calibrage a appris
 
 Les valeurs des trois niveaux sortent d'un balayage parametre par parametre sur des
-milliers de matchs simules, pas d'une intuition. Le balayage a montre que **deux leviers
-sur quatre ne servaient a rien** :
+milliers de matchs simules, pas d'une intuition — et le balayage a change deux fois
+l'equilibrage du jeu, pas seulement celui de l'IA.
+
+**Premier balayage** (deviation du jeu a &plusmn;5&deg;, la valeur du MVP initial) : deux
+leviers de difficulte sur quatre ne servaient a rien.
 
 | Levier                          | Effet mesure                                            |
 | ------------------------------- | ------------------------------------------------------- |
@@ -194,19 +198,32 @@ sur quatre ne servaient a rien** :
 | Jouer au hasard plutot qu'au mieux | **aucun**, meme a 80% de coups au hasard             |
 | Ignorer son cone d'incertitude  | **negligeable**                                         |
 
-Les deux derniers reglages ont donc ete **retires** plutot que gardes pour la forme.
+Les deux derniers reglages ont ete **retires** plutot que gardes pour la forme. Mais le
+vrai constat allait plus loin que l'IA : a la distance du terrain, une deviation de
+&plusmn;5&deg; represente &plusmn;72 px de derive laterale, pour des kubbs de 36 px
+espaces de 120 px. **La precision n'etait pas la variable qui decidait d'un lancer** — ni
+pour l'IA, ni pour le joueur.
 
-Conclusion a garder en tete pour l'equilibrage : a la distance du terrain, la deviation
-de &plusmn;5&deg; represente &plusmn;72 px de derive laterale, pour des kubbs de 36 px
-espaces de 120 px. **La precision n'est pas la variable qui decide d'un lancer** &mdash;
-ni pour l'IA, ni pour le joueur. Baisser `MAX_AIM_DEVIATION_DEG` est le seul moyen de
-rendre l'adresse payante.
+**Deuxieme etape : `MAX_AIM_DEVIATION_DEG` baisse de 5 a 2,5&deg;.** Consequence
+immediate sur l'IA — son propre niveau "Difficile" (calibre a 0,8&deg; d'erreur de visee
+propre pour battre "Moyen" sous l'ancienne deviation) devenait quasi imbattable : 97,8%
+de reussite en solo, 4,98 kubbs sur 5. Reduire la deviation du jeu rend logiquement une
+IA tres precise bien plus dangereuse. Reponse : un second balayage a recale le seul
+niveau concerne (`aimErrorDeg` de "Difficile" remonte a 3,5&deg;) pour revenir a un
+adversaire fort mais pas un mur, en gardant "Facile" et "Moyen" inchanges &mdash; leur
+propre imprecision (7&deg; et 12&deg;) domine largement la deviation du jeu quelle que
+soit sa valeur, donc rien a recalibrer pour eux.
 
-| Niveau      | Kubbs abattus en 12 lancers | Victoires par le roi |
-| ----------- | --------------------------- | -------------------- |
-| Facile      | 2,6                         | 1%                   |
-| Moyen       | 3,2                         | 5%                   |
-| Difficile   | 3,9                         | 31%                  |
+| Niveau      | Kubbs abattus en 12 lancers | Reussite en solo&sup1; |
+| ----------- | ---------------------------- | ----------------------- |
+| Facile      | 2,6                          | 1%                       |
+| Moyen       | 3,2                          | 9%                       |
+| Difficile   | 4,6                          | 66%                      |
+
+&sup1; Proportion des matchs simules ou l'IA seule (sans defense adverse) abat les 5
+kubbs puis le roi dans les regles, en 12 lancers. C'est une mesure de son adresse brute,
+pas une prediction du taux de victoire reel contre un joueur — utile pour comparer les
+niveaux entre eux, pas pour deviner qui va gagner une vraie partie.
 
 ---
 

@@ -39,13 +39,13 @@ export interface AiProfile {
   /** Ce que le joueur lit dans le menu. */
   hint: string;
   /**
-   * Erreur de visee propre a l'IA, en degres, EN PLUS de la deviation du jeu.
+   * Erreur de visee propre a l'IA, en degres, EN PLUS de la deviation du jeu
+   * (MAX_AIM_DEVIATION_DEG, actuellement +/-2.5 deg).
    *
-   * Attention au calibrage : en dessous de ~5 deg ce reglage ne se voit pas.
-   * La deviation de +/-5 deg imposee a tous les lancers domine completement a
-   * la distance du terrain, au point qu'un tireur parfait (0 deg) et un tireur
-   * a 5 deg abattent le meme nombre de kubbs. Il faut depasser 6 deg pour que
-   * l'IA commence reellement a manquer.
+   * Attention au calibrage : en dessous d'environ 2 deg ce reglage se noie
+   * dans la deviation du jeu et cesse de se voir. Le seuil depend directement
+   * de MAX_AIM_DEVIATION_DEG dans rules.ts — le rebalancer ici si on retouche
+   * l'autre.
    */
   aimErrorDeg: number;
   /**
@@ -86,7 +86,7 @@ export const AI_PROFILES: Record<Difficulty, AiProfile> = {
   difficile: {
     label: 'Difficile',
     hint: 'Ne gache presque rien',
-    aimErrorDeg: 0.8,
+    aimErrorDeg: 3.5,
     powerErrorRatio: 0.03,
     thinkMs: 850
   }

@@ -59,8 +59,16 @@ export const HITBOX = {
 
 /** Vitesse d'impact minimale (px/step Matter) pour faire tomber un kubb. */
 export const KNOCKDOWN_IMPACT_SPEED = 6;
-/** Deviation aleatoire appliquee a chaque lancer, en degres. */
-export const MAX_AIM_DEVIATION_DEG = 5;
+/**
+ * Deviation aleatoire appliquee a chaque lancer, en degres.
+ *
+ * Etait a 5 dans le MVP initial. A la distance du terrain, 5 deg valent
+ * +/-72 px de derive laterale — plus large qu'un kubb (36 px) espace de
+ * 120 px : la precision du joueur ne changeait presque rien au resultat
+ * (voir le calibrage de l'IA dans ai.ts, qui l'a mis en evidence). Baisse a
+ * 2.5 pour que bien viser recommence a payer.
+ */
+export const MAX_AIM_DEVIATION_DEG = 2.5;
 
 /** Parametres du geste de visee. */
 export const AIM = {
