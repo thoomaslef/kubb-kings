@@ -441,10 +441,12 @@ Le contenu reflete l&apos;etat reel du jeu : aucun serveur, aucun compte, aucun 
 d&apos;analyse, aucune donnee personnelle collectee — tout ce qui est conserve
 (preferences, meilleure serie) reste en stockage local sur l&apos;appareil.
 
-**A completer avant toute soumission sur les stores** : les mentions legales exigent une
-identite reelle. Chercher `[A COMPLETER` dans `public/legal/*.html` et `src/ui/Legal.tsx`
-pour trouver les quatre champs a renseigner (nom/raison sociale, contact, date de mise a
-jour) — repetes dans les deux formes pour rester coherents.
+Identite editeur renseignee : Tommy Studio (Thomas Lefevre), entrepreneur individuel, Caen. A
+tenir a jour si elle change (statut, adresse, contact) — repetee dans les deux formes, a
+modifier aux deux endroits pour rester coherente.
+
+URL a coller dans App Store Connect / Play Console :
+`https://thoomaslef.github.io/kubb-kings/legal/politique-de-confidentialite.html`
 
 ---
 

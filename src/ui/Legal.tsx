@@ -6,9 +6,6 @@ import { useGameStore } from '../store/useGameStore';
  * publiques (public/legal/*.html), demandees par Apple/Google au moment
  * de la soumission — les deux versions doivent rester en phase si le
  * contenu change.
- *
- * [A COMPLETER] avant toute soumission sur les stores : les mentions
- * legales exigent une identite reelle (nom/raison sociale, contact).
  */
 export function Legal() {
   const setScreen = useGameStore((s) => s.setScreen);
@@ -37,7 +34,7 @@ export function Legal() {
         </p>
         <p className="panel__text">
           Contact pour toute question relative a cette politique :{' '}
-          <strong>[A COMPLETER : adresse e-mail de contact]</strong>.
+          <strong>thomas@tommy-studio.pro</strong>.
         </p>
 
         <h3 className="legal-heading">Conditions generales d&apos;utilisation</h3>
@@ -47,9 +44,9 @@ export function Legal() {
         </p>
         <p className="panel__text">
           Le code, les visuels et les sons de l&apos;application sont la propriete de{' '}
-          <strong>[A COMPLETER : nom ou raison sociale de l&apos;editeur]</strong>, sauf mention
-          contraire. Le Kubb, jeu traditionnel suedois dont cette application s&apos;inspire, est
-          un jeu populaire du domaine public.
+          <strong>Tommy Studio (Thomas Lefevre)</strong>, sauf mention contraire. Le Kubb, jeu
+          traditionnel suedois dont cette application s&apos;inspire, est un jeu populaire du
+          domaine public.
         </p>
         <p className="panel__text">
           L&apos;application est fournie en l&apos;etat, sans garantie de disponibilite
@@ -58,9 +55,10 @@ export function Legal() {
 
         <h3 className="legal-heading">Mentions legales</h3>
         <p className="panel__text">
-          Editeur : <strong>[A COMPLETER : nom/prenom ou raison sociale]</strong>
+          Editeur : <strong>Tommy Studio</strong> &mdash; Thomas Lefevre, entrepreneur individuel
+          (SIRET 101 082 337 00011), Caen, Normandie
           <br />
-          Contact : <strong>[A COMPLETER : adresse e-mail]</strong>
+          Contact : <strong>thomas@tommy-studio.pro</strong> &mdash; +33 6 12 94 11 25
         </p>
         <p className="panel__text">
           Hebergement (version web) : GitHub, Inc. — 88 Colin P Kelly Jr St, San Francisco, CA
