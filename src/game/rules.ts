@@ -108,6 +108,31 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
   }
 };
 
+/**
+ * Vent (meteo), optionnel via un bouton au menu (off par defaut).
+ *
+ * Une force laterale constante, dans l'axe X du terrain (une brise
+ * traversiere, independante de l'angle vise), s'ajoute a la vitesse du baton
+ * a chaque pas de vol (MatchScene.update, meme decroissance frictionAir que
+ * Baton.launch). Sens tire au hasard une seule fois par partie, jamais par
+ * lancer.
+ */
+export const WIND = {
+  /** Vitesse laterale gagnee par pas de simulation Matter (60 pas/s). */
+  accelPerStep: 0.05,
+  /**
+   * Marge additionnelle sur le rayon de danger du roi (ai.ts), uniquement
+   * quand le vent souffle. L'IA compense la derive attendue (ai.ts,
+   * windCompensatedAngle), mais cette compensation reste une approximation
+   * en ligne droite d'une trajectoire en realite courbee — cette marge
+   * absorbe l'ecart residuel. Valeur issue d'un balayage en simulation
+   * (scripts/scratchpad, trajectoire courbee reelle, pas le modele en
+   * rayons droits de l'IA) : zero suicide du roi mesure avec cette marge,
+   * sur des milliers de lancers simules a plusieurs forces de vent.
+   */
+  kingDangerMargin: 26
+} as const;
+
 /** Vitesse d'impact minimale (px/step Matter) pour faire tomber un kubb. */
 export const KNOCKDOWN_IMPACT_SPEED = 6;
 /**

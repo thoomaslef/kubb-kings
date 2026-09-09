@@ -17,6 +17,8 @@ export function Menu() {
   const setFieldPreset = useGameStore((s) => s.setFieldPreset);
   const kubbSkin = useGameStore((s) => s.kubbSkin);
   const setKubbSkin = useGameStore((s) => s.setKubbSkin);
+  const windEnabled = useGameStore((s) => s.windEnabled);
+  const setWindEnabled = useGameStore((s) => s.setWindEnabled);
   const setMode = useGameStore((s) => s.setMode);
   const startRun = useGameStore((s) => s.startRun);
 
@@ -91,6 +93,28 @@ export function Menu() {
             ))}
           </div>
           <p className="footnote footnote--tight">{FIELD_PRESETS[fieldPreset].hint}</p>
+
+          <div className="segmented" role="group" aria-label="Meteo">
+            <button
+              className={`segmented__item${!windEnabled ? ' segmented__item--on' : ''}`}
+              aria-pressed={!windEnabled}
+              onClick={() => setWindEnabled(false)}
+            >
+              Sans vent
+            </button>
+            <button
+              className={`segmented__item${windEnabled ? ' segmented__item--on' : ''}`}
+              aria-pressed={windEnabled}
+              onClick={() => setWindEnabled(true)}
+            >
+              Avec vent
+            </button>
+          </div>
+          <p className="footnote footnote--tight">
+            {windEnabled
+              ? 'Une brise constante devie les lancers — sens tire au debut de chaque partie'
+              : 'Terrain calme'}
+          </p>
 
           <div className="segmented" role="group" aria-label="Skin des kubbs">
             {KUBB_SKINS.map((skin) => (

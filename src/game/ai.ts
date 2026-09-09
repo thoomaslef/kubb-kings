@@ -9,7 +9,8 @@ import {
   MAX_AIM_DEVIATION_DEG,
   OBSTACLE_RADIUS,
   THROW,
-  THROW_LINE_MARGIN
+  THROW_LINE_MARGIN,
+  WIND
 } from './rules';
 
 /**
@@ -115,6 +116,11 @@ export interface AiBoard {
    * juste un tir gache si on les percute, comme un baton trop court.
    */
   obstacles?: Point[];
+  /**
+   * Sens du vent, si la meteo est activee (absent sinon). Une brise
+   * traversiere constante dans l'axe X du terrain, cf. WIND dans rules.ts.
+   */
+  wind?: 1 | -1;
 }
 
 export interface AiThrow {
@@ -156,6 +162,89 @@ export function powerForDistance(distance: number, margin = 1.55): number {
 /** Vitesse restante apres avoir parcouru `distance`, cf. powerForDistance. */
 function speedAfter(power: number, distance: number): number {
   return THROW.maxSpeed * power - BATON_BODY.frictionAir * distance;
+}
+
+// ---------------------------------------------------------------------- vent
+
+export interface FlightStep extends Point {
+  /** Vitesse a ce point (memes unites que Baton.speed), pour juger un impact. */
+  speed: number;
+}
+
+/**
+ * Vole en repere-monde (x, y) avec la meme decroissance frictionAir et le
+ * meme increment de vent, pas a pas, que le jeu reel (Baton.launch pour la
+ * vitesse initiale, MatchScene.update pour l'increment de vent a chaque pas).
+ * Renvoie la trajectoire ENTIERE (pas juste le point final) : la verification
+ * de securite a besoin de savoir si le baton passe pres du roi en COURS de
+ * route, une derive laterale pouvant l'en rapprocher avant meme d'atteindre
+ * la distance visee.
+ */
+export function simulateWindFlight(origin: Point, angle: number, power: number, windDir: 1 | -1): FlightStep[] {
+  const k = BATON_BODY.frictionAir;
+  const accel = WIND.accelPerStep * windDir;
+  let vx = Math.cos(angle) * THROW.maxSpeed * power;
+  let vy = Math.sin(angle) * THROW.maxSpeed * power;
+  let x = origin.x;
+  let y = origin.y;
+
+  const path: FlightStep[] = [{ x, y, speed: Math.hypot(vx, vy) }];
+  // 400 pas couvrent largement la plus longue portee possible (v0 max / k
+  // vaut environ 2000 px, soit plus que la diagonale du terrain) : le baton
+  // repasse toujours sous THROW.restSpeed bien avant.
+  for (let i = 0; i < 400; i += 1) {
+    vx = vx * (1 - k) + accel;
+    vy = vy * (1 - k);
+    x += vx;
+    y += vy;
+    const speed = Math.hypot(vx, vy);
+    path.push({ x, y, speed });
+    if (speed < THROW.restSpeed) break;
+  }
+  return path;
+}
+
+/**
+ * Derive laterale (signee) d'une trajectoire par rapport a un axe vise
+ * d'origine, au moment ou l'avancee le long de cet axe atteint `distance`.
+ * Positive quand la trajectoire a devie vers la gauche de l'axe (sens
+ * trigonometrique), negative vers la droite.
+ */
+function lateralOffsetAt(path: Point[], origin: Point, axisAngle: number, distance: number): number {
+  const ux = Math.cos(axisAngle);
+  const uy = Math.sin(axisAngle);
+
+  for (const p of path) {
+    const dx = p.x - origin.x;
+    const dy = p.y - origin.y;
+    const s = dx * ux + dy * uy;
+    if (s >= distance) return dx * uy - dy * ux;
+  }
+  const last = path[path.length - 1];
+  return (last.x - origin.x) * uy - (last.y - origin.y) * ux;
+}
+
+/**
+ * Angle a viser pour qu'un tir souffle par le vent arrive quand meme sur sa
+ * cible : simule le vol a l'angle naif, mesure la derive laterale a la
+ * distance visee, corrige d'autant. Deux passes — le vent est une
+ * perturbation modeste face a la distance, une seule correction suffirait
+ * presque toujours, la seconde essuie le reste.
+ */
+function windCompensatedAngle(
+  origin: Point,
+  naiveAngle: number,
+  power: number,
+  distance: number,
+  windDir: 1 | -1
+): number {
+  let angle = naiveAngle;
+  for (let pass = 0; pass < 2; pass += 1) {
+    const path = simulateWindFlight(origin, angle, power, windDir);
+    const lateral = lateralOffsetAt(path, origin, naiveAngle, distance);
+    angle += lateral / distance;
+  }
+  return angle;
 }
 
 /**
@@ -246,9 +335,13 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
   // le piege. Seul son rayon change.
   const obstacles: Obstacle[] = board.targets.map((p) => ({ p, radius: KUBB_HIT_RADIUS, kind: 'kubb' as const }));
   if (board.kingStanding) {
+    // Vise-t-elle le roi ou l'evite-t-elle ? Seul le second cas gagne une
+    // marge de securite pour le vent : un tir legitime sur le roi n'a pas a
+    // se mefier de lui-meme.
+    const dangerRadius = KING_DANGER_RADIUS + (board.wind ? WIND.kingDangerMargin : 0);
     obstacles.push({
       p: king,
-      radius: aimingAtKing ? KING_HIT_RADIUS : KING_DANGER_RADIUS,
+      radius: aimingAtKing ? KING_HIT_RADIUS : dangerRadius,
       kind: 'king' as const
     });
   }
@@ -268,11 +361,15 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
     const origin: Point = { x: throwX, y: board.throwerY };
 
     for (const target of targets) {
-      const angle = Math.atan2(target.y - origin.y, target.x - origin.x);
-      if (Math.abs(wrapAngle(angle - forward)) > maxDelta) continue;
-
       const distance = Math.hypot(target.x - origin.x, target.y - origin.y);
       const power = powerForDistance(distance);
+      const naiveAngle = Math.atan2(target.y - origin.y, target.x - origin.x);
+      // Vise en amont du vent quand il souffle : l'angle "naif" ne suffirait
+      // qu'a atteindre la cible sans lui, jamais avec.
+      const angle = board.wind
+        ? windCompensatedAngle(origin, naiveAngle, power, distance, board.wind)
+        : naiveAngle;
+      if (Math.abs(wrapAngle(angle - forward)) > maxDelta) continue;
 
       let knockdowns = 0;
       let shots = 0;

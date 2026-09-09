@@ -73,6 +73,12 @@ export function HUD() {
             <strong className="hud__team-label">{activeLabel}</strong>
           </div>
 
+          {hud.wind && (
+            <span className="hud__wind" aria-label={`Vent vers ${hud.wind > 0 ? 'la droite' : 'la gauche'}`}>
+              {hud.wind > 0 ? '→' : '←'}
+            </span>
+          )}
+
           <div className="hud__stats">
             <div className="hud__stat">
               <span className="hud__stat-value">{targets}</span>

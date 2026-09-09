@@ -55,6 +55,8 @@ export interface HudState {
    * uniquement (1 ou 2). Sans objet en 'local' ou 'solo' — HUD l'ignore alors.
    */
   activePlayer: 1 | 2;
+  /** Sens du vent pour la partie en cours ; null si la meteo est desactivee. */
+  wind: 1 | -1 | null;
 }
 
 const initialHud = (): HudState => ({
@@ -64,7 +66,8 @@ const initialHud = (): HudState => ({
   throwsLeft: { blue: MAX_THROWS_PER_TEAM, red: MAX_THROWS_PER_TEAM },
   timeLeftMs: MATCH_DURATION_MS,
   canTargetKing: false,
-  activePlayer: 1
+  activePlayer: 1,
+  wind: null
 });
 
 interface GameState {
@@ -78,6 +81,8 @@ interface GameState {
   fieldPreset: FieldPresetId;
   /** Habillage visuel des kubbs — purement cosmetique, sans effet sur l'IA. */
   kubbSkin: KubbSkin;
+  /** Meteo : vent lateral en jeu, off par defaut. */
+  windEnabled: boolean;
   /** null hors mode 'defi' — pas de run en cours. */
   run: RunState | null;
 
@@ -90,6 +95,7 @@ interface GameState {
   setDifficulty: (difficulty: Difficulty) => void;
   setFieldPreset: (preset: FieldPresetId) => void;
   setKubbSkin: (skin: KubbSkin) => void;
+  setWindEnabled: (enabled: boolean) => void;
   /** (Re)demarre une run a la manche 1, sans bonus. */
   startRun: () => void;
   /** Passe a la manche suivante ; no-op hors run active. */
@@ -107,6 +113,7 @@ export const useGameStore = create<GameState>((set) => ({
   difficulty: 'moyen',
   fieldPreset: 'classique',
   kubbSkin: 'bois',
+  windEnabled: false,
   run: null,
 
   setScreen: (screen) => set({ screen }),
@@ -118,6 +125,7 @@ export const useGameStore = create<GameState>((set) => ({
   setDifficulty: (difficulty) => set({ difficulty }),
   setFieldPreset: (preset) => set({ fieldPreset: preset }),
   setKubbSkin: (skin) => set({ kubbSkin: skin }),
+  setWindEnabled: (enabled) => set({ windEnabled: enabled }),
   startRun: () => set({ run: { stageIndex: 0, perks: [] } }),
   advanceRun: () =>
     set((state) => (state.run ? { run: { ...state.run, stageIndex: state.run.stageIndex + 1 } } : state)),

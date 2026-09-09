@@ -5,7 +5,8 @@ suedois : deux equipes se lancent des batons pour abattre les blocs adverses, pu
 
 Quatre modes : **solo contre l'IA** (trois niveaux), **1v1 local**, **2v2 local**
 (pass-and-play sur le meme telephone) et **Defi**, un roguelite en 5 manches contre
-l'IA. Plusieurs terrains, trois skins de blocs, une partie de 4 minutes maximum.
+l'IA. Plusieurs terrains, un vent optionnel, trois skins de blocs, une partie de 4
+minutes maximum.
 
 ---
 
@@ -213,6 +214,38 @@ simulation n&apos;est necessaire pour cette fonctionnalite. Stocke dans le store
 
 ---
 
+## Meteo (vent)
+
+Bouton au menu, off par defaut (`windEnabled` dans le store). Quand il est actif, une
+brise traversiere constante (`WIND.accelPerStep` dans [`src/game/rules.ts`](src/game/rules.ts))
+s&apos;ajoute a la vitesse du baton a chaque pas de vol, dans l&apos;axe X du terrain quel
+que soit l&apos;angle vise — le sens (gauche/droite) est tire au hasard une seule fois par
+partie (`MatchScene.create`), jamais par lancer, et affiche dans le HUD (&larr;/&rarr;).
+Le joueur y est expose comme au vrai Kubb : un lancer mal juge peut deriver jusqu&apos;au
+roi.
+
+**L&apos;IA compense, mais reste prudente.** `ai.ts::windCompensatedAngle` simule le vol
+complet (meme decroissance frictionAir, meme increment de vent, pas a pas, que le jeu
+reel) a l&apos;angle naif, mesure la derive laterale a la distance visee et corrige
+l&apos;angle en consequence — deux passes, le vent restant une perturbation modeste face
+a la distance. Cette compensation est une approximation en ligne droite d&apos;une
+trajectoire en realite courbee ; `WIND.kingDangerMargin` elargit le rayon de danger du
+roi (uniquement quand le vent souffle et que l&apos;IA ne le vise pas legalement) pour
+absorber l&apos;ecart residuel.
+
+Verifie en deux temps, avant tout affichage a l&apos;ecran :
+
+1. **Simulation hors-navigateur, verite terrain = trajectoire courbee reelle** (pas le
+   modele en rayons droits de l&apos;IA) : 3000 matchs par niveau et par sens de vent
+   (facile/moyen/difficile x sans-vent/+1/-1), en suivant pas a pas la vraie physique du
+   baton. Zero suicide du roi dans les neuf combinaisons, et une IA aussi efficace avec
+   le vent que sans (taux de victoire et kubbs abattus par lancer quasi identiques).
+2. **Navigateur, vraie physique Matter** : parties completes en solo Difficile avec vent,
+   zero roi touche trop tot par l&apos;IA, trajectoires visiblement deviees a
+   l&apos;ecran.
+
+---
+
 ## Tutoriel de premiere partie
 
 L&apos;ecran des regles ([`src/ui/Rules.tsx`](src/ui/Rules.tsx)) est un mur de texte : personne
@@ -346,7 +379,7 @@ Le jeu et son habillage sont separes, et chacun a son fichier de reglage :
 
 | Fichier                                    | Ce qu&apos;on y regle                                                      |
 | ------------------------------------------ | -------------------------------------------------------------------------- |
-| [`src/game/rules.ts`](src/game/rules.ts)   | Seuil d&apos;impact, deviation, vitesse max, duree, lancers, terrain, hitboxes |
+| [`src/game/rules.ts`](src/game/rules.ts)   | Seuil d&apos;impact, deviation, vitesse max, duree, lancers, terrain, hitboxes, vent |
 | [`src/game/theme.ts`](src/game/theme.ts)   | Palette, ombres portees, cadre du terrain, skins de blocs                    |
 | [`src/game/juice.ts`](src/game/juice.ts)   | Intensite des secousses, du ralenti, de la trainee, des vibrations           |
 
@@ -374,7 +407,6 @@ Le son se coupe depuis le HUD ; la preference est conservee d&apos;une partie a 
 Volontairement non developpes, mais le decoupage `scenes / entities / physics / store`
 est prevu pour les accueillir :
 
-- meteo (vent)
 - multijoueur en ligne, classement mondial
 - tournois
 - portage natif iOS / Android (Capacitor)

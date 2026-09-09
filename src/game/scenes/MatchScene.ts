@@ -29,6 +29,7 @@ import {
   MAX_THROWS_PER_TEAM,
   THROW,
   THROW_LINE_MARGIN,
+  WIND,
   type FieldPresetId
 } from '../rules';
 
@@ -62,6 +63,12 @@ export class MatchScene extends Phaser.Scene {
   private secondSouffleUsed = false;
   /** Le lancer en cours a-t-il deja fait tomber un kubb ? Remis a zero a chaque tir. */
   private knockedThisThrow = false;
+  /**
+   * Sens du vent pour la partie en cours, tire une seule fois a create() —
+   * jamais par lancer, sans quoi il n'y aurait rien a lire ni a compenser.
+   * null si la meteo est desactivee.
+   */
+  private wind: 1 | -1 | null = null;
 
   /** Position de lancer courante de chaque equipe, le long de sa ligne de lancer. */
   private throwX: Record<TeamId, number> = { blue: FIELD_CENTER_X, red: FIELD_CENTER_X };
@@ -105,7 +112,8 @@ export class MatchScene extends Phaser.Scene {
     this.aiTimer = null;
     this.aiTween = null;
 
-    const { mode, difficulty, fieldPreset, kubbSkin, run } = gameStore.getState();
+    const { mode, difficulty, fieldPreset, kubbSkin, windEnabled, run } = gameStore.getState();
+    this.wind = windEnabled ? (Math.random() < 0.5 ? -1 : 1) : null;
     this.mode = mode;
     // En Defi, le niveau et le terrain viennent de l'echelle (roguelite.ts),
     // pas des selecteurs du menu casual — mais l'IA reste exactement la
@@ -163,6 +171,8 @@ export class MatchScene extends Phaser.Scene {
     if (this.tickClock(delta)) return;
 
     if (this.phase === 'flying' && this.baton) {
+      if (this.wind) this.applyWind(delta);
+
       this.flightMs += delta;
       this.restMs = this.baton.speed < THROW.restSpeed ? this.restMs + delta : 0;
       this.juice.trail(
@@ -241,6 +251,21 @@ export class MatchScene extends Phaser.Scene {
     this.aimPower = power;
 
     this.drawAim();
+  }
+
+  /**
+   * Brise traversiere : une vitesse laterale constante s'ajoute au baton en
+   * vol, dans l'axe X du terrain quel que soit l'angle vise (WIND.accelPerStep
+   * dans rules.ts). Le nombre de pas Matter ecoules cette frame se deduit du
+   * delta reel, pour rester independant du framerate — meme increment par pas
+   * que le modele suivi par l'IA pour compenser sa visee (ai.ts::simulateWindFlight).
+   */
+  private applyWind(delta: number) {
+    if (!this.baton || !this.wind) return;
+    const body = this.baton.sprite.body as MatterJS.BodyType;
+    const steps = delta / (1000 / 60);
+    const dvx = WIND.accelPerStep * this.wind * steps;
+    this.baton.sprite.setVelocity(body.velocity.x + dvx, body.velocity.y);
   }
 
   private launch() {
@@ -360,7 +385,8 @@ export class MatchScene extends Phaser.Scene {
             .map((kubb) => ({ x: kubb.sprite.x, y: kubb.sprite.y })),
           kingTargetable: opponent.standingCount === 0,
           kingStanding: this.king.isStanding,
-          obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y }))
+          obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
+          ...(this.wind ? { wind: this.wind } : {})
         },
         profile
       );
@@ -787,7 +813,8 @@ export class MatchScene extends Phaser.Scene {
       throwsLeft: { ...this.throwsLeft },
       timeLeftMs: this.timeLeftMs,
       canTargetKing,
-      activePlayer: this.playerIndex[this.activeTeam]
+      activePlayer: this.playerIndex[this.activeTeam],
+      wind: this.wind
     });
   }
 
