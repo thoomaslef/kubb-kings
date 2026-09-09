@@ -3,10 +3,10 @@
 Jeu mobile HTML5 inspire du [Kubb](https://fr.wikipedia.org/wiki/Kubb), le jeu de plein air
 suedois : deux equipes se lancent des batons pour abattre les blocs adverses, puis le roi.
 
-Quatre modes : **solo contre l'IA** (trois niveaux), **1v1 local**, **2v2 local**
-(pass-and-play sur le meme telephone) et **Defi**, un roguelite en 5 manches contre
-l'IA. Plusieurs terrains, un vent optionnel, trois skins de blocs, une partie de 4
-minutes maximum.
+Cinq modes : **solo contre l'IA** (trois niveaux), **1v1 local**, **2v2 local**
+(pass-and-play sur le meme telephone), **Defi** (un roguelite en 5 manches contre l'IA)
+et **Tournoi local** (elimination directe a 4 ou 8, toujours en pass-and-play). Plusieurs
+terrains, un vent optionnel, trois skins de blocs, une partie de 4 minutes maximum.
 
 ---
 
@@ -106,6 +106,7 @@ kubb-kings/
 │   │   ├── audio.ts    sons synthetises par code (WebAudio)
 │   │   ├── tutorial.ts persistance du tutoriel (localStorage, cf. Tutorial.tsx)
 │   │   ├── roguelite.ts mode Defi : echelle de manches, bonus, meilleure serie
+│   │   ├── tournament.ts tournoi local : arbre a elimination directe (module pur)
 │   │   └── GameBridge.ts
 │   ├── ui/             composants React (App, Menu, Rules, HUD, Tutorial, ResultScreen…)
 │   ├── store/          Zustand
@@ -373,6 +374,29 @@ persistance du tutoriel.
 
 ---
 
+## Tournoi local
+
+Elimination directe a 4 ou 8 joueurs, pass-and-play sur le meme telephone —
+[`src/game/tournament.ts`](src/game/tournament.ts), module pur (comme `roguelite.ts`)
+qui construit et fait progresser l&apos;arbre, sans rien connaitre de la partie
+elle-meme. Chaque match du tournoi est un 1v1 local ordinaire : aucune regle, aucun
+equilibrage ne change, seul un ecran de tableau s&apos;intercale entre deux matchs.
+
+- **Mise en place** ([`src/ui/TournamentSetup.tsx`](src/ui/TournamentSetup.tsx)) : taille
+  (4 ou 8) et noms des participants (par defaut &laquo; Joueur N &raquo;).
+- **Tableau** ([`src/ui/TournamentBracket.tsx`](src/ui/TournamentBracket.tsx)) : chaque
+  tour affiche ses matchs, le vainqueur en surbrillance ; un bouton lance le prochain
+  match dont les deux participants sont connus, jusqu&apos;au sacre du champion.
+- **Pendant un match**, le HUD affiche les noms des participants a la place des couleurs
+  d&apos;equipe (`tournamentPending` dans le store).
+- **Match nul** : plutot que de departager au hasard, le meme match se rejoue — le seul
+  cas ou `ResultScreen` ne fait pas progresser l&apos;arbre.
+
+Purement une couche de navigation autour du 1v1 existant : aucun impact sur `ai.ts` ni
+sur la physique, aucune verification par simulation necessaire.
+
+---
+
 ## Ressenti et rendu
 
 Le jeu et son habillage sont separes, et chacun a son fichier de reglage :
@@ -408,5 +432,4 @@ Volontairement non developpes, mais le decoupage `scenes / entities / physics / 
 est prevu pour les accueillir :
 
 - multijoueur en ligne, classement mondial
-- tournois
 - portage natif iOS / Android (Capacitor)

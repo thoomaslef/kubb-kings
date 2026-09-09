@@ -73,6 +73,9 @@ export function Menu() {
           <button className="btn" onClick={playDefi}>
             Defi &mdash; {LADDER.length} manches, de plus en plus dures
           </button>
+          <button className="btn" onClick={() => setScreen('tournament-setup')}>
+            Tournoi local &mdash; 4 ou 8 joueurs
+          </button>
           {bestStage > 0 && (
             <p className="footnote footnote--tight">
               Meilleure serie : {bestStage}/{LADDER.length} manche{bestStage > 1 ? 's' : ''} franchie

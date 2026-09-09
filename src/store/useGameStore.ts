@@ -4,9 +4,10 @@ import type { Difficulty } from '../game/ai';
 import type { PerkId } from '../game/roguelite';
 import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId } from '../game/rules';
 import type { KubbSkin } from '../game/theme';
+import { buildBracket, recordWinner, type TournamentState } from '../game/tournament';
 
 /** Ecrans hors-jeu geres par React. */
-export type Screen = 'boot' | 'menu' | 'rules' | 'match' | 'result' | 'perk' | 'quit';
+export type Screen = 'boot' | 'menu' | 'rules' | 'match' | 'result' | 'perk' | 'quit' | 'tournament-setup' | 'tournament';
 
 /** Phase du tour courant, pilotee par MatchScene. */
 export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';
@@ -26,6 +27,14 @@ export interface RunState {
   stageIndex: number;
   /** Bonus deja debloques cette run ; repart a vide a chaque nouvelle run. */
   perks: PerkId[];
+}
+
+/** Quel match de l'arbre du tournoi le match en cours represente. */
+export interface TournamentPending {
+  round: number;
+  slot: number;
+  blueName: string;
+  redName: string;
 }
 
 export type WinReason =
@@ -85,6 +94,14 @@ interface GameState {
   windEnabled: boolean;
   /** null hors mode 'defi' — pas de run en cours. */
   run: RunState | null;
+  /** null hors tournoi local — pas de tournoi en cours. */
+  tournament: TournamentState | null;
+  /**
+   * Match de tournoi en cours (ou dont on vient d'afficher le resultat) :
+   * quel match de l'arbre il represente et quel nom joue quelle equipe.
+   * null en dehors d'un tournoi.
+   */
+  tournamentPending: TournamentPending | null;
 
   setScreen: (screen: Screen) => void;
   setPaused: (paused: boolean) => void;
@@ -102,6 +119,17 @@ interface GameState {
   advanceRun: () => void;
   /** Ajoute un bonus a la run en cours ; no-op hors run active. */
   addPerk: (id: PerkId) => void;
+  /** Construit l'arbre a partir des noms (4 ou 8) et demarre le tournoi. */
+  startTournament: (names: string[]) => void;
+  /** Note quel match de l'arbre le prochain match 1v1 represente. */
+  beginTournamentMatch: (round: number, slot: number, blueName: string, redName: string) => void;
+  /**
+   * Enregistre le vainqueur du match en cours dans l'arbre (no-op sur match
+   * nul : on rejoue le meme match plutot que de departager au hasard).
+   */
+  reportTournamentResult: () => void;
+  /** Quitte le tournoi en cours (abandon, ou apres le sacre du champion). */
+  resetTournament: () => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -115,6 +143,8 @@ export const useGameStore = create<GameState>((set) => ({
   kubbSkin: 'bois',
   windEnabled: false,
   run: null,
+  tournament: null,
+  tournamentPending: null,
 
   setScreen: (screen) => set({ screen }),
   setPaused: (paused) => set({ paused }),
@@ -130,7 +160,23 @@ export const useGameStore = create<GameState>((set) => ({
   advanceRun: () =>
     set((state) => (state.run ? { run: { ...state.run, stageIndex: state.run.stageIndex + 1 } } : state)),
   addPerk: (id) =>
-    set((state) => (state.run ? { run: { ...state.run, perks: [...state.run.perks, id] } } : state))
+    set((state) => (state.run ? { run: { ...state.run, perks: [...state.run.perks, id] } } : state)),
+  startTournament: (names) => set({ tournament: buildBracket(names), tournamentPending: null }),
+  beginTournamentMatch: (round, slot, blueName, redName) =>
+    set({ tournamentPending: { round, slot, blueName, redName } }),
+  reportTournamentResult: () =>
+    set((state) => {
+      if (!state.tournament || !state.tournamentPending || !state.result) return state;
+      // Match nul : on rejoue le meme match plutot que de departager au hasard.
+      if (state.result.winner === 'draw') return state;
+      const { round, slot, blueName, redName } = state.tournamentPending;
+      const winnerName = state.result.winner === 'blue' ? blueName : redName;
+      return {
+        tournament: recordWinner(state.tournament, round, slot, winnerName),
+        tournamentPending: null
+      };
+    }),
+  resetTournament: () => set({ tournament: null, tournamentPending: null })
 }));
 
 /** Acces hors composant React (depuis les scenes Phaser). */

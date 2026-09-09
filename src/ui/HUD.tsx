@@ -22,6 +22,8 @@ export function HUD() {
 
   const mode = useGameStore((s) => s.mode);
   const run = useGameStore((s) => s.run);
+  const tournamentPending = useGameStore((s) => s.tournamentPending);
+  const resetTournament = useGameStore((s) => s.resetTournament);
   const [muted, setMutedState] = useState(isMuted);
 
   // La toute premiere fois que le roi devient visable, le bandeau se fait
@@ -43,11 +45,17 @@ export function HUD() {
   // En Defi, rappeler ou on en est dans l'echelle de manches.
   const stageTag = mode === 'defi' && run ? ` · Manche ${run.stageIndex + 1}/${LADDER.length}` : '';
   // En 2v2, deux joueurs se partagent chaque camp : preciser lequel est au lancer.
+  // En tournoi, le nom du participant remplace la couleur d'equipe (sans objet
+  // pour lui : il ne sait pas qu'il joue "Bleue" ou "Rouge").
   const activeLabel = activeIsAi
     ? `IA${stageTag}`
-    : mode === '2v2'
-      ? `${active.label} J${hud.activePlayer}`
-      : `${active.label}${stageTag}`;
+    : tournamentPending
+      ? hud.activeTeam === 'blue'
+        ? tournamentPending.blueName
+        : tournamentPending.redName
+      : mode === '2v2'
+        ? `${active.label} J${hud.activePlayer}`
+        : `${active.label}${stageTag}`;
   const targets = hud.kubbsStanding[OPPONENT[hud.activeTeam]];
   // Derniere ligne droite : le chrono se met a battre en rouge.
   const urgent = hud.timeLeftMs <= 10_000;
@@ -60,6 +68,7 @@ export function HUD() {
 
   const leaveMatch = () => {
     setPaused(false);
+    if (tournamentPending) resetTournament();
     bridge.send('leave-match');
     setScreen('menu');
   };

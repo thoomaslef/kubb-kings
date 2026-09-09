@@ -36,8 +36,12 @@ export function ResultScreen() {
   const mode = useGameStore((s) => s.mode);
   const run = useGameStore((s) => s.run);
   const startRun = useGameStore((s) => s.startRun);
+  const tournamentPending = useGameStore((s) => s.tournamentPending);
+  const reportTournamentResult = useGameStore((s) => s.reportTournamentResult);
+  const resetTournament = useGameStore((s) => s.resetTournament);
   const isDefi = mode === 'defi';
   const soloLike = mode === 'solo' || isDefi;
+  const isTournamentMatch = tournamentPending !== null;
 
   const wonMatch = result?.winner === 'blue';
   const stageIndex = run?.stageIndex ?? 0;
@@ -57,6 +61,12 @@ export function ResultScreen() {
   if (!result) return null;
 
   const accent = result.winner === 'draw' ? '#f2c14e' : TEAMS[result.winner].cssColor;
+  const tournamentWinnerName =
+    isTournamentMatch && result.winner !== 'draw'
+      ? result.winner === 'blue'
+        ? tournamentPending.blueName
+        : tournamentPending.redName
+      : null;
 
   const quitRun = () => {
     bridge.send('leave-match');
@@ -68,37 +78,82 @@ export function ResultScreen() {
     bridge.send('restart-match');
   };
 
+  const continueTournament = () => {
+    reportTournamentResult();
+    setScreen('tournament');
+  };
+
+  const quitTournament = () => {
+    resetTournament();
+    bridge.send('leave-match');
+    setScreen('menu');
+  };
+
   return (
     <div className="overlay overlay--solid">
       <div className="panel">
         <h2 className="panel__title" style={{ color: accent }}>
-          {isDefi && wonMatch && !runComplete ? `Manche ${stagesCleared} franchie !` : headline(result, soloLike)}
+          {isTournamentMatch
+            ? tournamentWinnerName
+              ? `${tournamentWinnerName} remporte ce match !`
+              : 'Match nul'
+            : isDefi && wonMatch && !runComplete
+              ? `Manche ${stagesCleared} franchie !`
+              : headline(result, soloLike)}
         </h2>
         <p className="panel__text">
-          {isDefi
-            ? runComplete
-              ? `Run terminee : les ${LADDER.length} manches sont passees. Bravo.`
-              : wonMatch
-                ? detail(result)
-                : `Run terminee a la manche ${stageIndex + 1} — ${stagesCleared} manche${
-                    stagesCleared === 1 ? '' : 's'
-                  } franchie${stagesCleared === 1 ? '' : 's'}.`
-            : detail(result)}
+          {isTournamentMatch
+            ? tournamentWinnerName
+              ? detail(result)
+              : 'Rejouez ce match pour departager.'
+            : isDefi
+              ? runComplete
+                ? `Run terminee : les ${LADDER.length} manches sont passees. Bravo.`
+                : wonMatch
+                  ? detail(result)
+                  : `Run terminee a la manche ${stageIndex + 1} — ${stagesCleared} manche${
+                      stagesCleared === 1 ? '' : 's'
+                    } franchie${stagesCleared === 1 ? '' : 's'}.`
+              : detail(result)}
         </p>
 
         <div className="score-row">
           <div className="score-cell" style={{ borderColor: TEAMS.blue.cssColor }}>
             <span className="score-cell__value">{result.knockedDown.blue}</span>
-            <span className="score-cell__label">kubbs abattus &mdash; {soloLike ? 'Vous' : 'Bleue'}</span>
+            <span className="score-cell__label">
+              kubbs abattus &mdash; {isTournamentMatch ? tournamentPending.blueName : soloLike ? 'Vous' : 'Bleue'}
+            </span>
           </div>
           <div className="score-cell" style={{ borderColor: TEAMS.red.cssColor }}>
             <span className="score-cell__value">{result.knockedDown.red}</span>
-            <span className="score-cell__label">kubbs abattus &mdash; {soloLike ? 'IA' : 'Rouge'}</span>
+            <span className="score-cell__label">
+              kubbs abattus &mdash; {isTournamentMatch ? tournamentPending.redName : soloLike ? 'IA' : 'Rouge'}
+            </span>
           </div>
         </div>
 
         <div className="button-column">
-          {isDefi ? (
+          {isTournamentMatch ? (
+            tournamentWinnerName ? (
+              <>
+                <button className="btn btn--primary" onClick={continueTournament}>
+                  Voir le tableau
+                </button>
+                <button className="btn btn--ghost" onClick={quitTournament}>
+                  Abandonner le tournoi
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn btn--primary" onClick={() => bridge.send('restart-match')}>
+                  Rejouer ce match
+                </button>
+                <button className="btn btn--ghost" onClick={quitTournament}>
+                  Abandonner le tournoi
+                </button>
+              </>
+            )
+          ) : isDefi ? (
             wonMatch && !runComplete ? (
               <>
                 <button className="btn btn--primary" onClick={() => setScreen('perk')}>
