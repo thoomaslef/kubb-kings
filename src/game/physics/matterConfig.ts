@@ -46,3 +46,11 @@ export const WALL_BODY = {
   friction: 0.1,
   label: 'wall'
 } as const;
+
+/** Rocher d'un terrain a obstacles : statique, un rebond plus sec qu'une bande. */
+export const OBSTACLE_BODY = {
+  isStatic: true,
+  restitution: 0.4,
+  friction: 0.2,
+  label: 'obstacle'
+} as const;

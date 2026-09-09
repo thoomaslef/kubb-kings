@@ -1,13 +1,17 @@
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { AI_PROFILES, type Difficulty } from '../game/ai';
+import { FIELD_PRESETS, type FieldPresetId } from '../game/rules';
 
 const LEVELS = Object.keys(AI_PROFILES) as Difficulty[];
+const PRESETS = Object.keys(FIELD_PRESETS) as FieldPresetId[];
 
 export function Menu() {
   const setScreen = useGameStore((s) => s.setScreen);
   const difficulty = useGameStore((s) => s.difficulty);
   const setDifficulty = useGameStore((s) => s.setDifficulty);
+  const fieldPreset = useGameStore((s) => s.fieldPreset);
+  const setFieldPreset = useGameStore((s) => s.setFieldPreset);
   const setMode = useGameStore((s) => s.setMode);
 
   const play = (mode: 'solo' | 'local' | '2v2') => {
@@ -48,6 +52,21 @@ export function Menu() {
           <button className="btn" onClick={() => play('2v2')}>
             2v2 local &mdash; a quatre
           </button>
+
+          <div className="segmented" role="group" aria-label="Terrain">
+            {PRESETS.map((id) => (
+              <button
+                key={id}
+                className={`segmented__item${id === fieldPreset ? ' segmented__item--on' : ''}`}
+                aria-pressed={id === fieldPreset}
+                onClick={() => setFieldPreset(id)}
+              >
+                {FIELD_PRESETS[id].label}
+              </button>
+            ))}
+          </div>
+          <p className="footnote footnote--tight">{FIELD_PRESETS[fieldPreset].hint}</p>
+
           <button className="btn" onClick={() => setScreen('rules')}>
             Regles
           </button>

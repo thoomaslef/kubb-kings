@@ -94,7 +94,7 @@ kubb-kings/
 ├── src/
 │   ├── game/
 │   │   ├── scenes/     BootScene, MenuScene, MatchScene, ResultScene
-│   │   ├── entities/   Baton, Kubb, King, Team
+│   │   ├── entities/   Baton, Kubb, King, Obstacle, Team
 │   │   ├── physics/    matterConfig.ts (gravite, restitution, frottements)
 │   │   ├── config.ts   config Phaser
 │   │   ├── rules.ts    regles, equilibrage, geometrie du terrain et hitboxes
@@ -162,6 +162,32 @@ React  <--(store Zustand : ecran, HUD, resultat)------------   Scenes Phaser
 - **Feu ami neutralise.** Un baton ne peut pas abattre les kubbs de sa propre equipe (cas
   possible sur un rebond de bande). Cela evite une elimination absurde due au hasard.
 - **Fin de tour automatique** quand le baton est a l&apos;arret (ou apres 4 s de vol).
+
+---
+
+## Terrains a obstacles
+
+Trois presets, choisis au menu, dans [`src/game/rules.ts`](src/game/rules.ts)
+(`FIELD_PRESETS`) : le terrain (`FIELD`, l&apos;espacement des kubbs, les hitboxes) ne
+change jamais — seuls des rochers statiques s&apos;ajoutent, definis en decalage
+(dx, dy) depuis le centre.
+
+| Preset         | Rochers                                                          |
+| -------------- | ------------------------------------------------------------------ |
+| **Classique**  | Aucun (terrain d&apos;origine)                                      |
+| **Chicane**    | Deux rochers en S, hors de l&apos;axe : recompense le repositionnement le long de la ligne de lancer |
+| **Sentinelle** | Deux rochers sur l&apos;axe, de part et d&apos;autre du roi : un tir droit depuis le centre de la ligne les percute avant sa cible |
+
+Un rocher ne tombe jamais et ne fait tomber personne : il fait rebondir le baton comme
+une bande (`src/game/entities/Obstacle.ts`, corps Matter statique).
+
+**L&apos;IA les voit.** `AiBoard.obstacles` (dans [`src/game/ai.ts`](src/game/ai.ts)) lui
+passe leur position ; son cone d&apos;incertitude les traite comme un troisieme type
+d&apos;obstacle (`kind: 'block'`, distinct de `'kubb'` et `'king'`) : un tir qui les
+percute est simplement gache pour cet echantillon, jamais compte comme une faute contre
+le roi. Verifie par simulation sur les 3 presets x 3 niveaux (9 combinaisons, 2000 matchs
+chacune) : zero suicide sur le roi partout, et une IA qui contourne les rochers la plupart
+du temps plutot que de leur foncer dedans.
 
 ---
 

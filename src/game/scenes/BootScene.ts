@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { TEAMS } from '../entities/Team';
 import { PALETTE } from '../theme';
+import { OBSTACLE_RADIUS } from '../rules';
 
 /**
  * Genere toutes les textures du jeu par code (aucun asset externe a charger),
@@ -21,6 +22,7 @@ export class BootScene extends Phaser.Scene {
     this.buildKubbTextures();
     this.buildKingTextures();
     this.buildThrowerTextures();
+    this.buildObstacleTexture();
     this.buildShadowTexture();
     this.buildParticleTextures();
 
@@ -229,6 +231,38 @@ export class BootScene extends Phaser.Scene {
         g.fillStyle(0xffffff, 0.92);
         g.fillCircle(20, 20, 4);
       });
+    });
+  }
+
+  // --------------------------------------------------------------- rochers
+
+  /**
+   * Rocher des terrains a obstacles : une silhouette irreguliere (plusieurs
+   * cercles chevauchants plutot qu'un disque parfait, pour ne pas se confondre
+   * avec le roi) avec une facette claire en haut a gauche, coherente avec la
+   * source de lumiere des ombres portees (theme.ts).
+   */
+  private buildObstacleTexture() {
+    const size = OBSTACLE_RADIUS * 2 + 6;
+    const c = size / 2;
+
+    this.texture('obstacle', size, size, (g) => {
+      const bump = (dx: number, dy: number, r: number, color: number, alpha = 1) => {
+        g.fillStyle(color, alpha);
+        g.fillCircle(c + dx, c + dy, r);
+      };
+
+      bump(0, 2, OBSTACLE_RADIUS, PALETTE.rockDark);
+      bump(-4, -3, OBSTACLE_RADIUS - 3, PALETTE.rock);
+      bump(5, 4, OBSTACLE_RADIUS - 6, PALETTE.rock);
+
+      // Facette claire : meme coin que les autres pieces (haut-gauche).
+      bump(-6, -7, OBSTACLE_RADIUS - 11, PALETTE.rockLight, 0.7);
+
+      // Quelques craquelures, pour casser l'aplat.
+      g.lineStyle(1, PALETTE.rockDark, 0.4);
+      g.lineBetween(c - 6, c - 2, c + 2, c + 6);
+      g.lineBetween(c + 4, c - 8, c + 8, c - 1);
     });
   }
 

@@ -11,6 +11,7 @@ import { TEAMS, OPPONENT, Team, throwerPosition, type TeamId } from '../entities
 import type { Kubb } from '../entities/Kubb';
 import { King } from '../entities/King';
 import { Baton } from '../entities/Baton';
+import { Obstacle } from '../entities/Obstacle';
 import { WALL_BODY } from '../physics/matterConfig';
 import { Juice } from '../juice';
 import { PALETTE, BORDER_WIDTH } from '../theme';
@@ -21,11 +22,13 @@ import {
   FIELD,
   FIELD_CENTER_X,
   FIELD_CENTER_Y,
+  FIELD_PRESETS,
   KNOCKDOWN_IMPACT_SPEED,
   MATCH_DURATION_MS,
   MAX_THROWS_PER_TEAM,
   THROW,
-  THROW_LINE_MARGIN
+  THROW_LINE_MARGIN,
+  type FieldPresetId
 } from '../rules';
 
 /**
@@ -50,6 +53,8 @@ export class MatchScene extends Phaser.Scene {
   private teams!: Record<TeamId, Team>;
   private king!: King;
   private baton: Baton | null = null;
+  private obstacles: Obstacle[] = [];
+  private fieldPreset: FieldPresetId = 'classique';
 
   /** Position de lancer courante de chaque equipe, le long de sa ligne de lancer. */
   private throwX: Record<TeamId, number> = { blue: FIELD_CENTER_X, red: FIELD_CENTER_X };
@@ -93,16 +98,18 @@ export class MatchScene extends Phaser.Scene {
     this.aiTimer = null;
     this.aiTween = null;
 
-    const { mode, difficulty } = gameStore.getState();
+    const { mode, difficulty, fieldPreset } = gameStore.getState();
     this.mode = mode;
     this.ai = mode === 'solo' ? AI_PROFILES[difficulty] : null;
     this.playerIndex = { blue: 1, red: 1 };
+    this.fieldPreset = fieldPreset;
 
     gameStore.getState().setScreen('match');
 
     this.drawField();
     this.createWalls();
     this.createThrowers();
+    this.createObstacles();
 
     this.teams = { blue: new Team(this, 'blue'), red: new Team(this, 'red') };
     this.king = new King(this, FIELD_CENTER_X, FIELD_CENTER_Y);
@@ -314,7 +321,8 @@ export class MatchScene extends Phaser.Scene {
             .filter((kubb) => kubb.isStanding)
             .map((kubb) => ({ x: kubb.sprite.x, y: kubb.sprite.y })),
           kingTargetable: opponent.standingCount === 0,
-          kingStanding: this.king.isStanding
+          kingStanding: this.king.isStanding,
+          obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y }))
         },
         profile
       );
@@ -381,7 +389,13 @@ export class MatchScene extends Phaser.Scene {
         1
       );
 
-      if (pair.bodyA.label === 'wall' || pair.bodyB.label === 'wall') {
+      // Bandes et rochers se comportent pareil : un rebond, rien d'autre.
+      if (
+        pair.bodyA.label === 'wall' ||
+        pair.bodyB.label === 'wall' ||
+        pair.bodyA.label === 'obstacle' ||
+        pair.bodyB.label === 'obstacle'
+      ) {
         this.playBounce(speed);
         continue;
       }
@@ -700,6 +714,14 @@ export class MatchScene extends Phaser.Scene {
       return this.add.image(pos.x, pos.y, `thrower-${id}`).setDepth(2);
     };
     this.throwerSprites = { blue: make('blue'), red: make('red') };
+  }
+
+  /** Rochers du terrain choisi. Vide sur le preset "classique". */
+  private createObstacles() {
+    const preset = FIELD_PRESETS[this.fieldPreset];
+    this.obstacles = preset.obstacles.map(
+      ({ dx, dy }) => new Obstacle(this, FIELD_CENTER_X + dx, FIELD_CENTER_Y + dy)
+    );
   }
 
   // ------------------------------------------------------------------ divers

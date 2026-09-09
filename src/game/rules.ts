@@ -57,6 +57,57 @@ export const HITBOX = {
   kingRadius: 20
 } as const;
 
+/**
+ * Terrains a obstacles.
+ *
+ * Chaque preset ajoute des rochers statiques, tous a la meme geometrie de
+ * terrain (FIELD, KUBB_SPACING, hitboxes : rien de tout cela ne change) —
+ * seuls des blocs supplementaires apparaissent, positionnes en decalage
+ * (dx, dy) depuis le centre du terrain. Un rocher ne peut rien faire tomber
+ * ni etre abattu : il fait juste rebondir le baton, comme une bande.
+ */
+export type FieldPresetId = 'classique' | 'chicane' | 'sentinelle';
+
+export interface FieldPreset {
+  id: FieldPresetId;
+  label: string;
+  hint: string;
+  /** Decalages (dx, dy) depuis FIELD_CENTER_X/Y, en pixels de design. */
+  obstacles: ReadonlyArray<{ dx: number; dy: number }>;
+}
+
+/** Rayon d'un rocher, en pixels de design — un peu plus large que le roi. */
+export const OBSTACLE_RADIUS = 22;
+
+export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
+  classique: {
+    id: 'classique',
+    label: 'Classique',
+    hint: 'Terrain nu',
+    obstacles: []
+  },
+  chicane: {
+    id: 'chicane',
+    label: 'Chicane',
+    hint: "Deux rochers en S, hors de l'axe",
+    obstacles: [
+      { dx: 85, dy: 130 },
+      { dx: -85, dy: -130 }
+    ]
+  },
+  sentinelle: {
+    id: 'sentinelle',
+    label: 'Sentinelle',
+    hint: 'Le roi, garde des deux cotes',
+    // Sur l'axe (dx: 0), comme le roi et le kubb central : un tir tout droit
+    // depuis le centre de la ligne de lancer les percute avant sa cible.
+    obstacles: [
+      { dx: 0, dy: 70 },
+      { dx: 0, dy: -70 }
+    ]
+  }
+};
+
 /** Vitesse d'impact minimale (px/step Matter) pour faire tomber un kubb. */
 export const KNOCKDOWN_IMPACT_SPEED = 6;
 /**

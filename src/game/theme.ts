@@ -30,7 +30,11 @@ export const PALETTE = {
   goldLight: 0xffeeb8,
   goldDark: 0x8a6b12,
   /** Teinte des pieces couchees, hors jeu. */
-  fallen: 0x6f7a72
+  fallen: 0x6f7a72,
+  /** Rochers des terrains a obstacles. */
+  rock: 0x6b6f72,
+  rockLight: 0x8b9094,
+  rockDark: 0x45484a
 } as const;
 
 /**
@@ -46,7 +50,7 @@ export const SHADOW = {
    * Echelle du sprite d'ombre. Volontairement plus large que la piece :
    * une ombre entierement cachee derriere son objet ne se voit pas.
    */
-  scale: { kubb: 1.05, king: 1.2, baton: 0.85 }
+  scale: { kubb: 1.05, king: 1.2, baton: 0.85, obstacle: 1.1 }
 } as const;
 
 /** Cote du cadre en bois qui entoure le terrain, en pixels de design. */

@@ -7,6 +7,7 @@ import {
   HITBOX,
   KNOCKDOWN_IMPACT_SPEED,
   MAX_AIM_DEVIATION_DEG,
+  OBSTACLE_RADIUS,
   THROW,
   THROW_LINE_MARGIN
 } from './rules';
@@ -109,6 +110,11 @@ export interface AiBoard {
   kingTargetable: boolean;
   /** true tant que le roi est debout et donc dangereux a frole. */
   kingStanding: boolean;
+  /**
+   * Rochers du terrain choisi, s'il y en a. Ni cible ni danger de defaite —
+   * juste un tir gache si on les percute, comme un baton trop court.
+   */
+  obstacles?: Point[];
 }
 
 export interface AiThrow {
@@ -162,11 +168,13 @@ function speedAfter(power: number, distance: number): number {
 const KUBB_HIT_RADIUS = HITBOX.kubb / 2 + HITBOX.batonWidth / 2;
 const KING_HIT_RADIUS = HITBOX.kingRadius + HITBOX.batonWidth / 2;
 const KING_DANGER_RADIUS = HITBOX.kingRadius + HITBOX.batonLength / 2;
+const BLOCK_HIT_RADIUS = OBSTACLE_RADIUS + HITBOX.batonWidth / 2;
 
 interface Obstacle {
   p: Point;
   radius: number;
-  isKing: boolean;
+  /** 'block' : un rocher — jamais une cible, jamais un motif de defaite. */
+  kind: 'kubb' | 'king' | 'block';
 }
 
 /** Distance parcourue avant d'entrer dans l'obstacle, ou null s'il est manque. */
@@ -236,9 +244,16 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
 
   // Le roi est un obstacle dans les deux cas : soit c'est la cible, soit c'est
   // le piege. Seul son rayon change.
-  const obstacles: Obstacle[] = board.targets.map((p) => ({ p, radius: KUBB_HIT_RADIUS, isKing: false }));
+  const obstacles: Obstacle[] = board.targets.map((p) => ({ p, radius: KUBB_HIT_RADIUS, kind: 'kubb' as const }));
   if (board.kingStanding) {
-    obstacles.push({ p: king, radius: aimingAtKing ? KING_HIT_RADIUS : KING_DANGER_RADIUS, isKing: true });
+    obstacles.push({
+      p: king,
+      radius: aimingAtKing ? KING_HIT_RADIUS : KING_DANGER_RADIUS,
+      kind: 'king' as const
+    });
+  }
+  for (const p of board.obstacles ?? []) {
+    obstacles.push({ p, radius: BLOCK_HIT_RADIUS, kind: 'block' as const });
   }
 
   const forward = board.direction === -1 ? -Math.PI / 2 : Math.PI / 2;
@@ -273,10 +288,13 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
           const hit = firstObstacle(origin, angle + (aimError + deviation) * DEG, obstacles);
           if (!hit) continue;
 
-          if (hit.obstacle.isKing && !aimingAtKing) {
+          if (hit.obstacle.kind === 'king' && !aimingAtKing) {
             touchesKing = true;
             break;
           }
+          // Rocher percute avant la cible : tir gache, mais sans consequence
+          // (contrairement au roi, il ne fait pas perdre la partie).
+          if (hit.obstacle.kind === 'block') continue;
           // Un baton en fin de course rebondit sans rien renverser.
           if (speedAfter(power, hit.distance) >= KNOCKDOWN_IMPACT_SPEED) knockdowns += 1;
         }
