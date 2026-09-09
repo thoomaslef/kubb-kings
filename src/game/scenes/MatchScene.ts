@@ -559,7 +559,12 @@ export class MatchScene extends Phaser.Scene {
     const g = this.aimGfx;
     const width = 170;
     const height = 12;
-    const gaugeY = y - TEAMS[this.activeTeam].direction * 34 - height / 2;
+    // Cote de l'origine oppose a la propre rangee de kubbs du lanceur
+    // (direction pointe vers l'adversaire) : la jauge se dessinait auparavant
+    // vers l'arriere et chevauchait les kubbs de sa propre equipe. L'offset
+    // reste sous 34 (la ou commencent les tirets de la fleche, cf. drawAim)
+    // pour ne pas non plus se retrouver sous la trajectoire visee.
+    const gaugeY = y + TEAMS[this.activeTeam].direction * 22 - height / 2;
     const gaugeX = x - width / 2;
 
     g.fillStyle(0x000000, 0.45);

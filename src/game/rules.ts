@@ -85,10 +85,23 @@ export const THROW = {
   maxSpeed: 30,
   /** Rotation visuelle du baton en vol. */
   spin: 0.35,
-  /** Duree max d'un lancer avant resolution forcee. */
-  maxFlightMs: 4000,
-  /** En dessous de cette vitesse, le baton est considere immobile. */
-  restSpeed: 1.2,
+  /**
+   * Duree max d'un lancer avant resolution forcee.
+   * Un filet de securite pour les cas pathologiques (rebonds infinis entre
+   * deux bandes) : en jeu normal, restSpeed/restDelayMs cloturent le tour
+   * bien avant.
+   */
+  maxFlightMs: 3000,
+  /**
+   * En dessous de cette vitesse, le baton est considere immobile.
+   *
+   * Volontairement proche de KNOCKDOWN_IMPACT_SPEED (6) sans l'atteindre :
+   * une fois sous ce seuil, le baton ne peut plus, par definition, faire
+   * tomber quoi que ce soit. On peut donc clore le tour sans attendre qu'il
+   * s'immobilise vraiment — c'etait l'essentiel du "temps mort" en fin de
+   * lancer, un baton qui rampait sans plus aucune consequence de jeu.
+   */
+  restSpeed: 4,
   /** Temps sous restSpeed avant de cloturer le tour. */
-  restDelayMs: 220
+  restDelayMs: 160
 } as const;
