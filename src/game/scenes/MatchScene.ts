@@ -1,6 +1,12 @@
 import Phaser from 'phaser';
 import { bridge } from '../GameBridge';
-import { gameStore, type MatchPhase, type MatchResult, type WinReason } from '../../store/useGameStore';
+import {
+  gameStore,
+  type GameMode,
+  type MatchPhase,
+  type MatchResult,
+  type WinReason
+} from '../../store/useGameStore';
 import { TEAMS, OPPONENT, Team, throwerPosition, type TeamId } from '../entities/Team';
 import type { Kubb } from '../entities/Kubb';
 import { King } from '../entities/King';
@@ -30,9 +36,16 @@ import {
  */
 export class MatchScene extends Phaser.Scene {
   private phase: MatchPhase = 'aiming';
+  private mode: GameMode = 'local';
   private activeTeam: TeamId = 'blue';
   private throwsLeft: Record<TeamId, number> = { blue: 0, red: 0 };
   private timeLeftMs = MATCH_DURATION_MS;
+  /**
+   * En 2v2, lequel des deux joueurs d'une equipe est au lancer. Purement
+   * cosmetique : l'alternance des tours reste celle du 1v1 (un baton, puis
+   * l'autre camp) — deux joueurs se partagent juste chaque camp.
+   */
+  private playerIndex: Record<TeamId, 1 | 2> = { blue: 1, red: 1 };
 
   private teams!: Record<TeamId, Team>;
   private king!: King;
@@ -81,7 +94,9 @@ export class MatchScene extends Phaser.Scene {
     this.aiTween = null;
 
     const { mode, difficulty } = gameStore.getState();
+    this.mode = mode;
     this.ai = mode === 'solo' ? AI_PROFILES[difficulty] : null;
+    this.playerIndex = { blue: 1, red: 1 };
 
     gameStore.getState().setScreen('match');
 
@@ -220,6 +235,10 @@ export class MatchScene extends Phaser.Scene {
     this.baton?.destroy();
     this.baton = null;
     this.throwsLeft[this.activeTeam] -= 1;
+    // L'autre joueur de cette equipe prendra le prochain lancer de ce camp.
+    if (this.mode === '2v2') {
+      this.playerIndex[this.activeTeam] = this.playerIndex[this.activeTeam] === 1 ? 2 : 1;
+    }
 
     if (this.throwsLeft.blue <= 0 && this.throwsLeft.red <= 0) {
       this.finishOnPoints('throws-exhausted');
@@ -254,7 +273,8 @@ export class MatchScene extends Phaser.Scene {
    */
   private turnLabel(team: TeamId): string {
     if (this.ai) return this.isAiTeam(team) ? "AU TOUR DE L'IA" : 'A VOUS DE JOUER';
-    return `AU TOUR DE L'EQUIPE ${TEAMS[team].label.toUpperCase()}`;
+    const base = `AU TOUR DE L'EQUIPE ${TEAMS[team].label.toUpperCase()}`;
+    return this.mode === '2v2' ? `${base} — JOUEUR ${this.playerIndex[team]}` : base;
   }
 
   // --------------------------------------------------------------------- IA
@@ -705,7 +725,8 @@ export class MatchScene extends Phaser.Scene {
       },
       throwsLeft: { ...this.throwsLeft },
       timeLeftMs: this.timeLeftMs,
-      canTargetKing
+      canTargetKing,
+      activePlayer: this.playerIndex[this.activeTeam]
     });
   }
 

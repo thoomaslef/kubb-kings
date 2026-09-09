@@ -10,7 +10,7 @@ export function Menu() {
   const setDifficulty = useGameStore((s) => s.setDifficulty);
   const setMode = useGameStore((s) => s.setMode);
 
-  const play = (mode: 'solo' | 'local') => {
+  const play = (mode: 'solo' | 'local' | '2v2') => {
     setMode(mode);
     bridge.send('start-match');
   };
@@ -44,6 +44,9 @@ export function Menu() {
 
           <button className="btn" onClick={() => play('local')}>
             1v1 local &mdash; a deux
+          </button>
+          <button className="btn" onClick={() => play('2v2')}>
+            2v2 local &mdash; a quatre
           </button>
           <button className="btn" onClick={() => setScreen('rules')}>
             Regles

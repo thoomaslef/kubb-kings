@@ -9,8 +9,13 @@ export type Screen = 'boot' | 'menu' | 'rules' | 'match' | 'result' | 'quit';
 /** Phase du tour courant, pilotee par MatchScene. */
 export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';
 
-/** Mode de jeu choisi au menu, conserve d'une partie a l'autre. */
-export type GameMode = 'local' | 'solo';
+/**
+ * Mode de jeu choisi au menu, conserve d'une partie a l'autre.
+ * 'local' = 1v1 (deux joueurs). '2v2' garde exactement la meme alternance de
+ * lancer que 'local' — un baton, puis l'autre camp — deux joueurs se
+ * partagent juste chaque camp, cf. `playerIndex` dans MatchScene.
+ */
+export type GameMode = 'local' | '2v2' | 'solo';
 
 export type WinReason =
   | 'king-down'
@@ -34,6 +39,11 @@ export interface HudState {
   timeLeftMs: number;
   /** true quand l'equipe active a le droit de viser le roi. */
   canTargetKing: boolean;
+  /**
+   * Lequel des deux joueurs d'une equipe est au lancer, en mode '2v2'
+   * uniquement (1 ou 2). Sans objet en 'local' ou 'solo' — HUD l'ignore alors.
+   */
+  activePlayer: 1 | 2;
 }
 
 const initialHud = (): HudState => ({
@@ -42,7 +52,8 @@ const initialHud = (): HudState => ({
   kubbsStanding: { blue: KUBBS_PER_TEAM, red: KUBBS_PER_TEAM },
   throwsLeft: { blue: MAX_THROWS_PER_TEAM, red: MAX_THROWS_PER_TEAM },
   timeLeftMs: MATCH_DURATION_MS,
-  canTargetKing: false
+  canTargetKing: false,
+  activePlayer: 1
 });
 
 interface GameState {

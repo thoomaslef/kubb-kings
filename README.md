@@ -3,8 +3,8 @@
 Jeu mobile HTML5 inspire du [Kubb](https://fr.wikipedia.org/wiki/Kubb), le jeu de plein air
 suedois : deux equipes se lancent des batons pour abattre les blocs adverses, puis le roi.
 
-Deux modes : **solo contre l'IA** (trois niveaux) et **1v1 local** (pass-and-play sur le
-meme telephone). Une seule map, une partie de 4 minutes maximum.
+Trois modes : **solo contre l'IA** (trois niveaux), **1v1 local** et **2v2 local**
+(pass-and-play sur le meme telephone). Une seule map, une partie de 4 minutes maximum.
 
 ---
 
@@ -136,7 +136,9 @@ React  <--(store Zustand : ecran, HUD, resultat)------------   Scenes Phaser
 
 - Chaque equipe aligne **5 kubbs** sur sa ligne de fond.
 - **Un seul roi**, au centre du terrain, partage par les deux equipes (regle classique du Kubb).
-- Les equipes lancent a tour de role, un baton par tour.
+- Les equipes lancent a tour de role, un baton par tour. En 2v2, les deux joueurs
+  d'une equipe alternent lequel des deux est au lancer a chaque fois que revient le
+  tour de leur camp — l'alternance des tours elle-meme ne change pas.
 - **Placement** : le point de contact choisit la position de lancer le long de la ligne de lancer.
 - **Visee** : le glissement donne l&apos;angle (bride a &plusmn;75&deg; vers l&apos;avant).
 - **Puissance** : la longueur du glissement, affichee par une jauge verte &rarr; rouge.

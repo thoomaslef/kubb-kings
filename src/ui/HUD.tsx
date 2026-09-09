@@ -38,7 +38,8 @@ export function HUD() {
   // En solo, l'adversaire n'est pas "l'equipe Rouge" mais l'IA : le HUD doit
   // dire a qui on a affaire, et surtout quand elle est en train de jouer.
   const activeIsAi = mode === 'solo' && hud.activeTeam === AI_TEAM;
-  const activeLabel = activeIsAi ? 'IA' : active.label;
+  // En 2v2, deux joueurs se partagent chaque camp : preciser lequel est au lancer.
+  const activeLabel = activeIsAi ? 'IA' : mode === '2v2' ? `${active.label} J${hud.activePlayer}` : active.label;
   const targets = hud.kubbsStanding[OPPONENT[hud.activeTeam]];
   // Derniere ligne droite : le chrono se met a battre en rouge.
   const urgent = hud.timeLeftMs <= 10_000;
