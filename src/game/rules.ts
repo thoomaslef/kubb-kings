@@ -18,10 +18,14 @@ export const FIELD = {
 export const FIELD_CENTER_X = FIELD.x + FIELD.width / 2;
 export const FIELD_CENTER_Y = FIELD.y + FIELD.height / 2;
 
-/** Distance entre la ligne de fond et le bord du terrain. */
-export const BASELINE_INSET = 130;
-/** Distance entre la position du lanceur et le bord du terrain. */
-export const THROWER_INSET = 45;
+/** Distance entre la ligne de fond (les kubbs) et le bord du terrain. */
+export const BASELINE_INSET = 60;
+/**
+ * Distance entre la position du lanceur et le bord du terrain.
+ * Superieure a BASELINE_INSET : le lanceur se place devant ses propres kubbs,
+ * qui ne sont donc jamais sur la trajectoire de son baton.
+ */
+export const THROWER_INSET = 130;
 
 /** Nombre de kubbs par equipe, alignes sur la ligne de fond. */
 export const KUBBS_PER_TEAM = 5;

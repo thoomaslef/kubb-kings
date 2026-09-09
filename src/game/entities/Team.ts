@@ -1,4 +1,13 @@
-import { FIELD, BASELINE_INSET, THROWER_INSET, FIELD_CENTER_X } from '../rules';
+import type Phaser from 'phaser';
+import {
+  FIELD,
+  BASELINE_INSET,
+  THROWER_INSET,
+  FIELD_CENTER_X,
+  KUBBS_PER_TEAM,
+  KUBB_SPACING
+} from '../rules';
+import { Kubb } from './Kubb';
 
 export type TeamId = 'blue' | 'red';
 
@@ -43,4 +52,33 @@ export const OPPONENT: Record<TeamId, TeamId> = { blue: 'red', red: 'blue' };
 /** Position depuis laquelle l'equipe lance (centre de sa ligne de fond). */
 export function throwerPosition(team: TeamId): { x: number; y: number } {
   return { x: FIELD_CENTER_X, y: TEAMS[team].throwerY };
+}
+
+/**
+ * Une equipe et sa ligne de kubbs.
+ * Le camp d'une equipe est la cible de l'adversaire : les kubbs d'une equipe
+ * ne peuvent pas etre abattus par ses propres batons.
+ */
+export class Team {
+  readonly id: TeamId;
+  readonly kubbs: Kubb[];
+
+  constructor(scene: Phaser.Scene, id: TeamId) {
+    this.id = id;
+    const { baselineY } = TEAMS[id];
+    const first = -((KUBBS_PER_TEAM - 1) / 2) * KUBB_SPACING;
+
+    this.kubbs = Array.from(
+      { length: KUBBS_PER_TEAM },
+      (_, i) => new Kubb(scene, FIELD_CENTER_X + first + i * KUBB_SPACING, baselineY, id)
+    );
+  }
+
+  get standingCount(): number {
+    return this.kubbs.reduce((total, kubb) => total + (kubb.isStanding ? 1 : 0), 0);
+  }
+
+  get downCount(): number {
+    return KUBBS_PER_TEAM - this.standingCount;
+  }
 }

@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { bridge } from '../GameBridge';
 import { gameStore, type MatchPhase } from '../../store/useGameStore';
-import { TEAMS, OPPONENT, throwerPosition, type TeamId } from '../entities/Team';
+import { TEAMS, OPPONENT, Team, throwerPosition, type TeamId } from '../entities/Team';
+import type { Kubb } from '../entities/Kubb';
 import { Baton } from '../entities/Baton';
 import { WALL_BODY } from '../physics/matterConfig';
 import {
@@ -9,14 +10,15 @@ import {
   FIELD,
   FIELD_CENTER_X,
   FIELD_CENTER_Y,
+  KNOCKDOWN_IMPACT_SPEED,
   MATCH_DURATION_MS,
   MAX_THROWS_PER_TEAM,
   THROW
 } from '../rules';
 
 /**
- * ETAPE 2 : boucle de lancer complete (visee, jauge de puissance, vol, fin de tour)
- * sur un terrain encore vide. Kubbs et roi arrivent aux etapes 3 et 4.
+ * ETAPE 3 : boucle de lancer + kubbs et detection de chute.
+ * Le roi et les conditions de victoire arrivent a l'etape 4.
  */
 export class MatchScene extends Phaser.Scene {
   private phase: MatchPhase = 'aiming';
@@ -24,6 +26,7 @@ export class MatchScene extends Phaser.Scene {
   private throwsLeft: Record<TeamId, number> = { blue: 0, red: 0 };
   private timeLeftMs = MATCH_DURATION_MS;
 
+  private teams!: Record<TeamId, Team>;
   private baton: Baton | null = null;
   private aimGfx!: Phaser.GameObjects.Graphics;
   private isDragging = false;
@@ -53,7 +56,14 @@ export class MatchScene extends Phaser.Scene {
     this.createWalls();
     this.drawThrowers();
 
+    this.teams = {
+      blue: new Team(this, 'blue'),
+      red: new Team(this, 'red')
+    };
+
     this.aimGfx = this.add.graphics().setDepth(5);
+
+    this.matter.world.on(Phaser.Physics.Matter.Events.COLLISION_START, this.onCollisionStart, this);
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
@@ -63,6 +73,7 @@ export class MatchScene extends Phaser.Scene {
     bridge.on('leave-match', this.handleLeave, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       bridge.off('leave-match', this.handleLeave, this);
+      this.matter.world.off(Phaser.Physics.Matter.Events.COLLISION_START, this.onCollisionStart, this);
     });
 
     this.syncHud();
@@ -138,10 +149,71 @@ export class MatchScene extends Phaser.Scene {
     this.baton = null;
 
     this.throwsLeft[this.activeTeam] -= 1;
-    this.activeTeam = OPPONENT[this.activeTeam];
+
+    if (this.throwsLeft.blue <= 0 && this.throwsLeft.red <= 0) {
+      this.finishOnPoints('throws-exhausted');
+      return;
+    }
+
+    // On saute l'equipe qui n'a plus de lancers.
+    const next = OPPONENT[this.activeTeam];
+    this.activeTeam = this.throwsLeft[next] > 0 ? next : this.activeTeam;
+
     this.phase = 'aiming';
     this.drawAim();
     this.syncHud();
+  }
+
+  // ------------------------------------------------------------- collisions
+
+  /**
+   * Un kubb ne tombe que si le baton le percute au-dessus du seuil de vitesse,
+   * et seulement s'il appartient au camp adverse.
+   */
+  private onCollisionStart(event: Phaser.Physics.Matter.Events.CollisionStartEvent) {
+    if (this.phase !== 'flying' || !this.baton) return;
+
+    for (const pair of event.pairs) {
+      const involvesBaton = pair.bodyA.label === 'baton' || pair.bodyB.label === 'baton';
+      if (!involvesBaton) continue;
+
+      const kubb = this.asKubb(pair.bodyA) ?? this.asKubb(pair.bodyB);
+      if (!kubb || !kubb.isStanding) continue;
+      if (kubb.team === this.activeTeam) continue;
+      if (this.baton.impactSpeed < KNOCKDOWN_IMPACT_SPEED) continue;
+
+      kubb.knockDown(this);
+      this.cameras.main.shake(140, 0.006);
+      this.syncHud();
+    }
+  }
+
+  private asKubb(body: MatterJS.BodyType): Kubb | undefined {
+    const owner = body.gameObject as Phaser.GameObjects.GameObject | null;
+    return owner?.getData?.('kubb') as Kubb | undefined;
+  }
+
+  /** Fin de partie sans roi abattu : le plus grand nombre de kubbs adverses l'emporte. */
+  private finishOnPoints(reason: 'timeout' | 'throws-exhausted') {
+    const knockedDown = {
+      blue: this.teams.red.downCount,
+      red: this.teams.blue.downCount
+    };
+    const winner =
+      knockedDown.blue === knockedDown.red ? 'draw' : knockedDown.blue > knockedDown.red ? 'blue' : 'red';
+
+    this.finish({ winner, reason, knockedDown });
+  }
+
+  private finish(result: {
+    winner: TeamId | 'draw';
+    reason: 'king-down' | 'king-early' | 'timeout' | 'throws-exhausted';
+    knockedDown: Record<TeamId, number>;
+  }) {
+    this.phase = 'over';
+    this.aimGfx.clear();
+    this.syncHud();
+    this.time.delayedCall(700, () => this.scene.start('ResultScene', result));
   }
 
   // ---------------------------------------------------------------- horloge
@@ -273,6 +345,10 @@ export class MatchScene extends Phaser.Scene {
     gameStore.getState().patchHud({
       activeTeam: this.activeTeam,
       phase: this.phase,
+      kubbsStanding: {
+        blue: this.teams.blue.standingCount,
+        red: this.teams.red.standingCount
+      },
       throwsLeft: { ...this.throwsLeft },
       timeLeftMs: this.timeLeftMs
     });
