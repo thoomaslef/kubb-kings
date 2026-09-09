@@ -129,6 +129,33 @@ body {
   letter-spacing: 0.6px;
 }
 
+/* Lien discret (mentions legales, confidentialite) : pas une action de jeu,
+   ne doit pas rivaliser visuellement avec les vrais boutons du menu. */
+.link-btn {
+  display: block;
+  margin: 10px auto 0;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: rgba(159, 179, 167, 0.7);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---------- Informations legales ---------- */
+
+.legal-heading {
+  margin: 22px 0 8px;
+  color: var(--gold);
+  font-size: 17px;
+}
+
+.legal-heading:first-of-type {
+  margin-top: 4px;
+}
+
 /* ---------- Boutons ---------- */
 
 .button-column {

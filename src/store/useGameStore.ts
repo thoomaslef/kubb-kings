@@ -7,7 +7,17 @@ import type { KubbSkin } from '../game/theme';
 import { buildBracket, recordWinner, type TournamentState } from '../game/tournament';
 
 /** Ecrans hors-jeu geres par React. */
-export type Screen = 'boot' | 'menu' | 'rules' | 'match' | 'result' | 'perk' | 'quit' | 'tournament-setup' | 'tournament';
+export type Screen =
+  | 'boot'
+  | 'menu'
+  | 'rules'
+  | 'match'
+  | 'result'
+  | 'perk'
+  | 'quit'
+  | 'tournament-setup'
+  | 'tournament'
+  | 'legal';
 
 /** Phase du tour courant, pilotee par MatchScene. */
 export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';

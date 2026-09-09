@@ -142,6 +142,9 @@ export function Menu() {
         </div>
 
         <p className="footnote">Pass-and-play &middot; 4 minutes max</p>
+        <button className="link-btn" onClick={() => setScreen('legal')}>
+          Confidentialite &amp; mentions legales
+        </button>
       </div>
     </div>
   );

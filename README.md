@@ -426,6 +426,28 @@ Le son se coupe depuis le HUD ; la preference est conservee d&apos;une partie a 
 
 ---
 
+## Informations legales
+
+Politique de confidentialite, CGU et mentions legales, en double forme :
+
+- **Pages statiques publiques** ([`public/legal/`](public/legal)), sans JS ni dependance au
+  bundle de l&apos;application — c&apos;est l&apos;URL a renseigner dans App Store Connect
+  (obligatoire) et la Play Console (section &laquo; Securite des donnees &raquo;), meme si le
+  jeu ne collecte rien.
+- **Ecran in-app** ([`src/ui/Legal.tsx`](src/ui/Legal.tsx)), accessible depuis un lien discret
+  en bas du menu, pour la meme lisibilite depuis l&apos;application elle-meme.
+
+Le contenu reflete l&apos;etat reel du jeu : aucun serveur, aucun compte, aucun outil
+d&apos;analyse, aucune donnee personnelle collectee — tout ce qui est conserve
+(preferences, meilleure serie) reste en stockage local sur l&apos;appareil.
+
+**A completer avant toute soumission sur les stores** : les mentions legales exigent une
+identite reelle. Chercher `[A COMPLETER` dans `public/legal/*.html` et `src/ui/Legal.tsx`
+pour trouver les quatre champs a renseigner (nom/raison sociale, contact, date de mise a
+jour) — repetes dans les deux formes pour rester coherents.
+
+---
+
 ## Hors perimetre de ce MVP
 
 Volontairement non developpes, mais le decoupage `scenes / entities / physics / store`

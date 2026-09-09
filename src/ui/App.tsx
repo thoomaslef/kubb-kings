@@ -9,6 +9,7 @@ import { PerkChoice } from './PerkChoice';
 import { QuitScreen } from './QuitScreen';
 import { TournamentSetup } from './TournamentSetup';
 import { TournamentBracket } from './TournamentBracket';
+import { Legal } from './Legal';
 
 /**
  * Coquille React : le canvas Phaser est toujours monte,
@@ -33,6 +34,7 @@ export function App() {
       {screen === 'quit' && <QuitScreen />}
       {screen === 'tournament-setup' && <TournamentSetup />}
       {screen === 'tournament' && <TournamentBracket />}
+      {screen === 'legal' && <Legal />}
     </div>
   );
 }
