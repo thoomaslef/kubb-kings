@@ -426,6 +426,23 @@ Le son se coupe depuis le HUD ; la preference est conservee d&apos;une partie a 
 
 ---
 
+## Solidite technique
+
+- **Error boundary** ([`src/ui/ErrorBoundary.tsx`](src/ui/ErrorBoundary.tsx)) : une erreur de
+  rendu React affichait auparavant un ecran blanc/noir figé, sans explication. Elle affiche
+  desormais un message et un bouton pour recharger.
+- **Journal d&apos;erreurs local** ([`src/game/diagnostics.ts`](src/game/diagnostics.ts)) :
+  capture aussi les erreurs hors React (boucle Phaser, promesses rejetees), en localStorage.
+  Le jeu est un site statique sans serveur pour recevoir des rapports a distance — ce journal
+  est donc consultable et copiable depuis l&apos;ecran **A propos**, pour un signalement
+  manuel plutot qu&apos;un SDK tiers.
+- **Chargement en deux temps** ([`src/ui/GameCanvas.tsx`](src/ui/GameCanvas.tsx)) : Phaser et
+  le code du jeu (le plus gros du bundle) sont importes dynamiquement, dans un chunk separe
+  du shell React — celui-ci peut donc s&apos;afficher (ecran de chargement) avant que le
+  moteur de jeu ne soit telecharge.
+
+---
+
 ## Informations legales
 
 Politique de confidentialite, CGU et mentions legales, en double forme :

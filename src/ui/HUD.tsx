@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
-import { TEAMS, OPPONENT } from '../game/entities/Team';
+import { TEAMS, OPPONENT } from '../game/entities/teamData';
 import { isMuted, setMuted } from '../game/audio';
 import { AI_TEAM } from '../game/ai';
 import { isKingTipSeen, markKingTipSeen } from '../game/tutorial';

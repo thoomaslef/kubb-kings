@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
-import { TEAMS, OPPONENT } from '../game/entities/Team';
+import { TEAMS, OPPONENT } from '../game/entities/teamData';
 import { AI_TEAM } from '../game/ai';
 import { LADDER, setBestStageIfHigher } from '../game/roguelite';
 import type { MatchResult } from '../store/useGameStore';

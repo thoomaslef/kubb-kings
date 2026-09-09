@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { TeamId } from '../game/entities/Team';
+import type { TeamId } from '../game/entities/teamData';
 import type { Difficulty } from '../game/ai';
 import type { PerkId } from '../game/roguelite';
 import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId } from '../game/rules';
@@ -17,7 +17,8 @@ export type Screen =
   | 'quit'
   | 'tournament-setup'
   | 'tournament'
-  | 'legal';
+  | 'legal'
+  | 'about';
 
 /** Phase du tour courant, pilotee par MatchScene. */
 export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';

@@ -18,6 +18,14 @@ export default defineConfig(({ command, isPreview }) => ({
   },
   build: {
     target: 'es2020',
-    chunkSizeWarningLimit: 1500
+    /**
+     * Phaser + le code du jeu forment un chunk a part (bootGame.ts, importe
+     * dynamiquement par GameCanvas.tsx) : il ne bloque plus le premier rendu
+     * du shell React (~180 Ko), mais reste lui-meme volumineux — Phaser fait
+     * deja plus de 1 Mo compresse. La limite est relevee UNE FOIS ce
+     * decoupage reel en place, pas pour faire taire un avertissement sur un
+     * bundle monolithique.
+     */
+    chunkSizeWarningLimit: 1600
   }
 }));

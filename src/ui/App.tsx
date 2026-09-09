@@ -10,6 +10,8 @@ import { QuitScreen } from './QuitScreen';
 import { TournamentSetup } from './TournamentSetup';
 import { TournamentBracket } from './TournamentBracket';
 import { Legal } from './Legal';
+import { About } from './About';
+import { Boot } from './Boot';
 
 /**
  * Coquille React : le canvas Phaser est toujours monte,
@@ -21,6 +23,7 @@ export function App() {
   return (
     <div className="app">
       <GameCanvas />
+      {screen === 'boot' && <Boot />}
       {screen === 'menu' && <Menu />}
       {screen === 'rules' && <Rules />}
       {screen === 'match' && (
@@ -35,6 +38,7 @@ export function App() {
       {screen === 'tournament-setup' && <TournamentSetup />}
       {screen === 'tournament' && <TournamentBracket />}
       {screen === 'legal' && <Legal />}
+      {screen === 'about' && <About />}
     </div>
   );
 }

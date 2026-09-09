@@ -122,6 +122,35 @@ body {
   font-size: 15px;
 }
 
+/* ---------- Chargement ---------- */
+
+.boot {
+  text-align: center;
+}
+
+.boot__label {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  animation: boot-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes boot-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot__label {
+    animation: none;
+  }
+}
+
 .footnote {
   margin: 22px 0 0;
   color: rgba(159, 179, 167, 0.7);
