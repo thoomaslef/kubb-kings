@@ -6,6 +6,8 @@ import type { Kubb } from '../entities/Kubb';
 import { King } from '../entities/King';
 import { Baton } from '../entities/Baton';
 import { WALL_BODY } from '../physics/matterConfig';
+import { Juice } from '../juice';
+import * as sfx from '../audio';
 import {
   AIM,
   FIELD,
@@ -49,6 +51,12 @@ export class MatchScene extends Phaser.Scene {
   private flightMs = 0;
   private lastShownSecond = -1;
 
+  private juice!: Juice;
+  /** Le jingle d'ouverture du roi ne se joue qu'une fois par equipe. */
+  private kingAnnounced: Record<TeamId, boolean> = { blue: false, red: false };
+  /** Horodatage du dernier rebond sonorise, pour ne pas mitrailler les bandes. */
+  private lastBounceMs = 0;
+
   constructor() {
     super('MatchScene');
   }
@@ -63,6 +71,8 @@ export class MatchScene extends Phaser.Scene {
     this.isDragging = false;
     this.aimPower = 0;
     this.lastShownSecond = -1;
+    this.kingAnnounced = { blue: false, red: false };
+    this.lastBounceMs = 0;
 
     gameStore.getState().setScreen('match');
 
@@ -74,6 +84,7 @@ export class MatchScene extends Phaser.Scene {
     this.king = new King(this, FIELD_CENTER_X, FIELD_CENTER_Y);
 
     this.aimGfx = this.add.graphics().setDepth(5);
+    this.juice = new Juice(this);
 
     this.matter.world.on(Phaser.Physics.Matter.Events.COLLISION_START, this.onCollisionStart, this);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
@@ -84,6 +95,8 @@ export class MatchScene extends Phaser.Scene {
     bridge.on('leave-match', this.handleLeave, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       bridge.off('leave-match', this.handleLeave, this);
+      // Le ralenti du hit-stop survivrait au changement de scene sans ce reset.
+      this.juice.destroy();
       // Le monde Matter est deja detruit quand SHUTDOWN est emis : on garde le garde-fou.
       this.matter.world?.off(Phaser.Physics.Matter.Events.COLLISION_START, this.onCollisionStart, this);
     });
@@ -101,6 +114,13 @@ export class MatchScene extends Phaser.Scene {
     if (this.phase === 'flying' && this.baton) {
       this.flightMs += delta;
       this.restMs = this.baton.speed < THROW.restSpeed ? this.restMs + delta : 0;
+      this.juice.trail(
+        delta,
+        this.baton.sprite.x,
+        this.baton.sprite.y,
+        this.baton.sprite.rotation,
+        this.baton.speed / THROW.maxSpeed
+      );
       this.baton.rememberSpeed();
 
       if (this.restMs >= THROW.restDelayMs || this.flightMs >= THROW.maxFlightMs) {
@@ -172,6 +192,8 @@ export class MatchScene extends Phaser.Scene {
     this.baton = new Baton(this, origin.x, origin.y);
     this.baton.launch(this.aimAngle, this.aimPower);
 
+    this.juice.throwStart(origin.x, origin.y, this.aimPower);
+
     this.phase = 'flying';
     this.flightMs = 0;
     this.restMs = 0;
@@ -181,6 +203,7 @@ export class MatchScene extends Phaser.Scene {
   }
 
   private endThrow() {
+    this.juice.throwEnd();
     this.baton?.destroy();
     this.baton = null;
     this.throwsLeft[this.activeTeam] -= 1;
@@ -191,8 +214,14 @@ export class MatchScene extends Phaser.Scene {
     }
 
     // On saute l'equipe qui n'a plus de lancers.
+    const previous = this.activeTeam;
     const next = OPPONENT[this.activeTeam];
     this.activeTeam = this.throwsLeft[next] > 0 ? next : this.activeTeam;
+
+    if (this.activeTeam !== previous) {
+      const team = TEAMS[this.activeTeam];
+      this.juice.turnBanner(`AU TOUR DE L'EQUIPE ${team.label.toUpperCase()}`, team.color, FIELD_CENTER_Y, this.scale.width);
+    }
 
     this.phase = 'aiming';
     this.aimAngle = this.forwardAngle();
@@ -209,13 +238,27 @@ export class MatchScene extends Phaser.Scene {
       const involvesBaton = pair.bodyA.label === 'baton' || pair.bodyB.label === 'baton';
       if (!involvesBaton) continue;
 
-      const hardEnough = this.baton.impactSpeed >= KNOCKDOWN_IMPACT_SPEED;
+      const speed = this.baton.impactSpeed;
+      const hardEnough = speed >= KNOCKDOWN_IMPACT_SPEED;
+      // Force normalisee (0 au seuil de chute, 1 a pleine puissance) : tout le
+      // feedback — secousse, particules, hauteur du choc — s'echelonne dessus.
+      const force = Phaser.Math.Clamp(
+        (speed - KNOCKDOWN_IMPACT_SPEED) / (THROW.maxSpeed - KNOCKDOWN_IMPACT_SPEED),
+        0,
+        1
+      );
+
+      if (pair.bodyA.label === 'wall' || pair.bodyB.label === 'wall') {
+        this.playBounce(speed);
+        continue;
+      }
 
       if (this.isKing(pair.bodyA) || this.isKing(pair.bodyB)) {
         if (hardEnough && this.king.isStanding) {
           this.resolveKingHit();
           return;
         }
+        this.playBounce(speed);
         continue;
       }
 
@@ -223,12 +266,31 @@ export class MatchScene extends Phaser.Scene {
       if (!kubb || !kubb.isStanding) continue;
       // Une equipe ne peut pas abattre ses propres kubbs.
       if (kubb.team === this.activeTeam) continue;
-      if (!hardEnough) continue;
+      if (!hardEnough) {
+        // Baton en fin de course : le kubb tient bon, mais le choc s'entend.
+        this.playBounce(speed);
+        continue;
+      }
 
+      const { x, y } = kubb.sprite;
       kubb.knockDown(this);
-      this.cameras.main.shake(140, 0.006);
+      this.juice.kubbImpact(x, y, force, TEAMS[kubb.team].color);
+      this.juice.floatingText(
+        x,
+        y,
+        this.teams[kubb.team].standingCount === 0 ? 'DERNIER !' : 'ABATTU !',
+        TEAMS[this.activeTeam].cssColor
+      );
       this.syncHud();
     }
+  }
+
+  /** Ricochet ou choc trop mou : un son bref, espace pour rester lisible. */
+  private playBounce(speed: number) {
+    const sprite = this.baton?.sprite;
+    if (!sprite || this.time.now - this.lastBounceMs < 110) return;
+    this.lastBounceMs = this.time.now;
+    this.juice.wallBounce(sprite.x, sprite.y, Phaser.Math.Clamp(speed / THROW.maxSpeed, 0, 1));
   }
 
   /**
@@ -237,14 +299,26 @@ export class MatchScene extends Phaser.Scene {
    */
   private resolveKingHit() {
     const legal = this.teams[OPPONENT[this.activeTeam]].standingCount === 0;
-    this.king.knockDown(this);
-    this.cameras.main.shake(320, 0.012);
+    const { x, y } = this.king.sprite;
 
-    this.finish({
-      winner: legal ? this.activeTeam : OPPONENT[this.activeTeam],
-      reason: legal ? 'king-down' : 'king-early',
-      knockedDown: this.knockedDown()
-    });
+    this.king.knockDown(this);
+    this.juice.kingFall(x, y, legal);
+    this.juice.floatingText(
+      x,
+      y - 46,
+      legal ? 'LE ROI TOMBE !' : 'ROI TOUCHE TROP TOT',
+      legal ? '#f2c14e' : '#ff5a4a'
+    );
+
+    this.finish(
+      {
+        winner: legal ? this.activeTeam : OPPONENT[this.activeTeam],
+        reason: legal ? 'king-down' : 'king-early',
+        knockedDown: this.knockedDown()
+      },
+      // Laisse le ralenti, le zoom et la gerbe doree se derouler.
+      1500
+    );
   }
 
   private asKubb(body: MatterJS.BodyType): Kubb | undefined {
@@ -271,14 +345,22 @@ export class MatchScene extends Phaser.Scene {
     this.finish({ winner, reason, knockedDown });
   }
 
-  private finish(result: MatchResult) {
+  private finish(result: MatchResult, delayMs = 750) {
     this.phase = 'over';
     this.isDragging = false;
     this.baton?.destroy();
     this.baton = null;
     this.aimGfx.clear();
     this.syncHud();
-    this.time.delayedCall(750, () => this.scene.start('ResultScene', result));
+
+    // Le verdict sonore arrive apres le choc, pas par-dessus.
+    this.time.delayedCall(380, () => {
+      if (result.winner === 'draw') return;
+      if (result.reason === 'king-early') sfx.playDefeat();
+      else sfx.playVictory();
+    });
+
+    this.time.delayedCall(delayMs, () => this.scene.start('ResultScene', result));
   }
 
   // ---------------------------------------------------------------- horloge
@@ -291,10 +373,13 @@ export class MatchScene extends Phaser.Scene {
     if (second !== this.lastShownSecond) {
       this.lastShownSecond = second;
       gameStore.getState().patchHud({ timeLeftMs: this.timeLeftMs });
+      // Compte a rebours sonore sur la derniere ligne droite.
+      if (second > 0 && second <= 10) sfx.playTick(second <= 3);
     }
 
     // On laisse toujours le lancer en cours se terminer avant de siffler la fin.
     if (this.timeLeftMs <= 0 && this.phase === 'aiming') {
+      sfx.playBuzzer();
       this.finishOnPoints('timeout');
       return true;
     }
@@ -421,6 +506,9 @@ export class MatchScene extends Phaser.Scene {
   // ------------------------------------------------------------------ divers
 
   private syncHud() {
+    const canTargetKing = this.teams[OPPONENT[this.activeTeam]].standingCount === 0;
+    this.updateKingHalo(canTargetKing);
+
     gameStore.getState().patchHud({
       activeTeam: this.activeTeam,
       phase: this.phase,
@@ -430,8 +518,24 @@ export class MatchScene extends Phaser.Scene {
       },
       throwsLeft: { ...this.throwsLeft },
       timeLeftMs: this.timeLeftMs,
-      canTargetKing: this.teams[OPPONENT[this.activeTeam]].standingCount === 0
+      canTargetKing
     });
+  }
+
+  /**
+   * Halo dore autour du roi tant que l'equipe active a le droit de le viser.
+   * Le jingle d'ouverture ne se joue qu'une fois par equipe : le halo, lui,
+   * apparait et disparait a chaque changement de tour.
+   */
+  private updateKingHalo(canTarget: boolean) {
+    if (!this.king.isStanding) {
+      this.juice.setKingTargetable(false, FIELD_CENTER_X, FIELD_CENTER_Y, false);
+      return;
+    }
+
+    const announce = canTarget && !this.kingAnnounced[this.activeTeam];
+    if (announce) this.kingAnnounced[this.activeTeam] = true;
+    this.juice.setKingTargetable(canTarget, FIELD_CENTER_X, FIELD_CENTER_Y, announce);
   }
 
   private handleLeave() {

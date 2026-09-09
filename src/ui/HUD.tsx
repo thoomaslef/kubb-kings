@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { TEAMS, OPPONENT } from '../game/entities/Team';
+import { isMuted, setMuted } from '../game/audio';
 
 function formatTime(ms: number) {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -15,8 +17,18 @@ export function HUD() {
   const setPaused = useGameStore((s) => s.setPaused);
   const setScreen = useGameStore((s) => s.setScreen);
 
+  const [muted, setMutedState] = useState(isMuted);
+
   const active = TEAMS[hud.activeTeam];
   const targets = hud.kubbsStanding[OPPONENT[hud.activeTeam]];
+  // Derniere ligne droite : le chrono se met a battre en rouge.
+  const urgent = hud.timeLeftMs <= 10_000;
+
+  const toggleSound = () => {
+    const next = !muted;
+    setMuted(next);
+    setMutedState(next);
+  };
 
   const leaveMatch = () => {
     setPaused(false);
@@ -30,9 +42,7 @@ export function HUD() {
         <div className="hud__bar">
           <div className="hud__team" style={{ borderColor: active.cssColor }}>
             <span className="hud__dot" style={{ background: active.cssColor }} />
-            <span>
-              Equipe <strong>{active.label}</strong>
-            </span>
+            <strong>{active.label}</strong>
           </div>
 
           <div className="hud__stats">
@@ -44,13 +54,21 @@ export function HUD() {
               <span className="hud__stat-value">{hud.throwsLeft[hud.activeTeam]}</span>
               <span className="hud__stat-label">lancers</span>
             </div>
-            <div className="hud__stat">
+            <div className={`hud__stat${urgent ? ' hud__stat--urgent' : ''}`}>
               <span className="hud__stat-value">{formatTime(hud.timeLeftMs)}</span>
               <span className="hud__stat-label">temps</span>
             </div>
           </div>
 
-          <button className="hud__pause" onClick={() => setPaused(true)} aria-label="Pause">
+          <button
+            className="hud__icon-btn"
+            onClick={toggleSound}
+            aria-label={muted ? 'Activer le son' : 'Couper le son'}
+          >
+            {muted ? '\u2715' : '\u266A'}
+          </button>
+
+          <button className="hud__icon-btn" onClick={() => setPaused(true)} aria-label="Pause">
             II
           </button>
         </div>

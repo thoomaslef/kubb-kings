@@ -189,8 +189,8 @@ body {
 .hud__bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 7px 8px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: rgba(9, 20, 15, 0.78);
@@ -199,11 +199,11 @@ body {
 .hud__team {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 5px 8px;
   border: 1px solid;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -217,7 +217,7 @@ body {
   display: flex;
   flex: 1;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
 }
 
 .hud__stat {
@@ -239,9 +239,25 @@ body {
   text-transform: uppercase;
 }
 
-.hud__pause {
-  width: 38px;
-  height: 38px;
+.hud__stat--urgent .hud__stat-value {
+  color: #ff6b5a;
+  animation: hud-pulse 1s ease-in-out infinite;
+}
+
+@keyframes hud-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.22);
+  }
+}
+
+.hud__icon-btn {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.08);
@@ -252,6 +268,12 @@ body {
   letter-spacing: 1px;
   cursor: pointer;
   pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud__stat--urgent .hud__stat-value {
+    animation: none;
+  }
 }
 
 .hud__banner {
