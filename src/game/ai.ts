@@ -9,7 +9,8 @@ import {
   OBSTACLE_RADIUS,
   THROW,
   THROW_POSITIONS,
-  WIND
+  WIND,
+  availableThrowPositions
 } from './rules';
 
 /**
@@ -111,6 +112,12 @@ export interface AiBoard {
    * traversiere constante dans l'axe X du terrain, cf. WIND dans rules.ts.
    */
   wind?: 1 | -1;
+  /**
+   * Ses propres kubbs encore debout, `standing[i]` pour `THROW_POSITIONS[i]`
+   * (rules.ts) : on ne peut plus lancer a l'aplomb d'un kubb tombe. Absent =
+   * toutes les positions disponibles (comportement d'avant cette regle).
+   */
+  ownStanding?: readonly boolean[];
 }
 
 export interface AiThrow {
@@ -339,10 +346,11 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
 
   const forward = board.direction === -1 ? -Math.PI / 2 : Math.PI / 2;
   const maxDelta = AIM.maxAngleDeg * DEG;
+  const positions = board.ownStanding ? availableThrowPositions(board.ownStanding) : THROW_POSITIONS;
 
   const candidates: Candidate[] = [];
 
-  for (const throwX of THROW_POSITIONS) {
+  for (const throwX of positions) {
     const origin: Point = { x: throwX, y: board.throwerY };
 
     for (const target of targets) {
@@ -418,9 +426,10 @@ function applyImprecision(shot: Candidate, profile: AiProfile, rng: Rng): AiThro
  */
 export function safeThrow(board: AiBoard, rng: Rng = Math.random): AiThrow {
   const forward = board.direction === -1 ? -Math.PI / 2 : Math.PI / 2;
+  const positions = board.ownStanding ? availableThrowPositions(board.ownStanding) : THROW_POSITIONS;
   // -1 : on se place a gauche et on tire encore plus a gauche. +1 : l'inverse.
   const side = rng() < 0.5 ? -1 : 1;
-  const throwX = side < 0 ? THROW_POSITIONS[0] : THROW_POSITIONS[THROW_POSITIONS.length - 1];
+  const throwX = side < 0 ? positions[0] : positions[positions.length - 1];
 
   // On s'ecarte franchement de l'axe : le roi se tient au centre.
   const angle = forward - side * AIM.maxAngleDeg * 0.8 * DEG;

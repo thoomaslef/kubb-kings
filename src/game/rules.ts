@@ -45,6 +45,20 @@ export const THROW_POSITIONS: readonly number[] = Array.from({ length: KUBBS_PER
   return FIELD_CENTER_X + first + i * KUBB_SPACING;
 });
 
+/**
+ * Positions reellement disponibles pour une equipe : celles de ses kubbs
+ * ENCORE DEBOUT (`standing[i]` correspond a `THROW_POSITIONS[i]`, meme
+ * ordre que Team.ts). Un kubb tombe n'est plus un poste de lancer valide.
+ *
+ * Si tous les kubbs de l'equipe sont a terre, elle doit pourtant continuer
+ * a jouer (tant qu'il lui reste des lancers) : on retombe alors sur les 5
+ * positions completes plutot que de la laisser sans aucun coup legal.
+ */
+export function availableThrowPositions(standing: readonly boolean[]): readonly number[] {
+  const available = THROW_POSITIONS.filter((_, i) => standing[i]);
+  return available.length > 0 ? available : THROW_POSITIONS;
+}
+
 /** Duree maximale d'une partie (4 min) pour tenir dans la fenetre 3-5 min. */
 export const MATCH_DURATION_MS = 4 * 60 * 1000;
 /** Nombre de lancers par equipe. Garde-fou si le timer n'est pas atteint. */

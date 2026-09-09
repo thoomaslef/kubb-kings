@@ -146,9 +146,12 @@ React  <--(store Zustand : ecran, HUD, resultat)------------   Scenes Phaser
 - Les equipes lancent a tour de role, un baton par tour. En 2v2, les deux joueurs
   d'une equipe alternent lequel des deux est au lancer a chaque fois que revient le
   tour de leur camp — l'alternance des tours elle-meme ne change pas.
-- **Placement** : le point de contact choisit la position de lancer, uniquement parmi les
-  **5 positions disponibles** (l&apos;aplomb de ses propres kubbs — `THROW_POSITIONS` dans
-  [`src/game/rules.ts`](src/game/rules.ts)), pas une ligne continue.
+- **Placement** : le point de contact choisit la position de lancer, uniquement parmi
+  celles de ses propres kubbs **encore debout** (`THROW_POSITIONS` /
+  `availableThrowPositions` dans [`src/game/rules.ts`](src/game/rules.ts)), pas une ligne
+  continue. Un kubb tombe n&apos;est plus un poste de lancer valide ; si tous les kubbs
+  d&apos;une equipe sont a terre, elle retombe sur les 5 positions completes plutot que de
+  se retrouver sans aucun coup legal.
 - **Visee** : le glissement donne l&apos;angle (bride a &plusmn;75&deg; vers l&apos;avant).
 - **Puissance** : la longueur du glissement, affichee par une jauge verte &rarr; rouge.
 - **Effet leger** : chaque lancer part avec une deviation aleatoire de **&plusmn;2,5&deg;**.
@@ -173,6 +176,15 @@ React  <--(store Zustand : ecran, HUD, resultat)------------   Scenes Phaser
   on trouvait toujours un angle degage vers n&apos;importe quelle cible. Restreint aux 5 points
   a l&apos;aplomb de ses propres kubbs (comme au vrai Kubb), le choix de la cible et celui de
   la position s&apos;influencent vraiment l&apos;un l&apos;autre.
+- **Un kubb tombe perd sa position de lancer.** Consequence directe de la regle
+  precedente : puisqu&apos;on tire depuis l&apos;aplomb de ses propres kubbs, un kubb couche
+  au sol n&apos;est plus un poste valide (`availableThrowPositions` dans
+  [`src/game/rules.ts`](src/game/rules.ts), utilisee a la fois par le joueur — visee et
+  points disponibles dans `MatchScene.drawAim` — et par l&apos;IA via `AiBoard.ownStanding`).
+  Repli sur les 5 positions completes si tous les kubbs d&apos;une equipe sont a terre, pour
+  qu&apos;elle garde toujours un coup legal a jouer. Verifie sans suicide ni position
+  illegale sur 40 500 matchs simules (27 combinaisons terrain x vent x niveau, degradation
+  forcee des kubbs propres) et 21 matchs en navigateur avec la physique Matter reelle.
 - **Feu ami neutralise.** Un baton ne peut pas abattre les kubbs de sa propre equipe (cas
   possible sur un rebond de bande). Cela evite une elimination absurde due au hasard.
 - **Fin de tour automatique** quand le baton est a l&apos;arret (ou apres 4 s de vol).

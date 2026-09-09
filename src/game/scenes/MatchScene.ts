@@ -31,12 +31,13 @@ import {
   THROW,
   THROW_POSITIONS,
   WIND,
+  availableThrowPositions,
   type FieldPresetId
 } from '../rules';
 
-/** La plus proche des 5 positions de lancer disponibles (voir THROW_POSITIONS). */
-function nearestThrowPosition(x: number): number {
-  return THROW_POSITIONS.reduce((best, p) => (Math.abs(p - x) < Math.abs(best - x) ? p : best));
+/** La plus proche d'un ensemble de positions de lancer (voir THROW_POSITIONS). */
+function nearestThrowPosition(x: number, positions: readonly number[]): number {
+  return positions.reduce((best, p) => (Math.abs(p - x) < Math.abs(best - x) ? p : best));
 }
 
 /**
@@ -208,14 +209,23 @@ export class MatchScene extends Phaser.Scene {
   }
 
   /**
+   * Positions de lancer reellement disponibles pour une equipe : celles de
+   * ses kubbs encore debout — un kubb tombe n'est plus un poste valide.
+   */
+  private availablePositions(team: TeamId): readonly number[] {
+    return availableThrowPositions(this.teams[team].kubbs.map((k) => k.isStanding));
+  }
+
+  /**
    * Le point de contact choisit d'abord la position de lancer, mais
-   * seulement parmi les 5 disponibles (l'aplomb de ses propres kubbs,
-   * comme au vrai Kubb) — pas n'importe ou sur une ligne continue.
+   * seulement parmi celles disponibles (l'aplomb d'un de ses propres kubbs
+   * encore debout, comme au vrai Kubb) — pas n'importe ou sur une ligne
+   * continue.
    */
   private onPointerDown(pointer: Phaser.Input.Pointer) {
     if (this.phase !== 'aiming') return;
 
-    this.throwX[this.activeTeam] = nearestThrowPosition(pointer.worldX);
+    this.throwX[this.activeTeam] = nearestThrowPosition(pointer.worldX, this.availablePositions(this.activeTeam));
     this.throwerSprites[this.activeTeam].x = this.throwX[this.activeTeam];
 
     this.isDragging = true;
@@ -398,6 +408,7 @@ export class MatchScene extends Phaser.Scene {
           kingTargetable: opponent.standingCount === 0,
           kingStanding: this.king.isStanding,
           obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
+          ownStanding: this.teams[AI_TEAM].kubbs.map((k) => k.isStanding),
           ...(this.wind ? { wind: this.wind } : {})
         },
         profile
@@ -627,9 +638,9 @@ export class MatchScene extends Phaser.Scene {
     const color = TEAMS[this.activeTeam].color;
     const throwerY = TEAMS[this.activeTeam].throwerY;
 
-    // Positions de lancer disponibles : un point par position, plus marque
-    // sur celle choisie — il n'y en a que 5, pas une ligne continue.
-    for (const x of THROW_POSITIONS) {
+    // Positions de lancer disponibles : un point par position ENCORE DEBOUT,
+    // plus marque sur celle choisie — un kubb tombe n'en a plus.
+    for (const x of this.availablePositions(this.activeTeam)) {
       const isActive = Math.abs(x - origin.x) < 1;
       g.fillStyle(color, isActive ? 0.6 : 0.22);
       g.fillCircle(x, throwerY, isActive ? 7 : 5);
