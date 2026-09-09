@@ -3,8 +3,9 @@
 Jeu mobile HTML5 inspire du [Kubb](https://fr.wikipedia.org/wiki/Kubb), le jeu de plein air
 suedois : deux equipes se lancent des batons pour abattre les blocs adverses, puis le roi.
 
-Trois modes : **solo contre l'IA** (trois niveaux), **1v1 local** et **2v2 local**
-(pass-and-play sur le meme telephone). Une seule map, une partie de 4 minutes maximum.
+Quatre modes : **solo contre l'IA** (trois niveaux), **1v1 local**, **2v2 local**
+(pass-and-play sur le meme telephone) et **Defi**, un roguelite en 5 manches contre
+l'IA. Plusieurs terrains, une partie de 4 minutes maximum.
 
 ---
 
@@ -103,6 +104,7 @@ kubb-kings/
 │   │   ├── juice.ts    feedback : particules, secousses, vibration, ralenti
 │   │   ├── audio.ts    sons synthetises par code (WebAudio)
 │   │   ├── tutorial.ts persistance du tutoriel (localStorage, cf. Tutorial.tsx)
+│   │   ├── roguelite.ts mode Defi : echelle de manches, bonus, meilleure serie
 │   │   └── GameBridge.ts
 │   ├── ui/             composants React (App, Menu, Rules, HUD, Tutorial, ResultScreen…)
 │   ├── store/          Zustand
@@ -278,6 +280,43 @@ soit sa valeur, donc rien a recalibrer pour eux.
 kubbs puis le roi dans les regles, en 12 lancers. C'est une mesure de son adresse brute,
 pas une prediction du taux de victoire reel contre un joueur — utile pour comparer les
 niveaux entre eux, pas pour deviner qui va gagner une vraie partie.
+
+---
+
+## Mode Defi (roguelite)
+
+[`src/game/roguelite.ts`](src/game/roguelite.ts), module pur comme `ai.ts` et
+`tutorial.ts` : une echelle de 5 manches contre l'IA, chacune plus dure que la
+precedente, avec un bonus au choix apres chaque victoire.
+
+| Manche | Niveau IA | Terrain    |
+| ------ | --------- | ---------- |
+| 1      | Facile    | Classique  |
+| 2      | Moyen     | Classique  |
+| 3      | Moyen     | Chicane    |
+| 4      | Difficile | Chicane    |
+| 5      | Difficile | Sentinelle |
+
+Seuls le niveau et le terrain changent d'une manche a l'autre : les regles et
+l'equilibrage restent ceux, deja calibres, du mode solo. **Une defaite, un match nul ou
+le timeout terminent la run immediatement** — c'est le ressort roguelite : pas de
+sauvegarde en cours de route.
+
+**Trois bonus**, chacun applicable au joueur uniquement (jamais a l'IA) :
+
+| Bonus                | Effet                                                    |
+| --------------------- | -------------------------------------------------------- |
+| Bras infatigable      | +2 lancers sur toute la manche                            |
+| Bras vif              | +15% de puissance au bout du glissement                   |
+| Second souffle         | Le premier lancer qui ne renverse rien n'est pas compte  |
+
+Un seul bonus est propose deux fois : `pickPerkChoices` tire deux options parmi ceux non
+encore debloques. Une fois les trois acquis, l'ecran de choix n'a plus rien a offrir et
+la manche suivante s'enchaine directement, sans faux choix a l'ecran.
+
+La meilleure serie (nombre de manches franchies) est retenue en `localStorage`, affichee
+au menu, et proposee de nouveau a la prochaine run — sur le meme modele que la
+persistance du tutoriel.
 
 ---
 

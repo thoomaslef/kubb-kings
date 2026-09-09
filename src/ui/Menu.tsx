@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { AI_PROFILES, type Difficulty } from '../game/ai';
 import { FIELD_PRESETS, type FieldPresetId } from '../game/rules';
+import { LADDER, getBestStage } from '../game/roguelite';
 
 const LEVELS = Object.keys(AI_PROFILES) as Difficulty[];
 const PRESETS = Object.keys(FIELD_PRESETS) as FieldPresetId[];
@@ -13,9 +15,20 @@ export function Menu() {
   const fieldPreset = useGameStore((s) => s.fieldPreset);
   const setFieldPreset = useGameStore((s) => s.setFieldPreset);
   const setMode = useGameStore((s) => s.setMode);
+  const startRun = useGameStore((s) => s.startRun);
+
+  // Lue une seule fois au montage : elle ne peut changer que pendant une run,
+  // ecran que ce composant n'affiche jamais.
+  const [bestStage] = useState(getBestStage);
 
   const play = (mode: 'solo' | 'local' | '2v2') => {
     setMode(mode);
+    bridge.send('start-match');
+  };
+
+  const playDefi = () => {
+    setMode('defi');
+    startRun();
     bridge.send('start-match');
   };
 
@@ -52,6 +65,15 @@ export function Menu() {
           <button className="btn" onClick={() => play('2v2')}>
             2v2 local &mdash; a quatre
           </button>
+          <button className="btn" onClick={playDefi}>
+            Defi &mdash; {LADDER.length} manches, de plus en plus dures
+          </button>
+          {bestStage > 0 && (
+            <p className="footnote footnote--tight">
+              Meilleure serie : {bestStage}/{LADDER.length} manche{bestStage > 1 ? 's' : ''} franchie
+              {bestStage > 1 ? 's' : ''}
+            </p>
+          )}
 
           <div className="segmented" role="group" aria-label="Terrain">
             {PRESETS.map((id) => (

@@ -16,6 +16,7 @@ import { WALL_BODY } from '../physics/matterConfig';
 import { Juice } from '../juice';
 import { PALETTE, BORDER_WIDTH } from '../theme';
 import { AI_PROFILES, AI_TEAM, decideThrow, type AiProfile } from '../ai';
+import { BRAS_VIF_MULTIPLIER, LADDER, LANCER_BONUS_THROWS, type PerkId } from '../roguelite';
 import * as sfx from '../audio';
 import {
   AIM,
@@ -55,6 +56,12 @@ export class MatchScene extends Phaser.Scene {
   private baton: Baton | null = null;
   private obstacles: Obstacle[] = [];
   private fieldPreset: FieldPresetId = 'classique';
+  /** Bonus de la run en cours (mode 'defi' uniquement, sinon toujours vide). */
+  private runPerks: PerkId[] = [];
+  /** "Second souffle" ne rembourse qu'un seul lancer par manche. */
+  private secondSouffleUsed = false;
+  /** Le lancer en cours a-t-il deja fait tomber un kubb ? Remis a zero a chaque tir. */
+  private knockedThisThrow = false;
 
   /** Position de lancer courante de chaque equipe, le long de sa ligne de lancer. */
   private throwX: Record<TeamId, number> = { blue: FIELD_CENTER_X, red: FIELD_CENTER_X };
@@ -98,11 +105,20 @@ export class MatchScene extends Phaser.Scene {
     this.aiTimer = null;
     this.aiTween = null;
 
-    const { mode, difficulty, fieldPreset } = gameStore.getState();
+    const { mode, difficulty, fieldPreset, run } = gameStore.getState();
     this.mode = mode;
-    this.ai = mode === 'solo' ? AI_PROFILES[difficulty] : null;
+    // En Defi, le niveau et le terrain viennent de l'echelle (roguelite.ts),
+    // pas des selecteurs du menu casual — mais l'IA reste exactement la
+    // meme machine qu'en solo, juste sur un profil plus dur.
+    const stage = mode === 'defi' ? LADDER[run?.stageIndex ?? 0] : null;
+    this.ai = stage ? AI_PROFILES[stage.difficulty] : mode === 'solo' ? AI_PROFILES[difficulty] : null;
     this.playerIndex = { blue: 1, red: 1 };
-    this.fieldPreset = fieldPreset;
+    this.fieldPreset = stage ? stage.fieldPreset : fieldPreset;
+    this.runPerks = stage ? run?.perks ?? [] : [];
+    this.secondSouffleUsed = false;
+    this.knockedThisThrow = false;
+    // "Bras infatigable" (Defi) : lancers en plus pour le joueur uniquement.
+    if (this.runPerks.includes('lancer-bonus')) this.throwsLeft.blue += LANCER_BONUS_THROWS;
 
     gameStore.getState().setScreen('match');
 
@@ -217,7 +233,12 @@ export class MatchScene extends Phaser.Scene {
     this.aimAngle = forward + Phaser.Math.Clamp(delta, -maxDelta, maxDelta);
 
     const distance = Phaser.Math.Distance.Between(origin.x, origin.y, pointer.worldX, pointer.worldY);
-    this.aimPower = Phaser.Math.Clamp(distance / AIM.maxDragDistance, AIM.minPower, 1);
+    let power = Phaser.Math.Clamp(distance / AIM.maxDragDistance, AIM.minPower, 1);
+    // "Bras vif" (Defi) : ne joue que pour le joueur, jamais pour l'IA.
+    if (this.activeTeam === 'blue' && this.runPerks.includes('bras-vif')) {
+      power = Math.min(1, power * BRAS_VIF_MULTIPLIER);
+    }
+    this.aimPower = power;
 
     this.drawAim();
   }
@@ -233,15 +254,32 @@ export class MatchScene extends Phaser.Scene {
     this.flightMs = 0;
     this.restMs = 0;
     this.aimPower = 0;
+    this.knockedThisThrow = false;
     this.drawAim();
     this.syncHud();
   }
 
   private endThrow() {
     this.juice.throwEnd();
+    const lastBatonPos = this.baton ? { x: this.baton.sprite.x, y: this.baton.sprite.y } : null;
     this.baton?.destroy();
     this.baton = null;
-    this.throwsLeft[this.activeTeam] -= 1;
+
+    // "Second souffle" (Defi) : le tout premier lancer du joueur qui ne
+    // renverse rien de la manche n'est pas compte. Une seule fois par manche.
+    const refunded =
+      this.activeTeam === 'blue' &&
+      !this.knockedThisThrow &&
+      !this.secondSouffleUsed &&
+      this.runPerks.includes('second-souffle');
+
+    if (refunded) {
+      this.secondSouffleUsed = true;
+      if (lastBatonPos) this.juice.floatingText(lastBatonPos.x, lastBatonPos.y, 'SECOND SOUFFLE !', '#f2c14e');
+    } else {
+      this.throwsLeft[this.activeTeam] -= 1;
+    }
+
     // L'autre joueur de cette equipe prendra le prochain lancer de ce camp.
     if (this.mode === '2v2') {
       this.playerIndex[this.activeTeam] = this.playerIndex[this.activeTeam] === 1 ? 2 : 1;
@@ -421,6 +459,7 @@ export class MatchScene extends Phaser.Scene {
 
       const { x, y } = kubb.sprite;
       kubb.knockDown(this);
+      this.knockedThisThrow = true;
       this.juice.kubbImpact(x, y, force, TEAMS[kubb.team].color);
       this.juice.floatingText(
         x,

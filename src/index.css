@@ -67,6 +67,13 @@ body {
 .panel {
   width: min(420px, 100%);
   max-height: 100%;
+  /*
+   * Le panneau ne grandit jamais au-dela du viewport (max-height: 100%) :
+   * sans defilement, tout contenu en trop devient tout simplement
+   * inatteignable. Menu et Regles ont grossi au fil des modes de jeu — un
+   * panel qui ne debordait pas hier peut deborder aujourd'hui.
+   */
+  overflow-y: auto;
   padding: 26px 22px;
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -159,6 +166,31 @@ body {
   color: var(--muted);
 }
 
+/* ---------- Choix de bonus (Defi) ---------- */
+
+.btn--perk {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  border-color: var(--gold);
+  background: rgba(242, 193, 78, 0.08);
+}
+
+.btn--perk__label {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.btn--perk__desc {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: normal;
+}
+
 /* ---------- Regles ---------- */
 
 .rules-list {
@@ -237,6 +269,20 @@ body {
   border: 1px solid;
   border-radius: 10px;
   font-size: 12px;
+  /*
+   * min-width:0 est ce qui autorise ce flex item a retrecir sous sa largeur
+   * naturelle : sans lui, un libelle plus long que d'habitude (2v2, la
+   * manche en Defi) pousse le reste de la barre hors de l'ecran au lieu de
+   * se faire tronquer.
+   */
+  min-width: 0;
+}
+
+/* Seul le texte se tronque (avec …) — le point de couleur reste entier. */
+.hud__team-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -248,7 +294,9 @@ body {
 
 .hud__stats {
   display: flex;
-  flex: 1;
+  /* Grandit pour occuper l'espace libre, mais ne retrecit jamais : c'est
+     hud__team (le libelle d'equipe) qui absorbe la place qui manque. */
+  flex: 1 0 auto;
   justify-content: flex-end;
   gap: 10px;
 }

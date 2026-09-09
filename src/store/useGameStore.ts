@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import type { TeamId } from '../game/entities/Team';
 import type { Difficulty } from '../game/ai';
+import type { PerkId } from '../game/roguelite';
 import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId } from '../game/rules';
 
 /** Ecrans hors-jeu geres par React. */
-export type Screen = 'boot' | 'menu' | 'rules' | 'match' | 'result' | 'quit';
+export type Screen = 'boot' | 'menu' | 'rules' | 'match' | 'result' | 'perk' | 'quit';
 
 /** Phase du tour courant, pilotee par MatchScene. */
 export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';
@@ -14,8 +15,17 @@ export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';
  * 'local' = 1v1 (deux joueurs). '2v2' garde exactement la meme alternance de
  * lancer que 'local' — un baton, puis l'autre camp — deux joueurs se
  * partagent juste chaque camp, cf. `playerIndex` dans MatchScene.
+ * 'defi' = roguelite solo (cf. `run` ci-dessous et `src/game/roguelite.ts`).
  */
-export type GameMode = 'local' | '2v2' | 'solo';
+export type GameMode = 'local' | '2v2' | 'solo' | 'defi';
+
+/** Progression de la run en cours, en mode 'defi' uniquement. */
+export interface RunState {
+  /** Index dans roguelite.ts::LADDER — 0 = premiere manche. */
+  stageIndex: number;
+  /** Bonus deja debloques cette run ; repart a vide a chaque nouvelle run. */
+  perks: PerkId[];
+}
 
 export type WinReason =
   | 'king-down'
@@ -65,6 +75,8 @@ interface GameState {
   mode: GameMode;
   difficulty: Difficulty;
   fieldPreset: FieldPresetId;
+  /** null hors mode 'defi' — pas de run en cours. */
+  run: RunState | null;
 
   setScreen: (screen: Screen) => void;
   setPaused: (paused: boolean) => void;
@@ -74,6 +86,12 @@ interface GameState {
   setMode: (mode: GameMode) => void;
   setDifficulty: (difficulty: Difficulty) => void;
   setFieldPreset: (preset: FieldPresetId) => void;
+  /** (Re)demarre une run a la manche 1, sans bonus. */
+  startRun: () => void;
+  /** Passe a la manche suivante ; no-op hors run active. */
+  advanceRun: () => void;
+  /** Ajoute un bonus a la run en cours ; no-op hors run active. */
+  addPerk: (id: PerkId) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -84,6 +102,7 @@ export const useGameStore = create<GameState>((set) => ({
   mode: 'solo',
   difficulty: 'moyen',
   fieldPreset: 'classique',
+  run: null,
 
   setScreen: (screen) => set({ screen }),
   setPaused: (paused) => set({ paused }),
@@ -92,7 +111,12 @@ export const useGameStore = create<GameState>((set) => ({
   setResult: (result) => set({ result }),
   setMode: (mode) => set({ mode }),
   setDifficulty: (difficulty) => set({ difficulty }),
-  setFieldPreset: (preset) => set({ fieldPreset: preset })
+  setFieldPreset: (preset) => set({ fieldPreset: preset }),
+  startRun: () => set({ run: { stageIndex: 0, perks: [] } }),
+  advanceRun: () =>
+    set((state) => (state.run ? { run: { ...state.run, stageIndex: state.run.stageIndex + 1 } } : state)),
+  addPerk: (id) =>
+    set((state) => (state.run ? { run: { ...state.run, perks: [...state.run.perks, id] } } : state))
 }));
 
 /** Acces hors composant React (depuis les scenes Phaser). */

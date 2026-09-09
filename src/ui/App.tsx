@@ -5,6 +5,7 @@ import { Rules } from './Rules';
 import { HUD } from './HUD';
 import { Tutorial } from './Tutorial';
 import { ResultScreen } from './ResultScreen';
+import { PerkChoice } from './PerkChoice';
 import { QuitScreen } from './QuitScreen';
 
 /**
@@ -26,6 +27,7 @@ export function App() {
         </>
       )}
       {screen === 'result' && <ResultScreen />}
+      {screen === 'perk' && <PerkChoice />}
       {screen === 'quit' && <QuitScreen />}
     </div>
   );

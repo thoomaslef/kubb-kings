@@ -5,6 +5,7 @@ import { TEAMS, OPPONENT } from '../game/entities/Team';
 import { isMuted, setMuted } from '../game/audio';
 import { AI_TEAM } from '../game/ai';
 import { isKingTipSeen, markKingTipSeen } from '../game/tutorial';
+import { LADDER } from '../game/roguelite';
 
 function formatTime(ms: number) {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -20,6 +21,7 @@ export function HUD() {
   const setScreen = useGameStore((s) => s.setScreen);
 
   const mode = useGameStore((s) => s.mode);
+  const run = useGameStore((s) => s.run);
   const [muted, setMutedState] = useState(isMuted);
 
   // La toute premiere fois que le roi devient visable, le bandeau se fait
@@ -35,11 +37,17 @@ export function HUD() {
   }, [hud.canTargetKing, hud.phase]);
 
   const active = TEAMS[hud.activeTeam];
-  // En solo, l'adversaire n'est pas "l'equipe Rouge" mais l'IA : le HUD doit
-  // dire a qui on a affaire, et surtout quand elle est en train de jouer.
-  const activeIsAi = mode === 'solo' && hud.activeTeam === AI_TEAM;
+  // En solo comme en Defi, l'adversaire n'est pas "l'equipe Rouge" mais
+  // l'IA : le HUD doit dire a qui on a affaire, et surtout quand elle joue.
+  const activeIsAi = (mode === 'solo' || mode === 'defi') && hud.activeTeam === AI_TEAM;
+  // En Defi, rappeler ou on en est dans l'echelle de manches.
+  const stageTag = mode === 'defi' && run ? ` · Manche ${run.stageIndex + 1}/${LADDER.length}` : '';
   // En 2v2, deux joueurs se partagent chaque camp : preciser lequel est au lancer.
-  const activeLabel = activeIsAi ? 'IA' : mode === '2v2' ? `${active.label} J${hud.activePlayer}` : active.label;
+  const activeLabel = activeIsAi
+    ? `IA${stageTag}`
+    : mode === '2v2'
+      ? `${active.label} J${hud.activePlayer}`
+      : `${active.label}${stageTag}`;
   const targets = hud.kubbsStanding[OPPONENT[hud.activeTeam]];
   // Derniere ligne droite : le chrono se met a battre en rouge.
   const urgent = hud.timeLeftMs <= 10_000;
@@ -62,7 +70,7 @@ export function HUD() {
         <div className="hud__bar">
           <div className="hud__team" style={{ borderColor: active.cssColor }}>
             <span className="hud__dot" style={{ background: active.cssColor }} />
-            <strong>{activeLabel}</strong>
+            <strong className="hud__team-label">{activeLabel}</strong>
           </div>
 
           <div className="hud__stats">
