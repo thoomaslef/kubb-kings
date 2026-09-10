@@ -63,15 +63,41 @@ const fr: Record<string, string> = {
   'skin.marbre.hint': 'Blocs en pierre veinee',
   'skin.metal.label': 'Metal',
   'skin.metal.hint': 'Blocs metalliques et reflets nets',
+  'skin.ardoise.label': 'Ardoise',
+  'skin.ardoise.hint': 'Pierre sombre fracturee (boutique)',
 
   // ---- baton (batons.ts) — n'affecte que le joueur, jamais l'IA
   'baton.base.label': 'De base',
   'baton.nordique.label': 'Nordique',
   'baton.sniper.label': 'Sniper',
   'baton.lourd.label': 'Lourd',
+  'baton.stabilise.label': 'Stabilise',
   'baton.statPower': 'Puissance',
   'baton.statPrecision': 'Precision',
   'baton.statControl': 'Controle',
+
+  // ---- effet de lancer (throwEffects.ts) — feu/glace sont des articles de boutique
+  'effect.none.label': 'Aucun',
+  'effect.none.hint': 'Trainee couleur du baton',
+  'effect.feu.label': 'Feu',
+  'effect.feu.hint': 'Trainee orange incandescente (boutique)',
+  'effect.glace.label': 'Glace',
+  'effect.glace.hint': 'Trainee bleu glacial (boutique)',
+
+  // ---- Boutique (shop.ts) — Phase 3 de la progression
+  'shop.title': 'Boutique',
+  'shop.intro': 'Achetez de nouveaux habillages avec les pieces gagnees en match.',
+  'shop.balance': '{n} pieces',
+  'shop.category.skin': 'Skins de kubbs',
+  'shop.category.trail': 'Effets de lancer',
+  'shop.category.baton': 'Batons',
+  'shop.owned': 'Possede',
+  'shop.buy': 'Acheter — {price} 🪙',
+  'shop.cantAfford': 'Pieces insuffisantes',
+  'shop.back': 'Retour',
+  'menu.shop': 'Boutique',
+  'menu.effectAria': 'Effet de lancer',
+  'menu.coinsAria': '{n} pieces',
 
   // ---- progression (progression.ts) — niveau/XP, Phase 2 de la progression
   'progression.title.debutant': 'Lanceur debutant',
@@ -149,6 +175,7 @@ const fr: Record<string, string> = {
   'result.tournament.seeBracket': 'Voir le tableau',
   'result.tournament.replay': 'Rejouer ce match',
   'result.tournament.forfeit': 'Abandonner le tournoi',
+  'result.coinsGained': '+{n} 🪙',
 
   // ---- Perk choice screen
   'perk.screen.title': 'Choisissez un bonus',
@@ -302,15 +329,41 @@ const en: Record<string, string> = {
   'skin.marbre.hint': 'Veined stone blocks',
   'skin.metal.label': 'Metal',
   'skin.metal.hint': 'Metal blocks with crisp highlights',
+  'skin.ardoise.label': 'Slate',
+  'skin.ardoise.hint': 'Dark fractured stone (shop)',
 
   // ---- baton (batons.ts) — affects the player only, never the AI
   'baton.base.label': 'Standard',
   'baton.nordique.label': 'Nordic',
   'baton.sniper.label': 'Sniper',
   'baton.lourd.label': 'Heavy',
+  'baton.stabilise.label': 'Steady',
   'baton.statPower': 'Power',
   'baton.statPrecision': 'Precision',
   'baton.statControl': 'Control',
+
+  // ---- throw effect (throwEffects.ts) — feu/glace are shop items
+  'effect.none.label': 'None',
+  'effect.none.hint': "Trail in the baton's own color",
+  'effect.feu.label': 'Fire',
+  'effect.feu.hint': 'Glowing orange trail (shop)',
+  'effect.glace.label': 'Ice',
+  'effect.glace.hint': 'Icy blue trail (shop)',
+
+  // ---- Shop (shop.ts) — progression Phase 3
+  'shop.title': 'Shop',
+  'shop.intro': 'Buy new looks with the coins earned in matches.',
+  'shop.balance': '{n} coins',
+  'shop.category.skin': 'Kubb skins',
+  'shop.category.trail': 'Throw effects',
+  'shop.category.baton': 'Batons',
+  'shop.owned': 'Owned',
+  'shop.buy': 'Buy — {price} 🪙',
+  'shop.cantAfford': 'Not enough coins',
+  'shop.back': 'Back',
+  'menu.shop': 'Shop',
+  'menu.effectAria': 'Throw effect',
+  'menu.coinsAria': '{n} coins',
 
   // ---- progression (progression.ts) — level/XP, progression Phase 2
   'progression.title.debutant': 'Novice thrower',
@@ -388,6 +441,7 @@ const en: Record<string, string> = {
   'result.tournament.seeBracket': 'View bracket',
   'result.tournament.replay': 'Replay this match',
   'result.tournament.forfeit': 'Forfeit the tournament',
+  'result.coinsGained': '+{n} 🪙',
 
   // ---- Perk choice screen
   'perk.screen.title': 'Choose a bonus',

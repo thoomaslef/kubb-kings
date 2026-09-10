@@ -382,6 +382,53 @@ resultat — zero erreur.
 
 ---
 
+## Boutique (pieces &amp; articles)
+
+Phase 3 de la progression : une monnaie et un petit catalogue d&apos;articles cosmetiques,
+sur le meme modele de persistance que le niveau/XP (`localStorage`,
+`currencyPersistence.ts` / `shopPersistence.ts`) — un profil commun a tous les modes,
+jamais perdu, contrairement aux simples preferences de session (skin, baton, effet de
+lancer choisis au menu, qui repartent a leurs valeurs par defaut a chaque rechargement).
+
+**Pieces**, gagnees a la fin de chaque partie cote equipe Bleue (`currency.ts`,
+`computeCoinsAward`, affiche sur l&apos;ecran de resultat) :
+
+| Source                       | Pieces |
+| ------------------------------ | :----: |
+| Participation                | +20    |
+| Par kubb adverse abattu       | +10    |
+| Victoire                     | +50    |
+
+**Catalogue**, volontairement restreint pour cette premiere passe : chaque nouvel
+article visuel (skin, roi&hellip;) demande un dessin procedural neuf (toujours zero
+asset externe, cf. `BootScene`) et un terrain neuf demanderait en plus une verification
+IA complete (placement d&apos;obstacles) — rois et terrains restent donc hors catalogue
+pour l&apos;instant.
+
+| Article                     | Categorie      | Prix |
+| ------------------------------ | ---------------- | :--: |
+| Ardoise (skin de kubb)        | Skin             | 300  |
+| Feu (trainee de lancer)       | Effet de lancer  | 150  |
+| Glace (trainee de lancer)     | Effet de lancer  | 150  |
+| Stabilise (baton)            | Baton            | 500  |
+
+Le baton **Stabilise** (Controle ★★★★★, Puissance/Precision au baseline ★★★) ne casse
+pas la regle deja posee pour les 4 batons gratuits (`batons.ts`) : un choix de style, pas
+un strict progres — il ameliore uniquement la resistance au vent, un axe qu&apos;aucun
+autre baton ne touche.
+
+**Aucun effet sur l&apos;IA ni sur les regles.** Comme les batons et les skins, la
+boutique reste un systeme cote joueur uniquement : l&apos;IA ne possede jamais rien et
+joue toujours avec le baton de base. Verifie en navigateur reel (achat via le bouton
+de la boutique, solde et articles possedes persistants apres rechargement, refus
+d&apos;achat si solde insuffisant ou article deja possede, selecteurs du menu qui ne
+proposent que les articles gratuits ou achetes, teinte de trainee appliquee au bon
+lancer et jamais a celui de l&apos;IA, gain de pieces reel en fin de match) — aucune
+simulation IA necessaire, ce systeme n&apos;influence jamais `decideThrow` ni
+`decideApproachThrow`.
+
+---
+
 ## Meteo (vent)
 
 Bouton au menu, off par defaut (`windEnabled` dans le store) — toujours un simple

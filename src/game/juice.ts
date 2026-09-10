@@ -96,8 +96,10 @@ export class Juice {
   /**
    * Images remanentes derriere le baton. Appele a chaque frame de vol :
    * l'accumulateur espace les copies pour que la trainee ne depende pas du framerate.
+   * `tint` (effet de lancer de boutique, cf. throwEffects.ts) : null = couleur
+   * d'origine du baton, sinon teinte les fantomes de la trainee.
    */
-  trail(delta: number, x: number, y: number, rotation: number, speedRatio: number) {
+  trail(delta: number, x: number, y: number, rotation: number, speedRatio: number, tint: number | null = null) {
     if (speedRatio < 0.12) return;
     this.trailMs += delta;
     if (this.trailMs < FEEL.trailIntervalMs) return;
@@ -108,6 +110,7 @@ export class Juice {
       .setDepth(5)
       .setRotation(rotation)
       .setAlpha(0.3 * speedRatio);
+    if (tint !== null) ghost.setTint(tint);
 
     this.scene.tweens.add({
       targets: ghost,

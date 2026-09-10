@@ -10,6 +10,7 @@ import { PerkChoice } from './PerkChoice';
 import { QuitScreen } from './QuitScreen';
 import { TournamentSetup } from './TournamentSetup';
 import { TournamentBracket } from './TournamentBracket';
+import { Shop } from './Shop';
 import { Legal } from './Legal';
 import { About } from './About';
 import { Boot } from './Boot';
@@ -46,6 +47,7 @@ export function App() {
       {screen === 'quit' && <QuitScreen />}
       {screen === 'tournament-setup' && <TournamentSetup />}
       {screen === 'tournament' && <TournamentBracket />}
+      {screen === 'shop' && <Shop />}
       {screen === 'legal' && <Legal />}
       {screen === 'about' && <About />}
     </div>

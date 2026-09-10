@@ -188,6 +188,28 @@ export class BootScene extends Phaser.Scene {
       return;
     }
 
+    if (skin === 'ardoise') {
+      // Boutique : pierre sombre fracturee, bande d'equipe fine en accent.
+      g.fillStyle(PALETTE.slateDark, 1);
+      g.fillRoundedRect(0, 0, 40, 40, 8);
+      g.fillStyle(PALETTE.slate, 1);
+      g.fillRoundedRect(1, 1, 38, 36, 7);
+
+      g.fillStyle(PALETTE.slateLight, 0.4);
+      g.fillRoundedRect(4, 4, 32, 11, 5);
+
+      // Fractures irregulieres, comme des veines de marbre mais anguleuses.
+      g.lineStyle(1, PALETTE.slateDark, 0.7);
+      g.lineBetween(5, 10, 13, 20);
+      g.lineBetween(13, 20, 9, 28);
+      g.lineBetween(24, 6, 34, 16);
+      g.lineBetween(34, 16, 28, 24);
+
+      g.fillStyle(color, 0.9);
+      g.fillRoundedRect(1, 32, 38, 5, 3);
+      return;
+    }
+
     // 'bois' — look d'origine.
     g.fillStyle(deep, 1);
     g.fillRoundedRect(0, 0, 40, 40, 8);
@@ -241,6 +263,22 @@ export class BootScene extends Phaser.Scene {
       g.fillRect(2, 4, 44, 4);
 
       // Face de bout teintee d'equipe : reste identifiable une fois couche.
+      g.fillStyle(color, 0.85);
+      g.fillRoundedRect(33, 2, 13, 26, 5);
+      return;
+    }
+
+    if (skin === 'ardoise') {
+      g.fillStyle(deep, 0.55);
+      g.fillRoundedRect(0, 2, 48, 30, 7);
+      g.fillStyle(PALETTE.slateDark, 1);
+      g.fillRoundedRect(1, 1, 46, 28, 6);
+
+      g.lineStyle(1, PALETTE.slateLight, 0.5);
+      g.lineBetween(6, 6, 14, 16);
+      g.lineBetween(18, 4, 24, 14);
+      g.lineBetween(24, 18, 30, 26);
+
       g.fillStyle(color, 0.85);
       g.fillRoundedRect(33, 2, 13, 26, 5);
       return;

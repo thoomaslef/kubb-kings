@@ -15,9 +15,16 @@
  * ce choix ne touche donc a aucun des reglages de securite de l'IA.
  */
 
-export type BatonId = 'base' | 'nordique' | 'sniper' | 'lourd';
+/**
+ * 'stabilise' est un baton de boutique (src/game/shop.ts) : verrouille tant
+ * qu'il n'a pas ete achete. Les 4 autres restent disponibles d'office.
+ */
+export type BatonId = 'base' | 'nordique' | 'sniper' | 'lourd' | 'stabilise';
 
-export const BATON_IDS: readonly BatonId[] = ['base', 'nordique', 'sniper', 'lourd'];
+export const BATON_IDS: readonly BatonId[] = ['base', 'nordique', 'sniper', 'lourd', 'stabilise'];
+
+/** Batons disponibles d'office, sans passer par la boutique. */
+export const FREE_BATON_IDS: readonly BatonId[] = ['base', 'nordique', 'sniper', 'lourd'];
 
 export interface BatonStats {
   /** Etoiles 1-5 (3 = baseline), purement pour le calcul des multiplicateurs et l'affichage menu. */
@@ -30,7 +37,10 @@ export const BATONS: Record<BatonId, BatonStats> = {
   base: { power: 3, precision: 3, control: 3 },
   nordique: { power: 4, precision: 2, control: 3 },
   sniper: { power: 2, precision: 5, control: 3 },
-  lourd: { power: 5, precision: 2, control: 3 }
+  lourd: { power: 5, precision: 2, control: 3 },
+  // Seul baton a vraiment jouer sur le Controle (les 4 autres restent tous a
+  // 3) : un compromis different, pas un strict progres — baseline ailleurs.
+  stabilise: { power: 3, precision: 3, control: 5 }
 };
 
 const STARS_BASELINE = 3;

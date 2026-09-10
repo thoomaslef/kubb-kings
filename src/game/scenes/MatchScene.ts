@@ -38,6 +38,7 @@ import {
   type Wind
 } from '../rules';
 import { BATONS, batonDeviationDeg, batonPowerMultiplier, batonWindMultiplier, type BatonStats } from '../batons';
+import { THROW_EFFECT_TINT } from '../throwEffects';
 
 /** La plus proche d'un ensemble de positions de lancer (voir THROW_POSITIONS). */
 function nearestThrowPosition(x: number, positions: readonly number[]): number {
@@ -255,7 +256,8 @@ export class MatchScene extends Phaser.Scene {
         this.baton.sprite.x,
         this.baton.sprite.y,
         this.baton.sprite.rotation,
-        this.baton.speed / THROW.maxSpeed
+        this.baton.speed / THROW.maxSpeed,
+        this.activeTrailTint()
       );
       this.baton.rememberSpeed();
 
@@ -341,6 +343,16 @@ export class MatchScene extends Phaser.Scene {
    */
   private activeBatonStats(): BatonStats {
     return this.isAiTeam(this.activeTeam) ? BATONS.base : this.batonStats;
+  }
+
+  /**
+   * Teinte de la trainee pour le lancer en cours : l'effet choisi au menu
+   * pour une equipe humaine, jamais pour l'IA (toujours 'none') — purement
+   * cosmetique, cf. throwEffects.ts.
+   */
+  private activeTrailTint(): number | null {
+    if (this.isAiTeam(this.activeTeam)) return null;
+    return THROW_EFFECT_TINT[gameStore.getState().trailEffect];
   }
 
   /**
@@ -926,6 +938,7 @@ export class MatchScene extends Phaser.Scene {
       triples: this.matchXpStats.triples,
       perfects: this.matchXpStats.perfects
     });
+    gameStore.getState().awardMatchCoins(result.knockedDown.blue, result.winner === 'blue');
 
     // Le verdict sonore arrive apres le choc, pas par-dessus.
     this.time.delayedCall(380, () => {

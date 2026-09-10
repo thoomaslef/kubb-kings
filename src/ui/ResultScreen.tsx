@@ -48,6 +48,7 @@ export function ResultScreen() {
   const resetTournament = useGameStore((s) => s.resetTournament);
   const progression = useGameStore((s) => s.progression);
   const lastXpAward = useGameStore((s) => s.lastXpAward);
+  const lastCoinsAward = useGameStore((s) => s.lastCoinsAward);
   const isDefi = mode === 'defi';
   const soloLike = mode === 'solo' || isDefi;
   const isTournamentMatch = tournamentPending !== null;
@@ -165,6 +166,9 @@ export function ResultScreen() {
             <p className="xp-panel__bar-label">
               {levelInfo.xpIntoLevel} / {levelInfo.xpForThisLevel} XP
             </p>
+            {lastCoinsAward !== null && (
+              <p className="xp-panel__coins">{t('result.coinsGained', { n: lastCoinsAward })}</p>
+            )}
           </div>
         )}
 

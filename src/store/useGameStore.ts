@@ -5,9 +5,14 @@ import type { PerkId } from '../game/roguelite';
 import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId, type Wind } from '../game/rules';
 import type { BatonId } from '../game/batons';
 import type { KubbSkin } from '../game/theme';
+import type { ThrowEffectId } from '../game/throwEffects';
+import { SHOP_ITEMS } from '../game/shop';
 import { buildBracket, recordWinner, type TournamentState } from '../game/tournament';
 import { computeXpAward, type MatchXpStats, type ProgressionState, type XpAward } from '../game/progression';
 import { loadProgression, saveProgression } from '../game/progressionPersistence';
+import { computeCoinsAward } from '../game/currency';
+import { loadCurrency, saveCurrency } from '../game/currencyPersistence';
+import { loadOwnedItems, saveOwnedItems } from '../game/shopPersistence';
 import { getInitialLang, persistLang } from '../i18n/langPersistence';
 import type { Lang } from '../i18n/translate';
 
@@ -22,6 +27,7 @@ export type Screen =
   | 'quit'
   | 'tournament-setup'
   | 'tournament'
+  | 'shop'
   | 'legal'
   | 'about';
 
@@ -142,6 +148,20 @@ interface GameState {
    * match n'a ete joue cette session.
    */
   lastXpAward: XpAward | null;
+  /** Pieces du joueur, persistees (currencyPersistence.ts). */
+  coins: number;
+  /**
+   * Gain de pieces du dernier match termine, pour l'ecran de resultat. null
+   * tant qu'aucun match n'a ete joue cette session.
+   */
+  lastCoinsAward: number | null;
+  /** Identifiants (ShopItem.id) des articles achetes, persistes (shopPersistence.ts). */
+  ownedItems: string[];
+  /**
+   * Effet de lancer du joueur (jamais de l'IA) — cosmetique, choix de session
+   * non persiste comme kubbSkin/batonId. Cf. src/game/throwEffects.ts.
+   */
+  trailEffect: ThrowEffectId;
 
   setScreen: (screen: Screen) => void;
   setPaused: (paused: boolean) => void;
@@ -179,6 +199,18 @@ interface GameState {
    * l'ecran de resultat.
    */
   awardMatchXp: (stats: MatchXpStats) => void;
+  /**
+   * Calcule et applique le gain de pieces d'un match qui vient de se
+   * terminer (cote equipe Bleue), persiste le nouveau solde.
+   */
+  awardMatchCoins: (knockedDownByBlue: number, won: boolean) => void;
+  /** Effet de lancer choisi au menu — voir `trailEffect` ci-dessus. */
+  setTrailEffect: (id: ThrowEffectId) => void;
+  /**
+   * Achete un article de la boutique si possede assez de pieces et pas deja
+   * possede ; no-op sinon (bouton achat desactive cote UI dans ces cas).
+   */
+  purchaseItem: (itemId: string) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -198,6 +230,10 @@ export const useGameStore = create<GameState>((set) => ({
   lang: getInitialLang(),
   progression: loadProgression(),
   lastXpAward: null,
+  coins: loadCurrency().coins,
+  lastCoinsAward: null,
+  ownedItems: loadOwnedItems(),
+  trailEffect: 'none',
 
   setScreen: (screen) => set({ screen }),
   setPaused: (paused) => set({ paused }),
@@ -240,6 +276,24 @@ export const useGameStore = create<GameState>((set) => ({
       const { award, after } = computeXpAward(stats, state.progression);
       saveProgression(after);
       return { progression: after, lastXpAward: award };
+    }),
+  awardMatchCoins: (knockedDownByBlue, won) =>
+    set((state) => {
+      const gained = computeCoinsAward(knockedDownByBlue, won);
+      const coins = state.coins + gained;
+      saveCurrency({ coins });
+      return { coins, lastCoinsAward: gained };
+    }),
+  setTrailEffect: (id) => set({ trailEffect: id }),
+  purchaseItem: (itemId) =>
+    set((state) => {
+      const item = SHOP_ITEMS.find((it) => it.id === itemId);
+      if (!item || state.ownedItems.includes(itemId) || state.coins < item.price) return state;
+      const coins = state.coins - item.price;
+      const ownedItems = [...state.ownedItems, itemId];
+      saveCurrency({ coins });
+      saveOwnedItems(ownedItems);
+      return { coins, ownedItems };
     })
 }));
 

@@ -40,17 +40,27 @@ export const PALETTE = {
   /** Base neutre des blocs "metal". */
   metal: 0x9aa0a6,
   metalLight: 0xd8dce0,
-  metalDark: 0x5a6066
+  metalDark: 0x5a6066,
+  /** Base sombre des blocs "ardoise" (boutique). */
+  slate: 0x2f3438,
+  slateLight: 0x4a5257,
+  slateDark: 0x181b1d
 } as const;
 
 /**
  * Habillage cosmetique des kubbs, choisi au menu. N'a aucune incidence sur
  * les collisions (HITBOX dans rules.ts) ni sur l'IA (ai.ts ne connait pas
- * cette notion) : uniquement une texture differente.
+ * cette notion) : uniquement une texture differente. 'ardoise' est un
+ * habillage de boutique (src/game/shop.ts) : toutes les textures sont
+ * generees d'office (BootScene), seul son affichage au menu est conditionne
+ * a la possession.
  */
-export type KubbSkin = 'bois' | 'marbre' | 'metal';
+export type KubbSkin = 'bois' | 'marbre' | 'metal' | 'ardoise';
 
-export const KUBB_SKINS: KubbSkin[] = ['bois', 'marbre', 'metal'];
+export const KUBB_SKINS: KubbSkin[] = ['bois', 'marbre', 'metal', 'ardoise'];
+
+/** Habillages disponibles d'office, sans passer par la boutique. */
+export const FREE_KUBB_SKINS: readonly KubbSkin[] = ['bois', 'marbre', 'metal'];
 
 // Libelles et indices : src/i18n/dictionaries.ts (skin.<id>.label / .hint).
 

@@ -6,6 +6,8 @@ import { FIELD_PRESETS, type FieldPresetId } from '../game/rules';
 import { BATONS, BATON_IDS } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { KUBB_SKINS } from '../game/theme';
+import { THROW_EFFECT_IDS } from '../game/throwEffects';
+import { isShopRefOwned } from '../game/shop';
 import { LADDER, getBestStage } from '../game/roguelite';
 import { useT } from '../i18n/useT';
 import type { Lang } from '../i18n/translate';
@@ -39,6 +41,14 @@ export function Menu() {
   const startRun = useGameStore((s) => s.startRun);
   const progression = useGameStore((s) => s.progression);
   const levelInfo = levelFromXp(progression.totalXp);
+  const coins = useGameStore((s) => s.coins);
+  const ownedItems = useGameStore((s) => s.ownedItems);
+  const trailEffect = useGameStore((s) => s.trailEffect);
+  const setTrailEffect = useGameStore((s) => s.setTrailEffect);
+
+  const availableSkins = KUBB_SKINS.filter((skin) => isShopRefOwned('skin', skin, ownedItems));
+  const availableBatons = BATON_IDS.filter((id) => isShopRefOwned('baton', id, ownedItems));
+  const availableEffects = THROW_EFFECT_IDS.filter((id) => isShopRefOwned('trail', id, ownedItems));
 
   // Lue une seule fois au montage : elle ne peut changer que pendant une run,
   // ecran que ce composant n'affiche jamais.
@@ -153,7 +163,7 @@ export function Menu() {
           <p className="footnote footnote--tight">{t(windEnabled ? 'menu.windOnHint' : 'menu.windOffHint')}</p>
 
           <div className="segmented" role="group" aria-label={t('menu.skinAria')}>
-            {KUBB_SKINS.map((skin) => (
+            {availableSkins.map((skin) => (
               <button
                 key={skin}
                 className={`segmented__item${skin === kubbSkin ? ' segmented__item--on' : ''}`}
@@ -167,7 +177,7 @@ export function Menu() {
           <p className="footnote footnote--tight">{t(`skin.${kubbSkin}.hint`)}</p>
 
           <div className="segmented" role="group" aria-label={t('menu.batonAria')}>
-            {BATON_IDS.map((id) => (
+            {availableBatons.map((id) => (
               <button
                 key={id}
                 className={`segmented__item${id === batonId ? ' segmented__item--on' : ''}`}
@@ -182,6 +192,24 @@ export function Menu() {
             {t('baton.statPower')} {stars(BATONS[batonId].power)} · {t('baton.statPrecision')}{' '}
             {stars(BATONS[batonId].precision)} · {t('baton.statControl')} {stars(BATONS[batonId].control)}
           </p>
+
+          <div className="segmented" role="group" aria-label={t('menu.effectAria')}>
+            {availableEffects.map((id) => (
+              <button
+                key={id}
+                className={`segmented__item${id === trailEffect ? ' segmented__item--on' : ''}`}
+                aria-pressed={id === trailEffect}
+                onClick={() => setTrailEffect(id)}
+              >
+                {t(`effect.${id}.label`)}
+              </button>
+            ))}
+          </div>
+          <p className="footnote footnote--tight">{t(`effect.${trailEffect}.hint`)}</p>
+
+          <button className="btn" onClick={() => setScreen('shop')}>
+            {t('menu.shop')} — {t('menu.coinsAria', { n: coins })}
+          </button>
 
           <div className="segmented" role="group" aria-label={t('menu.langAria')}>
             {LANGS.map((code) => (
