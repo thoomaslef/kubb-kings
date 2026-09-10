@@ -3,6 +3,7 @@ import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { TEAMS, OPPONENT } from '../game/entities/teamData';
 import { AI_TEAM } from '../game/ai';
+import { levelFromXp } from '../game/progression';
 import { LADDER, setBestStageIfHigher } from '../game/roguelite';
 import { translate, type Lang } from '../i18n/translate';
 import { useT } from '../i18n/useT';
@@ -45,6 +46,8 @@ export function ResultScreen() {
   const tournamentPending = useGameStore((s) => s.tournamentPending);
   const reportTournamentResult = useGameStore((s) => s.reportTournamentResult);
   const resetTournament = useGameStore((s) => s.resetTournament);
+  const progression = useGameStore((s) => s.progression);
+  const lastXpAward = useGameStore((s) => s.lastXpAward);
   const isDefi = mode === 'defi';
   const soloLike = mode === 'solo' || isDefi;
   const isTournamentMatch = tournamentPending !== null;
@@ -67,6 +70,7 @@ export function ResultScreen() {
   if (!result) return null;
 
   const accent = result.winner === 'draw' ? '#f2c14e' : TEAMS[result.winner].cssColor;
+  const levelInfo = levelFromXp(progression.totalXp);
   const tournamentWinnerName =
     isTournamentMatch && result.winner !== 'draw'
       ? result.winner === 'blue'
@@ -140,6 +144,29 @@ export function ResultScreen() {
             </span>
           </div>
         </div>
+
+        {lastXpAward && (
+          <div className="xp-panel">
+            {lastXpAward.levelAfter > lastXpAward.levelBefore && (
+              <p className="xp-panel__levelup">{t('progression.levelUp')}</p>
+            )}
+            <div className="xp-panel__header">
+              <span className="xp-panel__icon">{levelInfo.icon}</span>
+              <span className="xp-panel__level">{t('progression.level', { n: levelInfo.level })}</span>
+              <span className="xp-panel__title">{t(levelInfo.titleKey)}</span>
+              <span className="xp-panel__gain">{t('progression.xpGained', { n: lastXpAward.total })}</span>
+            </div>
+            <div className="xp-panel__bar-track">
+              <div
+                className="xp-panel__bar-fill"
+                style={{ width: `${Math.min(100, (levelInfo.xpIntoLevel / levelInfo.xpForThisLevel) * 100)}%` }}
+              />
+            </div>
+            <p className="xp-panel__bar-label">
+              {levelInfo.xpIntoLevel} / {levelInfo.xpForThisLevel} XP
+            </p>
+          </div>
+        )}
 
         <div className="button-column">
           {isTournamentMatch ? (

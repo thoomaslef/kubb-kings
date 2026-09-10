@@ -123,6 +123,12 @@ export class MatchScene extends Phaser.Scene {
    */
   private comboCount: Record<TeamId, number> = { blue: 0, red: 0 };
   /**
+   * Compteurs de la partie en cours, cote equipe Bleue uniquement (le profil
+   * de progression), alimentes par resolveComboFeedback — consommes une
+   * seule fois en fin de partie par awardMatchXp (finish()). Cf. progression.ts.
+   */
+  private matchXpStats = { precisionHits: 0, difficultHits: 0, doubles: 0, triples: 0, perfects: 0 };
+  /**
    * Vent (direction + force) pour la partie en cours, tire une seule fois a
    * create() — jamais par lancer, sans quoi il n'y aurait rien a lire ni a
    * compenser. null si la meteo est desactivee.
@@ -197,6 +203,7 @@ export class MatchScene extends Phaser.Scene {
     this.knockedThisThrowCount = 0;
     this.knockedThisThrowMaxForce = 0;
     this.comboCount = { blue: 0, red: 0 };
+    this.matchXpStats = { precisionHits: 0, difficultHits: 0, doubles: 0, triples: 0, perfects: 0 };
     // "Bras infatigable" (Defi) : lancers en plus pour le joueur uniquement.
     if (this.runPerks.includes('lancer-bonus')) this.throwsLeft.blue += LANCER_BONUS_THROWS;
 
@@ -535,8 +542,8 @@ export class MatchScene extends Phaser.Scene {
     let labelKey: string;
     let basePoints: number;
     let fire = false;
+    const precise = count === 1 && this.knockedThisThrowMaxForce >= COMBO_PRECISION_FORCE;
     if (count === 1) {
-      const precise = this.knockedThisThrowMaxForce >= COMBO_PRECISION_FORCE;
       labelKey = precise ? 'match.comboPrecision' : 'match.comboGood';
       basePoints = precise ? 25 : 10;
     } else if (count === 2) {
@@ -549,6 +556,16 @@ export class MatchScene extends Phaser.Scene {
       labelKey = 'match.comboPerfect';
       basePoints = 250;
       fire = true;
+    }
+
+    // Alimente la progression (XP, cf. progression.ts) — seule l'equipe
+    // Bleue compte pour le profil persistant, cf. awardMatchXp dans finish().
+    if (team === 'blue') {
+      if (precise) this.matchXpStats.precisionHits += 1;
+      if (count === 2) this.matchXpStats.doubles += 1;
+      else if (count === 3) this.matchXpStats.triples += 1;
+      else if (count >= 4) this.matchXpStats.perfects += 1;
+      if (this.bouncedWallThisThrow) this.matchXpStats.difficultHits += 1;
     }
 
     this.comboCount[team] += 1;
@@ -899,6 +916,16 @@ export class MatchScene extends Phaser.Scene {
     this.baton = null;
     this.aimGfx.clear();
     this.syncHud();
+
+    gameStore.getState().awardMatchXp({
+      won: result.winner === 'blue',
+      perfectWin: result.winner === 'blue' && this.teams.blue.downCount === 0,
+      precisionHits: this.matchXpStats.precisionHits,
+      difficultHits: this.matchXpStats.difficultHits,
+      doubles: this.matchXpStats.doubles,
+      triples: this.matchXpStats.triples,
+      perfects: this.matchXpStats.perfects
+    });
 
     // Le verdict sonore arrive apres le choc, pas par-dessus.
     this.time.delayedCall(380, () => {

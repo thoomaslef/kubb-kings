@@ -307,10 +307,9 @@ baton different est choisi ; lancer reel fonctionnel ; zero erreur).
 
 ## Combo (retour de score en jeu)
 
-Premiere brique d&apos;une progression plus large (a venir : XP/niveaux, monnaie,
-defis) — pour l&apos;instant purement un retour immediat, sans consequence sur les
-regles ni sur une quelconque sauvegarde. Chaque lancer qui abat au moins un kubb
-adverse affiche un texte flottant note selon ce qu&apos;il a accompli
+Phase 1 de la progression (Phase 2 : XP/niveaux, ci-dessous ; a venir : monnaie,
+defis) — un retour immediat, sans consequence sur les regles. Chaque lancer qui abat
+au moins un kubb adverse affiche un texte flottant note selon ce qu&apos;il a accompli
 (`MatchScene::resolveComboFeedback`) :
 
 | Resultat du lancer                                             | Libelle      | Points de base |
@@ -337,6 +336,49 @@ touche a aucun des reglages de securite de l&apos;IA (`decideThrow`) — verifie
 directement en navigateur (les 5 paliers et la multiplication par la serie, cas par
 cas, plus un lancer reel en jeu qui declenche bien le retour), aucune simulation de
 suicide necessaire.
+
+---
+
+## Progression (niveau &amp; XP)
+
+Phase 2 : un profil persistant (`localStorage`, `progressionPersistence.ts`), commun a
+tous les modes — un seul joueur sur cet appareil, meme quand un second humain joue
+Rouge en 1v1/2v2 local. Affiche au menu (badge compact) et sur l&apos;ecran de resultat
+(gain d&apos;XP du match qui vient de se terminer + barre de niveau).
+
+**Niveau.** XP necessaire pour passer du niveau *n* au niveau *n+1* : `100 + 25*(n-1)`
+(croissance lineaire douce). Chaque niveau porte un titre (purement cosmetique) :
+
+| Niveau | Titre                |
+| :----: | --------------------- |
+| 1      | 🪵 Lanceur debutant    |
+| 5      | 🪵 Lanceur amateur     |
+| 10     | 🎯 Lanceur confirme    |
+| 16     | 🏹 Tireur d&apos;elite |
+| 24     | 👑 Maitre du Kubb      |
+| 32     | 🔥 Legende du terrain  |
+
+**Gain d&apos;XP**, cote equipe Bleue uniquement, calcule a la fin de chaque partie
+(`MatchScene::finish` → `awardMatchXp`) a partir des memes evenements que le combo
+(Phase 1) — la progression recompense donc exactement ce que le joueur voit deja
+recompense a l&apos;ecran pendant le match :
+
+| Critere                                            | XP                              |
+| ---------------------------------------------------- | -------------------------------- |
+| Victoire                                             | +100                             |
+| Victoire parfaite (aucun kubb Bleu abattu de la partie) | +50                            |
+| Precision (par occurrence)                           | +5                                |
+| Coup difficile (kubb abattu apres un ricochet sur une bande, par occurrence) | +15 |
+| Elimination multiple : DOUBLE / TRIPLE / PERFECT (par occurrence) | +20 / +40 / +80          |
+| Serie de victoires (par victoire consecutive, plafonnee a 10) | +5                      |
+
+**Aucun effet sur les regles ni sur l&apos;IA.** Un calcul pur (`progression.ts`,
+`computeXpAward`), independant de `decideThrow`/`decideApproachThrow` — verifie
+directement (4 scenarios geres a la main via le store : victoire simple, victoire
+parfaite + bonus cumules, defaite qui brise la serie, gros score TRIPLE+PERFECT —
+total d&apos;XP et passage de niveau corrects a chaque fois), persistance confirmee
+apres rechargement de page, et un match complet reel jusqu&apos;a l&apos;ecran de
+resultat — zero erreur.
 
 ---
 

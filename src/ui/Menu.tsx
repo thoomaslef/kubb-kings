@@ -4,6 +4,7 @@ import { bridge } from '../game/GameBridge';
 import { AI_PROFILES, type Difficulty } from '../game/ai';
 import { FIELD_PRESETS, type FieldPresetId } from '../game/rules';
 import { BATONS, BATON_IDS } from '../game/batons';
+import { levelFromXp } from '../game/progression';
 import { KUBB_SKINS } from '../game/theme';
 import { LADDER, getBestStage } from '../game/roguelite';
 import { useT } from '../i18n/useT';
@@ -36,6 +37,8 @@ export function Menu() {
   const setLang = useGameStore((s) => s.setLang);
   const setMode = useGameStore((s) => s.setMode);
   const startRun = useGameStore((s) => s.startRun);
+  const progression = useGameStore((s) => s.progression);
+  const levelInfo = levelFromXp(progression.totalXp);
 
   // Lue une seule fois au montage : elle ne peut changer que pendant une run,
   // ecran que ce composant n'affiche jamais.
@@ -59,6 +62,23 @@ export function Menu() {
           KUBB<span className="title__accent">: Kings</span>
         </h1>
         <p className="subtitle">{t('menu.subtitle')}</p>
+
+        <div className="xp-panel xp-panel--compact">
+          <div className="xp-panel__header">
+            <span className="xp-panel__icon">{levelInfo.icon}</span>
+            <span className="xp-panel__level">{t('progression.level', { n: levelInfo.level })}</span>
+            <span className="xp-panel__title">{t(levelInfo.titleKey)}</span>
+          </div>
+          <div className="xp-panel__bar-track">
+            <div
+              className="xp-panel__bar-fill"
+              style={{ width: `${Math.min(100, (levelInfo.xpIntoLevel / levelInfo.xpForThisLevel) * 100)}%` }}
+            />
+          </div>
+          <p className="xp-panel__bar-label">
+            {levelInfo.xpIntoLevel} / {levelInfo.xpForThisLevel} XP
+          </p>
+        </div>
 
         <div className="button-column">
           <button className="btn btn--primary" onClick={() => play('solo')}>

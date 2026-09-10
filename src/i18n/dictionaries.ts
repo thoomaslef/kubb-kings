@@ -73,6 +73,17 @@ const fr: Record<string, string> = {
   'baton.statPrecision': 'Precision',
   'baton.statControl': 'Controle',
 
+  // ---- progression (progression.ts) — niveau/XP, Phase 2 de la progression
+  'progression.title.debutant': 'Lanceur debutant',
+  'progression.title.amateur': 'Lanceur amateur',
+  'progression.title.confirme': 'Lanceur confirme',
+  'progression.title.elite': "Tireur d'elite",
+  'progression.title.maitre': 'Maitre du Kubb',
+  'progression.title.legende': 'Legende du terrain',
+  'progression.level': 'Niveau {n}',
+  'progression.xpGained': '+{n} XP',
+  'progression.levelUp': 'NIVEAU SUPERIEUR !',
+
   // ---- team (teamData.ts)
   'team.blue.label': 'Bleue',
   'team.red.label': 'Rouge',
@@ -300,6 +311,17 @@ const en: Record<string, string> = {
   'baton.statPower': 'Power',
   'baton.statPrecision': 'Precision',
   'baton.statControl': 'Control',
+
+  // ---- progression (progression.ts) — level/XP, progression Phase 2
+  'progression.title.debutant': 'Novice thrower',
+  'progression.title.amateur': 'Amateur thrower',
+  'progression.title.confirme': 'Seasoned thrower',
+  'progression.title.elite': 'Elite marksman',
+  'progression.title.maitre': 'Kubb master',
+  'progression.title.legende': 'Field legend',
+  'progression.level': 'Level {n}',
+  'progression.xpGained': '+{n} XP',
+  'progression.levelUp': 'LEVEL UP!',
 
   // ---- team
   'team.blue.label': 'Blue',

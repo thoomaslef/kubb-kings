@@ -6,6 +6,8 @@ import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPrese
 import type { BatonId } from '../game/batons';
 import type { KubbSkin } from '../game/theme';
 import { buildBracket, recordWinner, type TournamentState } from '../game/tournament';
+import { computeXpAward, type MatchXpStats, type ProgressionState, type XpAward } from '../game/progression';
+import { loadProgression, saveProgression } from '../game/progressionPersistence';
 import { getInitialLang, persistLang } from '../i18n/langPersistence';
 import type { Lang } from '../i18n/translate';
 
@@ -129,6 +131,17 @@ interface GameState {
   tournamentPending: TournamentPending | null;
   /** Langue d'affichage, persistee (voir i18n/langPersistence.ts). */
   lang: Lang;
+  /**
+   * Progression du joueur (niveau/XP), persistee (progressionPersistence.ts).
+   * Cf. src/game/progression.ts pour le bareme et la formule de niveau.
+   */
+  progression: ProgressionState;
+  /**
+   * Gain d'XP du dernier match termine, pour l'ecran de resultat (avant/apres
+   * niveau inclus, pour detecter un passage de niveau). null tant qu'aucun
+   * match n'a ete joue cette session.
+   */
+  lastXpAward: XpAward | null;
 
   setScreen: (screen: Screen) => void;
   setPaused: (paused: boolean) => void;
@@ -159,6 +172,13 @@ interface GameState {
   /** Quitte le tournoi en cours (abandon, ou apres le sacre du champion). */
   resetTournament: () => void;
   setLang: (lang: Lang) => void;
+  /**
+   * Calcule et applique le gain d'XP d'un match qui vient de se terminer
+   * (cote equipe Bleue — "le joueur" du profil, cf. progression.ts),
+   * persiste le nouvel etat et le rend disponible via `lastXpAward` pour
+   * l'ecran de resultat.
+   */
+  awardMatchXp: (stats: MatchXpStats) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -176,6 +196,8 @@ export const useGameStore = create<GameState>((set) => ({
   tournament: null,
   tournamentPending: null,
   lang: getInitialLang(),
+  progression: loadProgression(),
+  lastXpAward: null,
 
   setScreen: (screen) => set({ screen }),
   setPaused: (paused) => set({ paused }),
@@ -212,7 +234,13 @@ export const useGameStore = create<GameState>((set) => ({
   setLang: (lang) => {
     persistLang(lang);
     set({ lang });
-  }
+  },
+  awardMatchXp: (stats) =>
+    set((state) => {
+      const { award, after } = computeXpAward(stats, state.progression);
+      saveProgression(after);
+      return { progression: after, lastXpAward: award };
+    })
 }));
 
 /** Acces hors composant React (depuis les scenes Phaser). */
