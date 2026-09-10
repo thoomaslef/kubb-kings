@@ -275,33 +275,47 @@ simulation n&apos;est necessaire pour cette fonctionnalite. Stocke dans le store
 
 ## Meteo (vent)
 
-Bouton au menu, off par defaut (`windEnabled` dans le store). Quand il est actif, une
-brise traversiere constante (`WIND.accelPerStep` dans [`src/game/rules.ts`](src/game/rules.ts))
-s&apos;ajoute a la vitesse du baton a chaque pas de vol, dans l&apos;axe X du terrain quel
-que soit l&apos;angle vise — le sens (gauche/droite) est tire au hasard une seule fois par
-partie (`MatchScene.create`), jamais par lancer, et affiche dans le HUD (&larr;/&rarr;).
-Le joueur y est expose comme au vrai Kubb : un lancer mal juge peut deriver jusqu&apos;au
-roi.
+Bouton au menu, off par defaut (`windEnabled` dans le store) — toujours un simple
+Sans vent/Avec vent, sans autre reglage. Quand il est actif, direction (les 8 sens de la
+boussole : N, NE, E, SE, S, SW, W, NW) ET force (1 ou 2) sont tirees au hasard une seule
+fois par partie (`MatchScene.create`), jamais par lancer, et affichees clairement dans le
+HUD (fleche orientee + sens + pastille de force, force 2 mise en evidence en dore —
+[`src/ui/HUD.tsx`](src/ui/HUD.tsx)). Une acceleration constante (`windAcceleration` dans
+[`src/game/rules.ts`](src/game/rules.ts), proportionnelle a la force) s&apos;ajoute a la
+vitesse du baton a chaque pas de vol, dans la direction tiree — y compris dans l&apos;axe
+du lancer (nord/sud), pas seulement lateralement comme la toute premiere version. Le
+joueur y est expose comme au vrai Kubb : un lancer mal juge peut deriver jusqu&apos;au roi.
 
-**L&apos;IA compense, mais reste prudente.** `ai.ts::windCompensatedAngle` simule le vol
-complet (meme decroissance frictionAir, meme increment de vent, pas a pas, que le jeu
-reel) a l&apos;angle naif, mesure la derive laterale a la distance visee et corrige
-l&apos;angle en consequence — deux passes, le vent restant une perturbation modeste face
-a la distance. Cette compensation est une approximation en ligne droite d&apos;une
-trajectoire en realite courbee ; `WIND.kingDangerMargin` elargit le rayon de danger du
-roi (uniquement quand le vent souffle et que l&apos;IA ne le vise pas legalement) pour
-absorber l&apos;ecart residuel.
+**L&apos;IA compense, mais reste prudente — et verifie desormais la VRAIE courbe, pas
+seulement l&apos;angle central.** `ai.ts::windCompensatedAngle` simule le vol complet a
+l&apos;angle naif, mesure la derive a la distance visee et corrige l&apos;angle en
+consequence. Ca ne suffit plus a garantir la securite a elle seule : sous un vent fort, le
+roi peut se trouver a mi-chemin d&apos;une cible plus lointaine, la ou la correction
+d&apos;angle (optimisee pour la distance complete) laisse une derive residuelle bien plus
+grande qu&apos;un modele en ligne droite ne le laisserait croire. `ai.ts::curvedKingDanger`
+simule donc la trajectoire COURBEE reelle sur tout le cone d&apos;incertitude (erreur du
+niveau + deviation du jeu + pire cas de puissance) avant d&apos;autoriser un candidat,
+plutot que de se fier a un simple rayon majore d&apos;une marge fixe.
 
 Verifie en deux temps, avant tout affichage a l&apos;ecran :
 
-1. **Simulation hors-navigateur, verite terrain = trajectoire courbee reelle** (pas le
-   modele en rayons droits de l&apos;IA) : 3000 matchs par niveau et par sens de vent
-   (facile/moyen/difficile x sans-vent/+1/-1), en suivant pas a pas la vraie physique du
-   baton. Zero suicide du roi dans les neuf combinaisons, et une IA aussi efficace avec
-   le vent que sans (taux de victoire et kubbs abattus par lancer quasi identiques).
-2. **Navigateur, vraie physique Matter** : parties completes en solo Difficile avec vent,
-   zero roi touche trop tot par l&apos;IA, trajectoires visiblement deviees a
-   l&apos;ecran.
+1. **Simulation hors-navigateur, verite terrain = trajectoire courbee reelle** : 6120
+   matchs (les 3 terrains x 17 etats de vent — sans vent plus les 8 sens x 2 forces — x
+   les 3 niveaux). Zero suicide du roi. Au passage, un vrai bug trouve et corrige : le
+   modele de vol plafonnait a 400 pas simules (pense pour un jeu sans vent, ou le
+   frottement suffit a arreter le baton bien avant) ; sous un vent fort perpendiculaire, la
+   vitesse ne repasse jamais sous ce seuil, faisant tourner la simulation jusqu&apos;a
+   cette limite artificielle — corrige pour plafonner exactement comme le jeu reel
+   (`THROW.maxFlightMs`, ~180 pas). Cout reel mesure : ~13-30ms par decision de l&apos;IA
+   meme sous vent fort, largement invisible dans son temps de reflexion (500-850ms).
+2. **Navigateur, vraie physique Matter** : 6 matchs solo Difficile avec vent, boussole HUD
+   verifiee a chaque partie (5 combinaisons direction/force differentes observees), zero
+   roi touche trop tot par l&apos;IA, zero erreur console.
+
+Le tir d&apos;ouverture (`decideApproachThrow`) beneficie du meme vent 2D : verifie a part
+sur 4590 tirs simules, 0,37% de contact residuel (concentre sur les niveaux faciles/moyens
+par vent fort) — un taux juge acceptable puisque toucher le roi ici ne fait perdre le
+tirage au sort que si l&apos;adversaire ne le touche pas aussi (voir plus haut).
 
 ---
 

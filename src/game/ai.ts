@@ -9,8 +9,9 @@ import {
   OBSTACLE_RADIUS,
   THROW,
   THROW_POSITIONS,
-  WIND,
-  availableThrowPositions
+  availableThrowPositions,
+  windAcceleration,
+  type Wind
 } from './rules';
 
 /**
@@ -108,10 +109,10 @@ export interface AiBoard {
    */
   obstacles?: Point[];
   /**
-   * Sens du vent, si la meteo est activee (absent sinon). Une brise
-   * traversiere constante dans l'axe X du terrain, cf. WIND dans rules.ts.
+   * Vent (direction + force), si la meteo est activee (absent sinon).
+   * Cf. WIND/Wind dans rules.ts.
    */
-  wind?: 1 | -1;
+  wind?: Wind;
   /**
    * Ses propres kubbs encore debout, `standing[i]` pour `THROW_POSITIONS[i]`
    * (rules.ts) : on ne peut plus lancer a l'aplomb d'un kubb tombe. Absent =
@@ -168,30 +169,48 @@ export interface FlightStep extends Point {
   speed: number;
 }
 
+/** Acceleration nulle : raccourci pour simuler un vol sans vent. */
+const NO_WIND_ACCEL = { x: 0, y: 0 };
+
 /**
- * Vole en repere-monde (x, y) avec la meme decroissance frictionAir et le
- * meme increment de vent, pas a pas, que le jeu reel (Baton.launch pour la
+ * Vole en repere-monde (x, y) avec la meme decroissance frictionAir et la
+ * meme acceleration de vent, pas a pas, que le jeu reel (Baton.launch pour la
  * vitesse initiale, MatchScene.update pour l'increment de vent a chaque pas).
+ * `windAccel` est un vecteur (x, y) — cf. windAcceleration() dans rules.ts —
+ * pas juste une derive laterale : le vent peut souffler dans n'importe laquelle
+ * des 8 directions de la boussole, y compris dans l'axe du lancer.
  * Renvoie la trajectoire ENTIERE (pas juste le point final) : la verification
  * de securite a besoin de savoir si le baton passe pres du roi en COURS de
- * route, une derive laterale pouvant l'en rapprocher avant meme d'atteindre
- * la distance visee.
+ * route, une derive pouvant l'en rapprocher avant meme d'atteindre la
+ * distance visee.
  */
-export function simulateWindFlight(origin: Point, angle: number, power: number, windDir: 1 | -1 | 0): FlightStep[] {
+export function simulateWindFlight(
+  origin: Point,
+  angle: number,
+  power: number,
+  windAccel: Point = NO_WIND_ACCEL
+): FlightStep[] {
   const k = BATON_BODY.frictionAir;
-  const accel = WIND.accelPerStep * windDir;
   let vx = Math.cos(angle) * THROW.maxSpeed * power;
   let vy = Math.sin(angle) * THROW.maxSpeed * power;
   let x = origin.x;
   let y = origin.y;
 
   const path: FlightStep[] = [{ x, y, speed: Math.hypot(vx, vy) }];
-  // 400 pas couvrent largement la plus longue portee possible (v0 max / k
-  // vaut environ 2000 px, soit plus que la diagonale du terrain) : le baton
-  // repasse toujours sous THROW.restSpeed bien avant.
-  for (let i = 0; i < 400; i += 1) {
-    vx = vx * (1 - k) + accel;
-    vy = vy * (1 - k);
+  // Sans vent, v0 max / k vaut environ 2000 px (plus que la diagonale du
+  // terrain) : le baton repasse toujours sous THROW.restSpeed bien avant
+  // MAX_STEPS. Avec un vent dont la composante perpendiculaire a une vitesse
+  // d'equilibre (accel/k) superieure a restSpeed, en revanche, la vitesse ne
+  // repasse JAMAIS sous ce seuil — imiter le seul filet de securite du jeu
+  // reel pour un tir qui ne s'arrete jamais de lui-meme (MatchScene.update :
+  // flightMs >= THROW.maxFlightMs cloture le tour de force) est donc
+  // essentiel, pas juste une optimisation : sans lui, un vent fort ferait
+  // vagabonder la simulation jusqu'a MAX_STEPS avec une derive sans rapport
+  // avec ce qui se passe reellement en jeu.
+  const maxSteps = Math.ceil(THROW.maxFlightMs / (1000 / 60));
+  for (let i = 0; i < maxSteps; i += 1) {
+    vx = vx * (1 - k) + windAccel.x;
+    vy = vy * (1 - k) + windAccel.y;
     x += vx;
     y += vy;
     const speed = Math.hypot(vx, vy);
@@ -233,11 +252,11 @@ function windCompensatedAngle(
   naiveAngle: number,
   power: number,
   distance: number,
-  windDir: 1 | -1
+  windAccel: Point
 ): number {
   let angle = naiveAngle;
   for (let pass = 0; pass < 2; pass += 1) {
-    const path = simulateWindFlight(origin, angle, power, windDir);
+    const path = simulateWindFlight(origin, angle, power, windAccel);
     const lateral = lateralOffsetAt(path, origin, naiveAngle, distance);
     angle += lateral / distance;
   }
@@ -272,6 +291,67 @@ function rayHit(origin: Point, dx: number, dy: number, o: Obstacle): number | nu
   if (perp > o.radius) return null;
 
   return along - Math.sqrt(o.radius * o.radius - perp * perp);
+}
+
+/**
+ * Echantillons pour le controle de securite roi COURBE sous le vent (voir
+ * curvedKingDanger plus bas). Impair pour retomber exactement sur le tir
+ * nominal en son centre, comme APPROACH_SAFETY_STEPS (decideApproachThrow,
+ * plus bas) — meme raisonnement : aimError et deviation n'entrent dans la
+ * simulation que par leur somme, donc un balayage LINEAIRE de cette somme
+ * couvre exactement les memes extremes qu'une grille complete.
+ */
+const KING_WIND_SAFETY_STEPS = 151;
+/**
+ * Marge de securite ajoutee a KING_HIT_RADIUS pour ce seul controle courbe
+ * (jamais pour le rendu ni la detection de contact reelle) : absorbe le
+ * residu de discretisation de KING_WIND_SAFETY_STEPS et le pire cas de
+ * puissance (powerError, applique apres coup par applyImprecision — d'ou la
+ * puissance majoree utilisee ci-dessous, meme logique que safetyPower dans
+ * decideApproachThrow). Valeur issue d'un balayage en simulation
+ * (scripts/scratchpad, trajectoire courbee reelle) : zero suicide mesure
+ * avec cette marge, aux 2 forces de vent et aux 8 directions.
+ */
+const KING_WIND_SAFETY_MARGIN = 60;
+
+/**
+ * Le tir (origine, angle, puissance) risque-t-il de froler le roi en
+ * chemin, une fois le vent pris en compte ? Contrairement au controle en
+ * ligne droite utilise pour les kubbs/rochers (firstObstacle), celui-ci
+ * simule la VRAIE trajectoire COURBEE (simulateWindFlight) sur tout le cone
+ * d'incertitude : sous un vent fort, une correction d'angle valable a la
+ * distance de la cible peut laisser le baton passer bien plus pres du roi
+ * qu'un modele en ligne droite ne le laisserait croire, si le roi se trouve
+ * a mi-chemin d'une cible plus lointaine (ce que le seul angle central
+ * corrige par windCompensatedAngle ne garantit pas).
+ *
+ * Pas de pre-filtre en ligne droite ici (tente puis abandonne : sous un vent
+ * fort, un tir faible peut derriver de plusieurs centaines de pixels sur
+ * toute la duree de vol — voir simulateWindFlight — ce qui rend un rayon de
+ * pre-filtre a la fois couteux a bien dimensionner et peu selectif sur un
+ * terrain de cette taille). Le cout reste borne : simulateWindFlight
+ * s'arrete lui-meme a THROW.maxFlightMs, jamais plus.
+ */
+function curvedKingDanger(
+  origin: Point,
+  angle: number,
+  power: number,
+  profile: AiProfile,
+  windAccel: Point,
+  king: Point
+): boolean {
+  const maxOffset = profile.aimErrorDeg + MAX_AIM_DEVIATION_DEG;
+  const safetyPower = Math.min(1, power * (1 + profile.powerErrorRatio));
+
+  for (let s = 0; s < KING_WIND_SAFETY_STEPS; s += 1) {
+    const offset = ((2 * s) / (KING_WIND_SAFETY_STEPS - 1) - 1) * maxOffset;
+    const path = simulateWindFlight(origin, angle + offset * DEG, safetyPower, windAccel);
+    for (const step of path) {
+      const dist = Math.hypot(step.x - king.x, step.y - king.y);
+      if (dist <= KING_HIT_RADIUS + KING_WIND_SAFETY_MARGIN) return true;
+    }
+  }
+  return false;
 }
 
 /** Premier obstacle rencontre le long d'un tir, ou null. */
@@ -326,19 +406,21 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
   const targets = aimingAtKing ? [king] : board.targets;
   if (targets.length === 0) return safeThrow(board, rng);
 
+  const windAccel = board.wind ? windAcceleration(board.wind) : null;
+
   // Le roi est un obstacle dans les deux cas : soit c'est la cible, soit c'est
   // le piege. Seul son rayon change.
   const obstacles: Obstacle[] = board.targets.map((p) => ({ p, radius: KUBB_HIT_RADIUS, kind: 'kubb' as const }));
   if (board.kingStanding) {
-    // Vise-t-elle le roi ou l'evite-t-elle ? Seul le second cas gagne une
-    // marge de securite pour le vent : un tir legitime sur le roi n'a pas a
-    // se mefier de lui-meme.
-    const dangerRadius = KING_DANGER_RADIUS + (board.wind ? WIND.kingDangerMargin : 0);
-    obstacles.push({
-      p: king,
-      radius: aimingAtKing ? KING_HIT_RADIUS : dangerRadius,
-      kind: 'king' as const
-    });
+    if (aimingAtKing) {
+      obstacles.push({ p: king, radius: KING_HIT_RADIUS, kind: 'king' as const });
+    } else if (!windAccel) {
+      // Sans vent, le controle en ligne droite ci-dessous suffit : aucune
+      // courbure a rater. Avec vent, curvedKingDanger (plus bas, sur la VRAIE
+      // trajectoire courbee) s'en charge a la place — un simple rayon
+      // majore d'une marge ne suffit plus (voir sa documentation).
+      obstacles.push({ p: king, radius: KING_DANGER_RADIUS, kind: 'king' as const });
+    }
   }
   for (const p of board.obstacles ?? []) {
     obstacles.push({ p, radius: BLOCK_HIT_RADIUS, kind: 'block' as const });
@@ -359,10 +441,12 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
       const naiveAngle = Math.atan2(target.y - origin.y, target.x - origin.x);
       // Vise en amont du vent quand il souffle : l'angle "naif" ne suffirait
       // qu'a atteindre la cible sans lui, jamais avec.
-      const angle = board.wind
-        ? windCompensatedAngle(origin, naiveAngle, power, distance, board.wind)
-        : naiveAngle;
+      const angle = windAccel ? windCompensatedAngle(origin, naiveAngle, power, distance, windAccel) : naiveAngle;
       if (Math.abs(wrapAngle(angle - forward)) > maxDelta) continue;
+
+      if (windAccel && board.kingStanding && !aimingAtKing) {
+        if (curvedKingDanger(origin, angle, power, profile, windAccel, king)) continue;
+      }
 
       let knockdowns = 0;
       let shots = 0;
@@ -451,7 +535,7 @@ export interface ApproachBoard {
   direction: -1 | 1;
   /** Rochers du terrain choisi, s'il y en a — un tir qui les percute est gache. */
   obstacles?: Point[];
-  wind?: 1 | -1;
+  wind?: Wind;
 }
 
 const APPROACH_ANGLE_STEPS = 11;
@@ -516,7 +600,7 @@ export function decideApproachThrow(board: ApproachBoard, profile: AiProfile, rn
   const king: Point = { x: FIELD_CENTER_X, y: FIELD_CENTER_Y };
   const forward = board.direction === -1 ? -Math.PI / 2 : Math.PI / 2;
   const maxDelta = AIM.maxAngleDeg * DEG;
-  const wind = board.wind ?? 0;
+  const windAccel = board.wind ? windAcceleration(board.wind) : NO_WIND_ACCEL;
   const rockObstacles: Obstacle[] = (board.obstacles ?? []).map((p) => ({
     p,
     radius: BLOCK_HIT_RADIUS,
@@ -551,7 +635,7 @@ export function decideApproachThrow(board: ApproachBoard, profile: AiProfile, rn
 
         for (let s = 0; s < APPROACH_SAFETY_STEPS && safe; s += 1) {
           const offset = ((2 * s) / (APPROACH_SAFETY_STEPS - 1) - 1) * maxOffset;
-          const path = simulateWindFlight(origin, angle + offset * DEG, safetyPower, wind);
+          const path = simulateWindFlight(origin, angle + offset * DEG, safetyPower, windAccel);
 
           let closest = Infinity;
           for (const step of path) {
@@ -560,7 +644,7 @@ export function decideApproachThrow(board: ApproachBoard, profile: AiProfile, rn
           }
           if (closest <= KING_HIT_RADIUS + APPROACH_SAFETY_MARGIN) safe = false;
 
-          if (offset === 0) nominalPath = simulateWindFlight(origin, angle, power, wind);
+          if (offset === 0) nominalPath = simulateWindFlight(origin, angle, power, windAccel);
         }
 
         if (!safe || !nominalPath) continue;

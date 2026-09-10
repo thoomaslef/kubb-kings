@@ -30,9 +30,11 @@ import {
   MAX_THROWS_PER_TEAM,
   THROW,
   THROW_POSITIONS,
-  WIND,
+  WIND_DIRECTIONS,
   availableThrowPositions,
-  type FieldPresetId
+  windAcceleration,
+  type FieldPresetId,
+  type Wind
 } from '../rules';
 
 /** La plus proche d'un ensemble de positions de lancer (voir THROW_POSITIONS). */
@@ -91,11 +93,11 @@ export class MatchScene extends Phaser.Scene {
    */
   private bouncedWallThisThrow = false;
   /**
-   * Sens du vent pour la partie en cours, tire une seule fois a create() —
-   * jamais par lancer, sans quoi il n'y aurait rien a lire ni a compenser.
-   * null si la meteo est desactivee.
+   * Vent (direction + force) pour la partie en cours, tire une seule fois a
+   * create() — jamais par lancer, sans quoi il n'y aurait rien a lire ni a
+   * compenser. null si la meteo est desactivee.
    */
-  private wind: 1 | -1 | null = null;
+  private wind: Wind | null = null;
 
   /** Position de lancer courante de chaque equipe, le long de sa ligne de lancer. */
   private throwX: Record<TeamId, number> = { blue: FIELD_CENTER_X, red: FIELD_CENTER_X };
@@ -143,7 +145,12 @@ export class MatchScene extends Phaser.Scene {
     this.aiTween = null;
 
     const { mode, difficulty, fieldPreset, kubbSkin, windEnabled, run } = gameStore.getState();
-    this.wind = windEnabled ? (Math.random() < 0.5 ? -1 : 1) : null;
+    this.wind = windEnabled
+      ? {
+          direction: WIND_DIRECTIONS[Math.floor(Math.random() * WIND_DIRECTIONS.length)],
+          force: Math.random() < 0.5 ? 1 : 2
+        }
+      : null;
     this.mode = mode;
     // En Defi, le niveau et le terrain viennent de l'echelle (roguelite.ts),
     // pas des selecteurs du menu casual — mais l'IA reste exactement la
@@ -287,18 +294,19 @@ export class MatchScene extends Phaser.Scene {
   }
 
   /**
-   * Brise traversiere : une vitesse laterale constante s'ajoute au baton en
-   * vol, dans l'axe X du terrain quel que soit l'angle vise (WIND.accelPerStep
-   * dans rules.ts). Le nombre de pas Matter ecoules cette frame se deduit du
-   * delta reel, pour rester independant du framerate — meme increment par pas
-   * que le modele suivi par l'IA pour compenser sa visee (ai.ts::simulateWindFlight).
+   * Brise : une acceleration constante s'ajoute au baton en vol, dans l'une
+   * des 8 directions de la boussole (windAcceleration dans rules.ts) quel
+   * que soit l'angle vise. Le nombre de pas Matter ecoules cette frame se
+   * deduit du delta reel, pour rester independant du framerate — meme
+   * increment par pas que le modele suivi par l'IA pour compenser sa visee
+   * (ai.ts::simulateWindFlight).
    */
   private applyWind(delta: number) {
     if (!this.baton || !this.wind) return;
     const body = this.baton.sprite.body as MatterJS.BodyType;
     const steps = delta / (1000 / 60);
-    const dvx = WIND.accelPerStep * this.wind * steps;
-    this.baton.sprite.setVelocity(body.velocity.x + dvx, body.velocity.y);
+    const accel = windAcceleration(this.wind);
+    this.baton.sprite.setVelocity(body.velocity.x + accel.x * steps, body.velocity.y + accel.y * steps);
   }
 
   private launch() {

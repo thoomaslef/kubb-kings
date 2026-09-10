@@ -6,6 +6,7 @@ import { isMuted, setMuted } from '../game/audio';
 import { AI_TEAM } from '../game/ai';
 import { isKingTipSeen, markKingTipSeen } from '../game/tutorial';
 import { LADDER } from '../game/roguelite';
+import type { WindDirection } from '../game/rules';
 import { useT } from '../i18n/useT';
 
 function formatTime(ms: number) {
@@ -14,6 +15,18 @@ function formatTime(ms: number) {
   const s = total % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
+
+/** Rotation (deg) d'une fleche pointant "vers le haut" par defaut, pour chaque sens de la boussole. */
+const WIND_ARROW_ROTATION: Record<WindDirection, number> = {
+  N: 0,
+  NE: 45,
+  E: 90,
+  SE: 135,
+  S: 180,
+  SW: 225,
+  W: 270,
+  NW: 315
+};
 
 export function HUD() {
   const t = useT();
@@ -87,8 +100,30 @@ export function HUD() {
           </div>
 
           {hud.wind && (
-            <span className="hud__wind" aria-label={t(hud.wind > 0 ? 'hud.windAriaRight' : 'hud.windAriaLeft')}>
-              {hud.wind > 0 ? '→' : '←'}
+            <span
+              className={`hud__wind hud__wind--force${hud.wind.force}`}
+              aria-label={t('hud.windAria', {
+                direction: t(`wind.dir.${hud.wind.direction}`),
+                force: hud.wind.force
+              })}
+              title={t('hud.windAria', {
+                direction: t(`wind.dir.${hud.wind.direction}`),
+                force: hud.wind.force
+              })}
+            >
+              <span
+                className="hud__wind-arrow"
+                style={{ transform: `rotate(${WIND_ARROW_ROTATION[hud.wind.direction]}deg)` }}
+                aria-hidden="true"
+              >
+                &uarr;
+              </span>
+              <span className="hud__wind-code" aria-hidden="true">
+                {hud.wind.direction}
+              </span>
+              <span className="hud__wind-force" aria-hidden="true">
+                {hud.wind.force}
+              </span>
             </span>
           )}
 

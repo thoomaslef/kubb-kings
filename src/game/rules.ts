@@ -125,27 +125,53 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
 /**
  * Vent (meteo), optionnel via un bouton au menu (off par defaut).
  *
- * Une force laterale constante, dans l'axe X du terrain (une brise
- * traversiere, independante de l'angle vise), s'ajoute a la vitesse du baton
- * a chaque pas de vol (MatchScene.update, meme decroissance frictionAir que
- * Baton.launch). Sens tire au hasard une seule fois par partie, jamais par
- * lancer.
+ * Une acceleration constante s'ajoute a la vitesse du baton a chaque pas de
+ * vol (MatchScene.update, meme decroissance frictionAir que Baton.launch),
+ * dans l'une des 8 directions de la boussole, a l'une de 2 forces. Direction
+ * ET force sont tirees au hasard une seule fois par partie (jamais par
+ * lancer) et affichees clairement dans le HUD (boussole + libelle).
  */
+export type WindDirection = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW';
+export type WindForce = 1 | 2;
+
+/** Etat du vent d'une partie : direction (boussole) et force (1 ou 2). */
+export interface Wind {
+  direction: WindDirection;
+  force: WindForce;
+}
+
+/** Les 8 sens possibles, dans l'ordre de la boussole (pour un tirage au hasard ou un affichage). */
+export const WIND_DIRECTIONS: readonly WindDirection[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+
+/**
+ * Vecteur unitaire par sens, dans le repere du terrain (x vers l'est/la
+ * droite, y vers le sud/le bas — Nord est donc y negatif). Les diagonales
+ * sont normalisees (norme 1) pour que la force d'un vent diagonal ne soit
+ * pas plus forte qu'un vent cardinal.
+ */
+const DIAG = Math.SQRT1_2;
+export const WIND_UNIT_VECTORS: Record<WindDirection, { x: number; y: number }> = {
+  N: { x: 0, y: -1 },
+  NE: { x: DIAG, y: -DIAG },
+  E: { x: 1, y: 0 },
+  SE: { x: DIAG, y: DIAG },
+  S: { x: 0, y: 1 },
+  SW: { x: -DIAG, y: DIAG },
+  W: { x: -1, y: 0 },
+  NW: { x: -DIAG, y: -DIAG }
+};
+
 export const WIND = {
-  /** Vitesse laterale gagnee par pas de simulation Matter (60 pas/s). */
-  accelPerStep: 0.05,
-  /**
-   * Marge additionnelle sur le rayon de danger du roi (ai.ts), uniquement
-   * quand le vent souffle. L'IA compense la derive attendue (ai.ts,
-   * windCompensatedAngle), mais cette compensation reste une approximation
-   * en ligne droite d'une trajectoire en realite courbee — cette marge
-   * absorbe l'ecart residuel. Valeur issue d'un balayage en simulation
-   * (scripts/scratchpad, trajectoire courbee reelle, pas le modele en
-   * rayons droits de l'IA) : zero suicide du roi mesure avec cette marge,
-   * sur des milliers de lancers simules a plusieurs forces de vent.
-   */
-  kingDangerMargin: 26
+  /** Vitesse gagnee par pas de simulation Matter (60 pas/s), par unite de force (1 ou 2). */
+  accelPerStepPerForce: 0.05
 } as const;
+
+/** Acceleration (x, y) appliquee au baton a chaque pas de vol pour ce vent. */
+export function windAcceleration(wind: Wind): { x: number; y: number } {
+  const unit = WIND_UNIT_VECTORS[wind.direction];
+  const magnitude = WIND.accelPerStepPerForce * wind.force;
+  return { x: unit.x * magnitude, y: unit.y * magnitude };
+}
 
 /** Vitesse d'impact minimale (px/step Matter) pour faire tomber un kubb. */
 export const KNOCKDOWN_IMPACT_SPEED = 6;

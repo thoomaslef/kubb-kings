@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { TeamId } from '../game/entities/teamData';
 import type { Difficulty } from '../game/ai';
 import type { PerkId } from '../game/roguelite';
-import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId } from '../game/rules';
+import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId, type Wind } from '../game/rules';
 import type { KubbSkin } from '../game/theme';
 import { buildBracket, recordWinner, type TournamentState } from '../game/tournament';
 import { getInitialLang, persistLang } from '../i18n/langPersistence';
@@ -82,8 +82,8 @@ export interface HudState {
    * uniquement (1 ou 2). Sans objet en 'local' ou 'solo' — HUD l'ignore alors.
    */
   activePlayer: 1 | 2;
-  /** Sens du vent pour la partie en cours ; null si la meteo est desactivee. */
-  wind: 1 | -1 | null;
+  /** Vent (direction + force) pour la partie en cours ; null si la meteo est desactivee. */
+  wind: Wind | null;
 }
 
 const initialHud = (): HudState => ({

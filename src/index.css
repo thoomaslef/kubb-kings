@@ -415,13 +415,52 @@ body {
   border-radius: 50%;
 }
 
-/* Sens du vent, quand la meteo est activee. Flex 0 : ne retrecit jamais,
-   mais son texte est court — ca ne pousse rien hors de l'ecran. */
+/* Boussole de vent, quand la meteo est activee : fleche orientee + sens (2
+   lettres) + pastille de force. Flex 0 : ne retrecit jamais, mais reste
+   compact — ca ne pousse rien hors de l'ecran. */
 .hud__wind {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
+}
+
+.hud__wind-arrow {
+  display: inline-block;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.hud__wind-code {
+  letter-spacing: 0.02em;
+}
+
+.hud__wind-force {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* Force 2 : plus vif (meme accent dore que le roi a portee) pour se voir au premier coup d'oeil. */
+.hud__wind--force2 .hud__wind-arrow,
+.hud__wind--force2 .hud__wind-code {
+  color: var(--gold);
+}
+
+.hud__wind--force2 .hud__wind-force {
+  background: var(--gold);
+  color: var(--bg);
 }
 
 .hud__stats {
