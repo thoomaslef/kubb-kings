@@ -7,12 +7,14 @@ import type { BatonId } from '../game/batons';
 import type { KubbSkin } from '../game/theme';
 import type { ThrowEffectId } from '../game/throwEffects';
 import { SHOP_ITEMS } from '../game/shop';
+import type { AchievementId } from '../game/achievements';
 import { buildBracket, recordWinner, type TournamentState } from '../game/tournament';
 import { computeXpAward, type MatchXpStats, type ProgressionState, type XpAward } from '../game/progression';
 import { loadProgression, saveProgression } from '../game/progressionPersistence';
 import { computeCoinsAward } from '../game/currency';
 import { loadCurrency, saveCurrency } from '../game/currencyPersistence';
 import { loadOwnedItems, saveOwnedItems } from '../game/shopPersistence';
+import { loadUnlockedAchievements, saveUnlockedAchievements } from '../game/achievementsPersistence';
 import { getInitialLang, persistLang } from '../i18n/langPersistence';
 import type { Lang } from '../i18n/translate';
 
@@ -28,6 +30,7 @@ export type Screen =
   | 'tournament-setup'
   | 'tournament'
   | 'shop'
+  | 'achievements'
   | 'legal'
   | 'about';
 
@@ -162,6 +165,14 @@ interface GameState {
    * non persiste comme kubbSkin/batonId. Cf. src/game/throwEffects.ts.
    */
   trailEffect: ThrowEffectId;
+  /** Identifiants des succes debloques, persistes (achievementsPersistence.ts). */
+  unlockedAchievements: string[];
+  /**
+   * Succes nouvellement debloques par le dernier match termine, pour
+   * l'ecran de resultat. Tableau vide tant qu'aucun match n'a ete joue
+   * cette session, ou si le dernier match n'en a debloque aucun.
+   */
+  lastAchievementsUnlocked: AchievementId[];
 
   setScreen: (screen: Screen) => void;
   setPaused: (paused: boolean) => void;
@@ -202,8 +213,10 @@ interface GameState {
   /**
    * Calcule et applique le gain de pieces d'un match qui vient de se
    * terminer (cote equipe Bleue), persiste le nouveau solde.
+   * `achievementCoins` : bonus deja calcule des succes nouvellement
+   * debloques ce match (cf. unlockAchievements ci-dessous).
    */
-  awardMatchCoins: (knockedDownByBlue: number, won: boolean) => void;
+  awardMatchCoins: (knockedDownByBlue: number, won: boolean, achievementCoins?: number) => void;
   /** Effet de lancer choisi au menu — voir `trailEffect` ci-dessus. */
   setTrailEffect: (id: ThrowEffectId) => void;
   /**
@@ -211,6 +224,16 @@ interface GameState {
    * possede ; no-op sinon (bouton achat desactive cote UI dans ces cas).
    */
   purchaseItem: (itemId: string) => void;
+  /**
+   * Marque comme possedes les succes donnes, en filtrant ceux deja
+   * debloques (idempotent, meme discipline que purchaseItem) : persiste la
+   * liste et l'expose via `lastAchievementsUnlocked` pour l'ecran de
+   * resultat. Le XP/les pieces de ces succes sont deja comptes ailleurs
+   * (matchXpStats.achievementXp consomme par awardMatchXp, achievementCoins
+   * passe a awardMatchCoins) — cette action ne fait que persister l'etat
+   * "possede" et exposer la liste pour l'affichage.
+   */
+  unlockAchievements: (ids: AchievementId[]) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -234,6 +257,8 @@ export const useGameStore = create<GameState>((set) => ({
   lastCoinsAward: null,
   ownedItems: loadOwnedItems(),
   trailEffect: 'none',
+  unlockedAchievements: loadUnlockedAchievements(),
+  lastAchievementsUnlocked: [],
 
   setScreen: (screen) => set({ screen }),
   setPaused: (paused) => set({ paused }),
@@ -277,9 +302,9 @@ export const useGameStore = create<GameState>((set) => ({
       saveProgression(after);
       return { progression: after, lastXpAward: award };
     }),
-  awardMatchCoins: (knockedDownByBlue, won) =>
+  awardMatchCoins: (knockedDownByBlue, won, achievementCoins = 0) =>
     set((state) => {
-      const gained = computeCoinsAward(knockedDownByBlue, won);
+      const gained = computeCoinsAward(knockedDownByBlue, won, achievementCoins);
       const coins = state.coins + gained;
       saveCurrency({ coins });
       return { coins, lastCoinsAward: gained };
@@ -294,6 +319,14 @@ export const useGameStore = create<GameState>((set) => ({
       saveCurrency({ coins });
       saveOwnedItems(ownedItems);
       return { coins, ownedItems };
+    }),
+  unlockAchievements: (ids) =>
+    set((state) => {
+      const newOnes = ids.filter((id) => !state.unlockedAchievements.includes(id));
+      if (newOnes.length === 0) return { lastAchievementsUnlocked: [] };
+      const unlockedAchievements = [...state.unlockedAchievements, ...newOnes];
+      saveUnlockedAchievements(unlockedAchievements);
+      return { unlockedAchievements, lastAchievementsUnlocked: newOnes };
     })
 }));
 

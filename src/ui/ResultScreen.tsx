@@ -49,6 +49,7 @@ export function ResultScreen() {
   const progression = useGameStore((s) => s.progression);
   const lastXpAward = useGameStore((s) => s.lastXpAward);
   const lastCoinsAward = useGameStore((s) => s.lastCoinsAward);
+  const lastAchievementsUnlocked = useGameStore((s) => s.lastAchievementsUnlocked);
   const isDefi = mode === 'defi';
   const soloLike = mode === 'solo' || isDefi;
   const isTournamentMatch = tournamentPending !== null;
@@ -169,6 +170,11 @@ export function ResultScreen() {
             {lastCoinsAward !== null && (
               <p className="xp-panel__coins">{t('result.coinsGained', { n: lastCoinsAward })}</p>
             )}
+            {lastAchievementsUnlocked.map((id) => (
+              <p key={id} className="xp-panel__achievement">
+                {t('result.achievementUnlocked', { label: t(`achievement.${id}.label`) })}
+              </p>
+            ))}
           </div>
         )}
 

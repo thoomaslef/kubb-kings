@@ -11,6 +11,7 @@ import { QuitScreen } from './QuitScreen';
 import { TournamentSetup } from './TournamentSetup';
 import { TournamentBracket } from './TournamentBracket';
 import { Shop } from './Shop';
+import { Achievements } from './Achievements';
 import { Legal } from './Legal';
 import { About } from './About';
 import { Boot } from './Boot';
@@ -48,6 +49,7 @@ export function App() {
       {screen === 'tournament-setup' && <TournamentSetup />}
       {screen === 'tournament' && <TournamentBracket />}
       {screen === 'shop' && <Shop />}
+      {screen === 'achievements' && <Achievements />}
       {screen === 'legal' && <Legal />}
       {screen === 'about' && <About />}
     </div>

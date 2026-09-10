@@ -99,6 +99,11 @@ export interface MatchXpStats {
   doubles: number;
   triples: number;
   perfects: number;
+  /**
+   * Somme des Achievement.xp des succes nouvellement debloques ce match
+   * (achievements.ts) — deja calculee par MatchScene, simple bonus flat ici.
+   */
+  achievementXp: number;
 }
 
 export interface XpAward {
@@ -109,6 +114,7 @@ export interface XpAward {
   difficult: number;
   multi: number;
   streak: number;
+  achievements: number;
   /** Serie de victoires APRES ce match (deja incrementee/remise a zero). */
   winStreakAfter: number;
   levelBefore: number;
@@ -128,14 +134,27 @@ export function computeXpAward(stats: MatchXpStats, before: ProgressionState): {
 
   const winStreakAfter = stats.won ? before.winStreak + 1 : 0;
   const streak = stats.won ? Math.min(winStreakAfter, XP_RULES.streakCap) * XP_RULES.streakPerWin : 0;
+  const achievements = stats.achievementXp;
 
-  const total = win + perfectWin + precision + difficult + multi + streak;
+  const total = win + perfectWin + precision + difficult + multi + streak + achievements;
   const levelBefore = levelFromXp(before.totalXp).level;
   const totalXpAfter = before.totalXp + total;
   const levelAfter = levelFromXp(totalXpAfter).level;
 
   return {
-    award: { total, win, perfectWin, precision, difficult, multi, streak, winStreakAfter, levelBefore, levelAfter },
+    award: {
+      total,
+      win,
+      perfectWin,
+      precision,
+      difficult,
+      multi,
+      streak,
+      achievements,
+      winStreakAfter,
+      levelBefore,
+      levelAfter
+    },
     after: { totalXp: totalXpAfter, winStreak: winStreakAfter, gamesPlayed: before.gamesPlayed + 1 }
   };
 }

@@ -210,6 +210,9 @@ export function Menu() {
           <button className="btn" onClick={() => setScreen('shop')}>
             {t('menu.shop')} — {t('menu.coinsAria', { n: coins })}
           </button>
+          <button className="btn" onClick={() => setScreen('achievements')}>
+            {t('menu.achievements')}
+          </button>
 
           <div className="segmented" role="group" aria-label={t('menu.langAria')}>
             {LANGS.map((code) => (

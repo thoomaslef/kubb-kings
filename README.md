@@ -429,6 +429,40 @@ simulation IA necessaire, ce systeme n&apos;influence jamais `decideThrow` ni
 
 ---
 
+## Succes
+
+Phase 4 de la progression : des defis ponctuels, cote equipe Bleue uniquement, chacun
+debloque une seule fois par appareil (persiste, `achievementsPersistence.ts`) et
+recompense en XP + pieces au moment ou il est franchi — la recompense est simplement
+pliee dans le meme calcul de fin de match que la victoire, la precision ou les
+combos (`MatchXpStats.achievementXp`, `computeCoinsAward(..., achievementCoins)`),
+si bien que le passage de niveau et le solde affiches restent toujours coherents en
+un seul endroit (`MatchScene::finish`). Consultable a tout moment au menu (ecran
+Succes, `Achievements.tsx`), et annonce a l&apos;ecran (bandeau + son) au moment ou il
+tombe pendant la partie.
+
+| Succes          | Condition                                                     | Recompense |
+| ------------------ | ---------------------------------------------------------------- | :--------: |
+| Double            | Faire tomber 2 kubbs (ou plus) avec un seul lancer               | +150 XP · +50 🪙  |
+| Triple            | Faire tomber exactement 3 kubbs avec un seul lancer              | +250 XP · +75 🪙  |
+| Longue distance   | Faire tomber le kubb adverse le plus eloigne du point de lancer  | +150 XP · +50 🪙  |
+| Sans-faute        | Gagner une partie sans rater un seul lancer                      | +400 XP · +150 🪙 |
+| Coup de grace     | Faire tomber le roi sur son tout dernier lancer disponible       | +400 XP · +150 🪙 |
+
+**Aucun effet sur l&apos;IA ni sur les regles.** Un systeme de detection cote joueur
+pur, ajoute par-dessus les evenements deja suivis pour le combo (Phase 1) et l&apos;XP
+(Phase 2) — aucun nouveau reglage de `decideThrow`/`decideApproachThrow`. Verifie
+directement : logique de detection (le kubb le plus eloigne reellement identifie
+parmi les kubbs adverses encore debout, un lancer a 3 kubbs qui debloque Double sans
+redebloquer Triple s&apos;il l&apos;est deja, une victoire avec un lancer manque qui
+NE debloque PAS Sans-faute, un roi abattu qui NE debloque PAS Coup de grace s&apos;il
+restait des lancers), idempotence (un succes deja possede ou deja gagne plus tot
+dans le meme match ne redonne jamais sa recompense), calcul d&apos;XP/pieces qui
+inclut bien le bonus de succes, persistance apres rechargement, et l&apos;ecran Succes
++ le bandeau de resultat en navigateur reel — zero simulation IA necessaire.
+
+---
+
 ## Meteo (vent)
 
 Bouton au menu, off par defaut (`windEnabled` dans le store) — toujours un simple

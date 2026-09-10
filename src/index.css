@@ -747,6 +747,14 @@ body {
   text-align: center;
 }
 
+.xp-panel__achievement {
+  margin: 6px 0 0;
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+}
+
 /* ---------- Boutique (shop.ts) ---------- */
 
 .shop-balance {
@@ -824,5 +832,12 @@ body {
 .shop-item__locked {
   color: #ff8a7a;
   font-size: 11px;
+  white-space: nowrap;
+}
+
+.shop-item__status {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 12px;
   white-space: nowrap;
 }

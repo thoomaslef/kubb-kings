@@ -39,6 +39,7 @@ import {
 } from '../rules';
 import { BATONS, batonDeviationDeg, batonPowerMultiplier, batonWindMultiplier, type BatonStats } from '../batons';
 import { THROW_EFFECT_TINT } from '../throwEffects';
+import { ACHIEVEMENTS, type AchievementId } from '../achievements';
 
 /** La plus proche d'un ensemble de positions de lancer (voir THROW_POSITIONS). */
 function nearestThrowPosition(x: number, positions: readonly number[]): number {
@@ -130,6 +131,25 @@ export class MatchScene extends Phaser.Scene {
    */
   private matchXpStats = { precisionHits: 0, difficultHits: 0, doubles: 0, triples: 0, perfects: 0 };
   /**
+   * Succes (achievements.ts) nouvellement debloques pendant la partie en
+   * cours (cote equipe Bleue uniquement) : detectes au fil du match, la
+   * somme de leurs recompenses est consommee une seule fois en fin de
+   * partie par awardMatchXp/awardMatchCoins (finish()), la liste elle-meme
+   * par unlockAchievements. Cf. tryUnlockAchievement.
+   */
+  private achievementsEarnedThisMatch = new Set<AchievementId>();
+  private achievementRewards = { xp: 0, coins: 0 };
+  /**
+   * Kubb adverse le plus eloigne du point de lancer au moment ou l'equipe
+   * Bleue arme son tir (recalcule a chaque lancer de Bleue, launch()) — sert
+   * uniquement a detecter le succes "kubb-eloigne" dans onCollisionStart.
+   */
+  private farthestTarget: Kubb | null = null;
+  /** Nombre de lancers de Bleue en partie normale — sert au succes "sans-faute". */
+  private blueThrowsMadeInMatch = 0;
+  /** true des qu'un lancer de Bleue en partie normale n'a rien renverse. */
+  private blueMissedThisMatch = false;
+  /**
    * Vent (direction + force) pour la partie en cours, tire une seule fois a
    * create() — jamais par lancer, sans quoi il n'y aurait rien a lire ni a
    * compenser. null si la meteo est desactivee.
@@ -205,6 +225,11 @@ export class MatchScene extends Phaser.Scene {
     this.knockedThisThrowMaxForce = 0;
     this.comboCount = { blue: 0, red: 0 };
     this.matchXpStats = { precisionHits: 0, difficultHits: 0, doubles: 0, triples: 0, perfects: 0 };
+    this.achievementsEarnedThisMatch = new Set();
+    this.achievementRewards = { xp: 0, coins: 0 };
+    this.farthestTarget = null;
+    this.blueThrowsMadeInMatch = 0;
+    this.blueMissedThisMatch = false;
     // "Bras infatigable" (Defi) : lancers en plus pour le joueur uniquement.
     if (this.runPerks.includes('lancer-bonus')) this.throwsLeft.blue += LANCER_BONUS_THROWS;
 
@@ -375,6 +400,7 @@ export class MatchScene extends Phaser.Scene {
 
   private launch() {
     const origin = this.origin();
+    this.updateFarthestTarget(origin);
     this.baton = new Baton(this, origin.x, origin.y);
     const stats = this.activeBatonStats();
     this.baton.launch(
@@ -546,6 +572,15 @@ export class MatchScene extends Phaser.Scene {
    */
   private resolveComboFeedback(team: TeamId, batonPos: { x: number; y: number } | null) {
     const count = this.knockedThisThrowCount;
+    const pos = batonPos ?? { x: FIELD_CENTER_X, y: FIELD_CENTER_Y };
+
+    // Succes "sans-faute" (achievements.ts) : compte chaque lancer de Bleue
+    // en partie normale, et retient si l'un d'eux n'a rien renverse.
+    if (team === 'blue') {
+      this.blueThrowsMadeInMatch += 1;
+      if (count === 0) this.blueMissedThisMatch = true;
+    }
+
     if (count === 0) {
       this.comboCount[team] = 0;
       return;
@@ -578,13 +613,16 @@ export class MatchScene extends Phaser.Scene {
       else if (count === 3) this.matchXpStats.triples += 1;
       else if (count >= 4) this.matchXpStats.perfects += 1;
       if (this.bouncedWallThisThrow) this.matchXpStats.difficultHits += 1;
+      // Succes "double"/"triple" (achievements.ts) : au moins 2, ou exactement
+      // 3, kubbs abattus par le meme lancer.
+      if (count >= 2) this.tryUnlockAchievement('double', pos);
+      if (count === 3) this.tryUnlockAchievement('triple', pos);
     }
 
     this.comboCount[team] += 1;
     const multiplier = this.comboCount[team];
 
     const lang = gameStore.getState().lang;
-    const pos = batonPos ?? { x: FIELD_CENTER_X, y: FIELD_CENTER_Y };
     this.juice.floatingText(
       pos.x,
       pos.y - 24,
@@ -596,6 +634,53 @@ export class MatchScene extends Phaser.Scene {
         this.juice.floatingText(pos.x, pos.y + 36, translate(lang, 'match.comboMultiplier', { n: multiplier }), '#f2c14e');
       });
     }
+  }
+
+  // ------------------------------------------------------------------ succes
+
+  /**
+   * Recalcule le kubb adverse le plus eloigne du point de lancer, pour le
+   * succes "kubb-eloigne" (onCollisionStart) — seule l'equipe Bleue compte
+   * pour la progression, inutile de le calculer pour l'IA.
+   */
+  private updateFarthestTarget(origin: { x: number; y: number }) {
+    if (this.activeTeam !== 'blue' || this.matchStage !== 'match') {
+      this.farthestTarget = null;
+      return;
+    }
+    const standing = this.teams[OPPONENT.blue].kubbs.filter((k) => k.isStanding);
+    this.farthestTarget = standing.reduce<Kubb | null>((best, k) => {
+      if (!best) return k;
+      const d = Phaser.Math.Distance.Between(origin.x, origin.y, k.sprite.x, k.sprite.y);
+      const bd = Phaser.Math.Distance.Between(origin.x, origin.y, best.sprite.x, best.sprite.y);
+      return d > bd ? k : best;
+    }, null);
+  }
+
+  /**
+   * Debloque un succes s'il ne l'est pas deja (possede, ou deja gagne plus
+   * tot dans ce meme match) : accumule sa recompense (consommee en fin de
+   * partie par finish()) et l'annonce a l'ecran. Cote equipe Bleue
+   * uniquement — tous les appelants ne l'invoquent deja que pour elle.
+   */
+  private tryUnlockAchievement(id: AchievementId, pos: { x: number; y: number }) {
+    if (this.achievementsEarnedThisMatch.has(id)) return;
+    if (gameStore.getState().unlockedAchievements.includes(id)) return;
+    const def = ACHIEVEMENTS.find((a) => a.id === id);
+    if (!def) return;
+
+    this.achievementsEarnedThisMatch.add(id);
+    this.achievementRewards.xp += def.xp;
+    this.achievementRewards.coins += def.coins;
+
+    sfx.playKingUnlocked();
+    const lang = gameStore.getState().lang;
+    this.juice.floatingText(
+      pos.x,
+      pos.y - 110,
+      `${translate(lang, 'achievement.unlocked')} ${translate(lang, `achievement.${id}.label`)}`,
+      '#f2c14e'
+    );
   }
 
   /** Le tirage au sort est tranche : demarre la partie normale avec l'equipe gagnante. */
@@ -836,6 +921,11 @@ export class MatchScene extends Phaser.Scene {
         ),
         TEAMS[this.activeTeam].cssColor
       );
+      // Succes "kubb-eloigne" (achievements.ts) : ce kubb etait bien le plus
+      // eloigne du point de lancer au moment ou Bleue a arme ce tir.
+      if (this.activeTeam === 'blue' && kubb === this.farthestTarget) {
+        this.tryUnlockAchievement('kubb-eloigne', { x, y });
+      }
       if (this.bouncedWallThisThrow) this.reviveLeftmostKubb(this.activeTeam);
       this.syncHud();
     }
@@ -885,6 +975,13 @@ export class MatchScene extends Phaser.Scene {
       legal ? '#f2c14e' : '#ff5a4a'
     );
 
+    // Succes "roi-dernier-lancer" (achievements.ts) : victoire sur le tout
+    // dernier lancer disponible de Bleue (avant decompte : endThrow() n'est
+    // jamais atteint pour ce lancer puisque finish() met deja phase='over').
+    if (legal && this.activeTeam === 'blue' && this.throwsLeft.blue === 1) {
+      this.tryUnlockAchievement('roi-dernier-lancer', { x, y: y - 46 });
+    }
+
     this.finish(
       {
         winner: legal ? this.activeTeam : OPPONENT[this.activeTeam],
@@ -929,6 +1026,12 @@ export class MatchScene extends Phaser.Scene {
     this.aimGfx.clear();
     this.syncHud();
 
+    // Succes "sans-faute" (achievements.ts) : victoire de Bleue sans un seul
+    // lancer manque en partie normale (au moins un lancer effectue).
+    if (result.winner === 'blue' && this.blueThrowsMadeInMatch > 0 && !this.blueMissedThisMatch) {
+      this.tryUnlockAchievement('sans-faute', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 40 });
+    }
+
     gameStore.getState().awardMatchXp({
       won: result.winner === 'blue',
       perfectWin: result.winner === 'blue' && this.teams.blue.downCount === 0,
@@ -936,9 +1039,11 @@ export class MatchScene extends Phaser.Scene {
       difficultHits: this.matchXpStats.difficultHits,
       doubles: this.matchXpStats.doubles,
       triples: this.matchXpStats.triples,
-      perfects: this.matchXpStats.perfects
+      perfects: this.matchXpStats.perfects,
+      achievementXp: this.achievementRewards.xp
     });
-    gameStore.getState().awardMatchCoins(result.knockedDown.blue, result.winner === 'blue');
+    gameStore.getState().awardMatchCoins(result.knockedDown.blue, result.winner === 'blue', this.achievementRewards.coins);
+    gameStore.getState().unlockAchievements([...this.achievementsEarnedThisMatch]);
 
     // Le verdict sonore arrive apres le choc, pas par-dessus.
     this.time.delayedCall(380, () => {
