@@ -45,6 +45,13 @@ function nearestThrowPosition(x: number, positions: readonly number[]): number {
 }
 
 /**
+ * Force d'impact normalisee (0 au seuil de chute, 1 a pleine puissance, cf.
+ * onCollisionStart) au-dela de laquelle un abattage simple est note
+ * PRECISION plutot que simple BON LANCER — cf. resolveComboFeedback.
+ */
+const COMBO_PRECISION_FORCE = 0.55;
+
+/**
  * Scene de match : un tour = choisir sa position de lancer, viser, doser, lancer.
  *
  * Le roi est unique et se tient sur la ligne mediane (regle classique du Kubb) :
@@ -101,6 +108,20 @@ export class MatchScene extends Phaser.Scene {
    * indirect plus difficile a placer.
    */
   private bouncedWallThisThrow = false;
+  /**
+   * Nombre de kubbs abattus par le lancer en cours (pour distinguer un
+   * lancer simple d'un DOUBLE/TRIPLE/PERFECT) et force du coup le plus dur
+   * porte (pour distinguer BON LANCER de PRECISION) — remis a zero a
+   * chaque tir, evalues a la fin (endThrow) une fois le lancer termine.
+   */
+  private knockedThisThrowCount = 0;
+  private knockedThisThrowMaxForce = 0;
+  /**
+   * Serie de lancers consecutifs ayant abattu au moins un kubb, par equipe —
+   * remise a zero des qu'un lancer de cette equipe ne renverse rien. Module
+   * les points de retour (feedback de combo, MatchScene::resolveComboFeedback).
+   */
+  private comboCount: Record<TeamId, number> = { blue: 0, red: 0 };
   /**
    * Vent (direction + force) pour la partie en cours, tire une seule fois a
    * create() — jamais par lancer, sans quoi il n'y aurait rien a lire ni a
@@ -173,6 +194,9 @@ export class MatchScene extends Phaser.Scene {
     this.secondSouffleUsed = false;
     this.knockedThisThrow = false;
     this.bouncedWallThisThrow = false;
+    this.knockedThisThrowCount = 0;
+    this.knockedThisThrowMaxForce = 0;
+    this.comboCount = { blue: 0, red: 0 };
     // "Bras infatigable" (Defi) : lancers en plus pour le joueur uniquement.
     if (this.runPerks.includes('lancer-bonus')) this.throwsLeft.blue += LANCER_BONUS_THROWS;
 
@@ -349,6 +373,8 @@ export class MatchScene extends Phaser.Scene {
     this.aimPower = 0;
     this.knockedThisThrow = false;
     this.bouncedWallThisThrow = false;
+    this.knockedThisThrowCount = 0;
+    this.knockedThisThrowMaxForce = 0;
     this.drawAim();
     this.syncHud();
   }
@@ -390,6 +416,8 @@ export class MatchScene extends Phaser.Scene {
       this.resolveOpeningThrow(lastBatonPos);
       return;
     }
+
+    this.resolveComboFeedback(this.activeTeam, lastBatonPos);
 
     if (this.throwsLeft.blue <= 0 && this.throwsLeft.red <= 0) {
       this.finishOnPoints('throws-exhausted');
@@ -486,6 +514,59 @@ export class MatchScene extends Phaser.Scene {
           : 'red';
 
     this.beginMatch(winner);
+  }
+
+  /**
+   * Feedback de combo (partie normale uniquement) : classe le lancer qui
+   * vient de se terminer selon le nombre de kubbs abattus (this.
+   * knockedThisThrowCount, accumule pendant le vol par onCollisionStart) et,
+   * pour un abattage simple, la force du coup (BON LANCER vs PRECISION,
+   * this.knockedThisThrowMaxForce). Un lancer qui ne renverse rien casse la
+   * serie de l'equipe (comboCount) ; un lancer qui renverse quelque chose
+   * l'allonge et multiplie d'autant les points affiches.
+   */
+  private resolveComboFeedback(team: TeamId, batonPos: { x: number; y: number } | null) {
+    const count = this.knockedThisThrowCount;
+    if (count === 0) {
+      this.comboCount[team] = 0;
+      return;
+    }
+
+    let labelKey: string;
+    let basePoints: number;
+    let fire = false;
+    if (count === 1) {
+      const precise = this.knockedThisThrowMaxForce >= COMBO_PRECISION_FORCE;
+      labelKey = precise ? 'match.comboPrecision' : 'match.comboGood';
+      basePoints = precise ? 25 : 10;
+    } else if (count === 2) {
+      labelKey = 'match.comboDouble';
+      basePoints = 50;
+    } else if (count === 3) {
+      labelKey = 'match.comboTriple';
+      basePoints = 100;
+    } else {
+      labelKey = 'match.comboPerfect';
+      basePoints = 250;
+      fire = true;
+    }
+
+    this.comboCount[team] += 1;
+    const multiplier = this.comboCount[team];
+
+    const lang = gameStore.getState().lang;
+    const pos = batonPos ?? { x: FIELD_CENTER_X, y: FIELD_CENTER_Y };
+    this.juice.floatingText(
+      pos.x,
+      pos.y - 24,
+      `${translate(lang, labelKey)} +${basePoints * multiplier}`,
+      fire ? '#ff5a4a' : TEAMS[team].cssColor
+    );
+    if (multiplier > 1) {
+      this.time.delayedCall(120, () => {
+        this.juice.floatingText(pos.x, pos.y + 36, translate(lang, 'match.comboMultiplier', { n: multiplier }), '#f2c14e');
+      });
+    }
   }
 
   /** Le tirage au sort est tranche : demarre la partie normale avec l'equipe gagnante. */
@@ -714,6 +795,8 @@ export class MatchScene extends Phaser.Scene {
       const { x, y } = kubb.sprite;
       kubb.knockDown(this);
       this.knockedThisThrow = true;
+      this.knockedThisThrowCount += 1;
+      this.knockedThisThrowMaxForce = Math.max(this.knockedThisThrowMaxForce, force);
       this.juice.kubbImpact(x, y, force, TEAMS[kubb.team].color);
       this.juice.floatingText(
         x,

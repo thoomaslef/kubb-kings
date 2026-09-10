@@ -305,6 +305,41 @@ baton different est choisi ; lancer reel fonctionnel ; zero erreur).
 
 ---
 
+## Combo (retour de score en jeu)
+
+Premiere brique d&apos;une progression plus large (a venir : XP/niveaux, monnaie,
+defis) — pour l&apos;instant purement un retour immediat, sans consequence sur les
+regles ni sur une quelconque sauvegarde. Chaque lancer qui abat au moins un kubb
+adverse affiche un texte flottant note selon ce qu&apos;il a accompli
+(`MatchScene::resolveComboFeedback`) :
+
+| Resultat du lancer                                             | Libelle      | Points de base |
+| ---------------------------------------------------------------- | ------------ | -------------- |
+| 1 kubb abattu, impact sous le seuil de precision                 | BON LANCER   | +10            |
+| 1 kubb abattu, impact au-dessus du seuil de precision (force &ge; 0.55, meme normalisation 0-1 que `Juice.kubbImpact`) | PRECISION    | +25            |
+| 2 kubbs abattus par le meme lancer                                | DOUBLE       | +50            |
+| 3 kubbs abattus par le meme lancer                                | TRIPLE       | +100           |
+| 4 kubbs abattus ou plus par le meme lancer                        | PERFECT !    | +250           |
+
+**Serie (combo).** Chaque lancer qui abat au moins un kubb allonge d&apos;un cran la
+serie EN COURS de son equipe (`comboCount`, independante entre bleu et rouge) et
+multiplie d&apos;autant les points affiches — un DOUBLE au 3<sup>e</sup> lancer d&apos;une
+serie affiche donc "+150" (50 &times; 3), avec un second texte "&times;3 COMBO" juste en
+dessous. Un lancer qui ne renverse rien (tir gache, rocher, bande sans suite) casse
+la serie de cette equipe, qui repart de zero au prochain abattage. La serie de l&apos;IA
+suit exactement les memes regles que celle du joueur — le spectacle vaut aussi pour
+elle.
+
+**Aucun effet sur les regles ni sur l&apos;IA.** Purement un habillage
+(`Juice.floatingText`), au meme titre que les eclats de bois ou le halo du roi (voir
+plus bas) : retirer ce systeme ne changerait l&apos;issue d&apos;aucune partie, et il ne
+touche a aucun des reglages de securite de l&apos;IA (`decideThrow`) — verifie
+directement en navigateur (les 5 paliers et la multiplication par la serie, cas par
+cas, plus un lancer reel en jeu qui declenche bien le retour), aucune simulation de
+suicide necessaire.
+
+---
+
 ## Meteo (vent)
 
 Bouton au menu, off par defaut (`windEnabled` dans le store) — toujours un simple

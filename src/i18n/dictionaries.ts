@@ -231,6 +231,12 @@ const fr: Record<string, string> = {
   'match.kubbRevived': 'KUBB RELEVE !',
   'match.openingTouched': 'TOUCHE !',
   'match.openingBothTouched': 'EGALITE, ON REJOUE !',
+  'match.comboGood': 'BON LANCER',
+  'match.comboPrecision': 'PRECISION',
+  'match.comboDouble': 'DOUBLE',
+  'match.comboTriple': 'TRIPLE',
+  'match.comboPerfect': 'PERFECT !',
+  'match.comboMultiplier': '×{n} COMBO',
   'match.kingFalls': 'LE ROI TOMBE !',
   'match.kingTooEarly': 'ROI TOUCHE TROP TOT'
 };
@@ -453,6 +459,12 @@ const en: Record<string, string> = {
   'match.openingTouched': 'HIT!',
   'match.openingBothTouched': 'TIE, THROW AGAIN!',
   'match.kubbRevived': 'KUBB REVIVED!',
+  'match.comboGood': 'GOOD THROW',
+  'match.comboPrecision': 'PRECISION',
+  'match.comboDouble': 'DOUBLE',
+  'match.comboTriple': 'TRIPLE',
+  'match.comboPerfect': 'PERFECT!',
+  'match.comboMultiplier': '×{n} COMBO',
   'match.kingFalls': 'THE KING FALLS!',
   'match.kingTooEarly': 'KING HIT TOO SOON'
 };
