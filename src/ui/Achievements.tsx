@@ -26,9 +26,11 @@ export function Achievements() {
                     {t('achievements.reward', { xp: achievement.xp, coins: achievement.coins })}
                   </span>
                 </div>
-                <span className={earned ? 'shop-item__owned' : 'shop-item__status'}>
-                  {t(earned ? 'achievements.earned' : 'achievements.locked')}
-                </span>
+                <div className="shop-item__footer">
+                  <span className={earned ? 'shop-item__owned' : 'shop-item__status'}>
+                    {t(earned ? 'achievements.earned' : 'achievements.locked')}
+                  </span>
+                </div>
               </div>
             );
           })}

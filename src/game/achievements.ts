@@ -11,7 +11,15 @@
  * que purchaseItem dans shop.ts.
  */
 
-export type AchievementId = 'double' | 'triple' | 'kubb-eloigne' | 'sans-faute' | 'roi-dernier-lancer';
+export type AchievementId =
+  | 'double'
+  | 'triple'
+  | 'perfect'
+  | 'kubb-eloigne'
+  | 'sans-faute'
+  | 'victoire-parfaite'
+  | 'ricochet'
+  | 'roi-dernier-lancer';
 
 export interface Achievement {
   id: AchievementId;
@@ -22,7 +30,10 @@ export interface Achievement {
 export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'double', xp: 150, coins: 50 },
   { id: 'triple', xp: 250, coins: 75 },
+  { id: 'perfect', xp: 350, coins: 100 },
   { id: 'kubb-eloigne', xp: 150, coins: 50 },
+  { id: 'ricochet', xp: 150, coins: 50 },
   { id: 'sans-faute', xp: 400, coins: 150 },
+  { id: 'victoire-parfaite', xp: 350, coins: 125 },
   { id: 'roi-dernier-lancer', xp: 400, coins: 150 }
 ];

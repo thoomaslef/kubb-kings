@@ -59,18 +59,22 @@ export function Shop() {
                           </span>
                         )}
                       </div>
-                      {owned ? (
-                        <span className="shop-item__owned">{t('shop.owned')}</span>
-                      ) : (
-                        <button
-                          className="btn btn--primary shop-item__buy"
-                          disabled={!affordable}
-                          onClick={() => purchaseItem(item.id)}
-                        >
-                          {t('shop.buy', { price: item.price })}
-                        </button>
-                      )}
-                      {!owned && !affordable && <span className="shop-item__locked">{t('shop.cantAfford')}</span>}
+                      <div className="shop-item__footer">
+                        {owned ? (
+                          <span className="shop-item__owned">{t('shop.owned')}</span>
+                        ) : (
+                          <>
+                            <button
+                              className="btn btn--primary shop-item__buy"
+                              disabled={!affordable}
+                              onClick={() => purchaseItem(item.id)}
+                            >
+                              {t('shop.buy', { price: item.price })}
+                            </button>
+                            {!affordable && <span className="shop-item__locked">{t('shop.cantAfford')}</span>}
+                          </>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

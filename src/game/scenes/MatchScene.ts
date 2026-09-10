@@ -617,6 +617,7 @@ export class MatchScene extends Phaser.Scene {
       // 3, kubbs abattus par le meme lancer.
       if (count >= 2) this.tryUnlockAchievement('double', pos);
       if (count === 3) this.tryUnlockAchievement('triple', pos);
+      if (count >= 4) this.tryUnlockAchievement('perfect', pos);
     }
 
     this.comboCount[team] += 1;
@@ -948,6 +949,11 @@ export class MatchScene extends Phaser.Scene {
       translate(gameStore.getState().lang, 'match.kubbRevived'),
       TEAMS[team].cssColor
     );
+
+    // Succes "ricochet" (achievements.ts) : redresse obtenue via un tir indirect.
+    if (team === 'blue') {
+      this.tryUnlockAchievement('ricochet', { x: fallen.sprite.x, y: fallen.sprite.y });
+    }
   }
 
   /** Ricochet ou choc trop mou : un son bref, espace pour rester lisible. */
@@ -1030,6 +1036,13 @@ export class MatchScene extends Phaser.Scene {
     // lancer manque en partie normale (au moins un lancer effectue).
     if (result.winner === 'blue' && this.blueThrowsMadeInMatch > 0 && !this.blueMissedThisMatch) {
       this.tryUnlockAchievement('sans-faute', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 40 });
+    }
+    // Succes "victoire-parfaite" (achievements.ts) : victoire de Bleue sans
+    // avoir perdu un seul de ses propres kubbs de toute la partie. Bandeau
+    // decale plus haut que celui de "sans-faute" : les deux peuvent tomber
+    // sur la meme victoire.
+    if (result.winner === 'blue' && this.teams.blue.downCount === 0) {
+      this.tryUnlockAchievement('victoire-parfaite', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 90 });
     }
 
     gameStore.getState().awardMatchXp({

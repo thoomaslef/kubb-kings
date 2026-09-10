@@ -441,20 +441,24 @@ un seul endroit (`MatchScene::finish`). Consultable a tout moment au menu (ecran
 Succes, `Achievements.tsx`), et annonce a l&apos;ecran (bandeau + son) au moment ou il
 tombe pendant la partie.
 
-| Succes          | Condition                                                     | Recompense |
+| Succes            | Condition                                                     | Recompense |
 | ------------------ | ---------------------------------------------------------------- | :--------: |
 | Double            | Faire tomber 2 kubbs (ou plus) avec un seul lancer               | +150 XP · +50 🪙  |
 | Triple            | Faire tomber exactement 3 kubbs avec un seul lancer              | +250 XP · +75 🪙  |
+| Perfect           | Faire tomber 4 kubbs ou plus avec un seul lancer                 | +350 XP · +100 🪙 |
 | Longue distance   | Faire tomber le kubb adverse le plus eloigne du point de lancer  | +150 XP · +50 🪙  |
+| Ricochet          | Redresser un kubb grace a un tir indirect (rebond sur une bande) | +150 XP · +50 🪙  |
 | Sans-faute        | Gagner une partie sans rater un seul lancer                      | +400 XP · +150 🪙 |
+| Victoire parfaite | Gagner une partie sans perdre un seul de ses propres kubbs       | +350 XP · +125 🪙 |
 | Coup de grace     | Faire tomber le roi sur son tout dernier lancer disponible       | +400 XP · +150 🪙 |
 
 **Aucun effet sur l&apos;IA ni sur les regles.** Un systeme de detection cote joueur
 pur, ajoute par-dessus les evenements deja suivis pour le combo (Phase 1) et l&apos;XP
 (Phase 2) — aucun nouveau reglage de `decideThrow`/`decideApproachThrow`. Verifie
 directement : logique de detection (le kubb le plus eloigne reellement identifie
-parmi les kubbs adverses encore debout, un lancer a 3 kubbs qui debloque Double sans
-redebloquer Triple s&apos;il l&apos;est deja, une victoire avec un lancer manque qui
+parmi les kubbs adverses encore debout, un lancer a 5 kubbs qui debloque Double +
+Perfect sans redebloquer Triple, une redresse via ricochet qui ne debloque jamais
+rien pour l&apos;equipe qui n&apos;a pas lance, une victoire avec un lancer manque qui
 NE debloque PAS Sans-faute, un roi abattu qui NE debloque PAS Coup de grace s&apos;il
 restait des lancers), idempotence (un succes deja possede ou deja gagne plus tot
 dans le meme match ne redonne jamais sa recompense), calcul d&apos;XP/pieces qui

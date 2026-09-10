@@ -785,9 +785,9 @@ body {
 
 .shop-item {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
@@ -798,10 +798,9 @@ body {
 }
 
 .shop-item__body {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -813,6 +812,19 @@ body {
 .shop-item__hint {
   color: var(--muted);
   font-size: 12px;
+  line-height: 1.4;
+}
+
+/*
+ * Ligne d'action/statut, sous le texte plutot qu'a cote : un bouton "Acheter"
+ * et son eventuel avertissement pousses en colonne etroite ecrasaient jadis
+ * le texte (voir historique) — tout tient desormais sur la pleine largeur.
+ */
+.shop-item__footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
 }
 
 .shop-item__owned {
@@ -831,8 +843,7 @@ body {
 
 .shop-item__locked {
   color: #ff8a7a;
-  font-size: 11px;
-  white-space: nowrap;
+  font-size: 12px;
 }
 
 .shop-item__status {
