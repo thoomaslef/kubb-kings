@@ -32,6 +32,7 @@ const fr: Record<string, string> = {
     "Une brise devie les lancers — direction (8 sens) et force (1 ou 2) tirees au debut de chaque partie, affichees clairement en jeu",
   'menu.windOffHint': 'Terrain calme',
   'menu.skinAria': 'Skin des kubbs',
+  'menu.batonAria': 'Baton',
   'menu.langAria': 'Langue',
   'menu.rules': 'Regles',
   'menu.quit': 'Quitter',
@@ -62,6 +63,15 @@ const fr: Record<string, string> = {
   'skin.marbre.hint': 'Blocs en pierre veinee',
   'skin.metal.label': 'Metal',
   'skin.metal.hint': 'Blocs metalliques et reflets nets',
+
+  // ---- baton (batons.ts) — n'affecte que le joueur, jamais l'IA
+  'baton.base.label': 'De base',
+  'baton.nordique.label': 'Nordique',
+  'baton.sniper.label': 'Sniper',
+  'baton.lourd.label': 'Lourd',
+  'baton.statPower': 'Puissance',
+  'baton.statPrecision': 'Precision',
+  'baton.statControl': 'Controle',
 
   // ---- team (teamData.ts)
   'team.blue.label': 'Bleue',
@@ -244,6 +254,7 @@ const en: Record<string, string> = {
     'A breeze bends throws — direction (8-way) and force (1 or 2) set at the start of each match, shown clearly in-game',
   'menu.windOffHint': 'Calm field',
   'menu.skinAria': 'Kubb skin',
+  'menu.batonAria': 'Baton',
   'menu.langAria': 'Language',
   'menu.rules': 'Rules',
   'menu.quit': 'Quit',
@@ -274,6 +285,15 @@ const en: Record<string, string> = {
   'skin.marbre.hint': 'Veined stone blocks',
   'skin.metal.label': 'Metal',
   'skin.metal.hint': 'Metal blocks with crisp highlights',
+
+  // ---- baton (batons.ts) — affects the player only, never the AI
+  'baton.base.label': 'Standard',
+  'baton.nordique.label': 'Nordic',
+  'baton.sniper.label': 'Sniper',
+  'baton.lourd.label': 'Heavy',
+  'baton.statPower': 'Power',
+  'baton.statPrecision': 'Precision',
+  'baton.statControl': 'Control',
 
   // ---- team
   'team.blue.label': 'Blue',

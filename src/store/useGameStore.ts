@@ -3,6 +3,7 @@ import type { TeamId } from '../game/entities/teamData';
 import type { Difficulty } from '../game/ai';
 import type { PerkId } from '../game/roguelite';
 import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId, type Wind } from '../game/rules';
+import type { BatonId } from '../game/batons';
 import type { KubbSkin } from '../game/theme';
 import { buildBracket, recordWinner, type TournamentState } from '../game/tournament';
 import { getInitialLang, persistLang } from '../i18n/langPersistence';
@@ -109,6 +110,11 @@ interface GameState {
   fieldPreset: FieldPresetId;
   /** Habillage visuel des kubbs — purement cosmetique, sans effet sur l'IA. */
   kubbSkin: KubbSkin;
+  /**
+   * Baton du joueur (jamais de l'IA, toujours sur le baton de base) — un vrai
+   * effet de jeu, pas cosmetique comme kubbSkin. Cf. src/game/batons.ts.
+   */
+  batonId: BatonId;
   /** Meteo : vent lateral en jeu, off par defaut. */
   windEnabled: boolean;
   /** null hors mode 'defi' — pas de run en cours. */
@@ -133,6 +139,7 @@ interface GameState {
   setDifficulty: (difficulty: Difficulty) => void;
   setFieldPreset: (preset: FieldPresetId) => void;
   setKubbSkin: (skin: KubbSkin) => void;
+  setBatonId: (id: BatonId) => void;
   setWindEnabled: (enabled: boolean) => void;
   /** (Re)demarre une run a la manche 1, sans bonus. */
   startRun: () => void;
@@ -163,6 +170,7 @@ export const useGameStore = create<GameState>((set) => ({
   difficulty: 'moyen',
   fieldPreset: 'classique',
   kubbSkin: 'bois',
+  batonId: 'base',
   windEnabled: false,
   run: null,
   tournament: null,
@@ -178,6 +186,7 @@ export const useGameStore = create<GameState>((set) => ({
   setDifficulty: (difficulty) => set({ difficulty }),
   setFieldPreset: (preset) => set({ fieldPreset: preset }),
   setKubbSkin: (skin) => set({ kubbSkin: skin }),
+  setBatonId: (id) => set({ batonId: id }),
   setWindEnabled: (enabled) => set({ windEnabled: enabled }),
   startRun: () => set({ run: { stageIndex: 0, perks: [] } }),
   advanceRun: () =>

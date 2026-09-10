@@ -27,6 +27,7 @@ import {
   FIELD_PRESETS,
   KNOCKDOWN_IMPACT_SPEED,
   MATCH_DURATION_MS,
+  MAX_AIM_DEVIATION_DEG,
   MAX_THROWS_PER_TEAM,
   THROW,
   THROW_POSITIONS,
@@ -36,6 +37,7 @@ import {
   type FieldPresetId,
   type Wind
 } from '../rules';
+import { BATONS, batonDeviationDeg, batonPowerMultiplier, batonWindMultiplier, type BatonStats } from '../batons';
 
 /** La plus proche d'un ensemble de positions de lancer (voir THROW_POSITIONS). */
 function nearestThrowPosition(x: number, positions: readonly number[]): number {
@@ -79,6 +81,13 @@ export class MatchScene extends Phaser.Scene {
   private baton: Baton | null = null;
   private obstacles: Obstacle[] = [];
   private fieldPreset: FieldPresetId = 'classique';
+  /**
+   * Baton choisi au menu — n'affecte QUE les equipes tenues par un joueur
+   * humain (isAiTeam false) : l'IA reste toujours sur BATONS.base, cf.
+   * batons.ts. Stats brutes ; les multiplicateurs se calculent a la volee
+   * (batonPowerMultiplier/batonDeviationDeg/batonWindMultiplier).
+   */
+  private batonStats: BatonStats = BATONS.base;
   /** Bonus de la run en cours (mode 'defi' uniquement, sinon toujours vide). */
   private runPerks: PerkId[] = [];
   /** "Second souffle" ne rembourse qu'un seul lancer par manche. */
@@ -144,7 +153,8 @@ export class MatchScene extends Phaser.Scene {
     this.aiTimer = null;
     this.aiTween = null;
 
-    const { mode, difficulty, fieldPreset, kubbSkin, windEnabled, run } = gameStore.getState();
+    const { mode, difficulty, fieldPreset, kubbSkin, batonId, windEnabled, run } = gameStore.getState();
+    this.batonStats = BATONS[batonId];
     this.wind = windEnabled
       ? {
           direction: WIND_DIRECTIONS[Math.floor(Math.random() * WIND_DIRECTIONS.length)],
@@ -294,25 +304,42 @@ export class MatchScene extends Phaser.Scene {
   }
 
   /**
+   * Stats du baton reellement en jeu pour l'equipe active : celui choisi au
+   * menu pour une equipe humaine, toujours BATONS.base pour l'IA — son
+   * equilibrage n'a jamais ete verifie qu'avec ce baton-la.
+   */
+  private activeBatonStats(): BatonStats {
+    return this.isAiTeam(this.activeTeam) ? BATONS.base : this.batonStats;
+  }
+
+  /**
    * Brise : une acceleration constante s'ajoute au baton en vol, dans l'une
    * des 8 directions de la boussole (windAcceleration dans rules.ts) quel
-   * que soit l'angle vise. Le nombre de pas Matter ecoules cette frame se
-   * deduit du delta reel, pour rester independant du framerate — meme
-   * increment par pas que le modele suivi par l'IA pour compenser sa visee
-   * (ai.ts::simulateWindFlight).
+   * que soit l'angle vise, moderee par le Controle du baton en jeu (moins
+   * d'effet pour un baton plus etoile en Controle). Le nombre de pas Matter
+   * ecoules cette frame se deduit du delta reel, pour rester independant du
+   * framerate — meme increment par pas que le modele suivi par l'IA pour
+   * compenser sa visee (ai.ts::simulateWindFlight).
    */
   private applyWind(delta: number) {
     if (!this.baton || !this.wind) return;
     const body = this.baton.sprite.body as MatterJS.BodyType;
     const steps = delta / (1000 / 60);
     const accel = windAcceleration(this.wind);
-    this.baton.sprite.setVelocity(body.velocity.x + accel.x * steps, body.velocity.y + accel.y * steps);
+    const mult = batonWindMultiplier(this.activeBatonStats());
+    this.baton.sprite.setVelocity(body.velocity.x + accel.x * mult * steps, body.velocity.y + accel.y * mult * steps);
   }
 
   private launch() {
     const origin = this.origin();
     this.baton = new Baton(this, origin.x, origin.y);
-    this.baton.launch(this.aimAngle, this.aimPower);
+    const stats = this.activeBatonStats();
+    this.baton.launch(
+      this.aimAngle,
+      this.aimPower,
+      batonDeviationDeg(stats, MAX_AIM_DEVIATION_DEG),
+      batonPowerMultiplier(stats)
+    );
 
     this.juice.throwStart(origin.x, origin.y, this.aimPower);
 

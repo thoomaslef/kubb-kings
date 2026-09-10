@@ -3,6 +3,7 @@ import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { AI_PROFILES, type Difficulty } from '../game/ai';
 import { FIELD_PRESETS, type FieldPresetId } from '../game/rules';
+import { BATONS, BATON_IDS } from '../game/batons';
 import { KUBB_SKINS } from '../game/theme';
 import { LADDER, getBestStage } from '../game/roguelite';
 import { useT } from '../i18n/useT';
@@ -13,6 +14,11 @@ const PRESETS = Object.keys(FIELD_PRESETS) as FieldPresetId[];
 const LANGS: Lang[] = ['fr', 'en'];
 const LANG_AUTONYM: Record<Lang, string> = { fr: 'Français', en: 'English' };
 
+/** "★★★☆☆" pour n etoiles sur 5. */
+function stars(n: number): string {
+  return '★'.repeat(n) + '☆'.repeat(Math.max(0, 5 - n));
+}
+
 export function Menu() {
   const t = useT();
   const setScreen = useGameStore((s) => s.setScreen);
@@ -22,6 +28,8 @@ export function Menu() {
   const setFieldPreset = useGameStore((s) => s.setFieldPreset);
   const kubbSkin = useGameStore((s) => s.kubbSkin);
   const setKubbSkin = useGameStore((s) => s.setKubbSkin);
+  const batonId = useGameStore((s) => s.batonId);
+  const setBatonId = useGameStore((s) => s.setBatonId);
   const windEnabled = useGameStore((s) => s.windEnabled);
   const setWindEnabled = useGameStore((s) => s.setWindEnabled);
   const lang = useGameStore((s) => s.lang);
@@ -137,6 +145,23 @@ export function Menu() {
             ))}
           </div>
           <p className="footnote footnote--tight">{t(`skin.${kubbSkin}.hint`)}</p>
+
+          <div className="segmented" role="group" aria-label={t('menu.batonAria')}>
+            {BATON_IDS.map((id) => (
+              <button
+                key={id}
+                className={`segmented__item${id === batonId ? ' segmented__item--on' : ''}`}
+                aria-pressed={id === batonId}
+                onClick={() => setBatonId(id)}
+              >
+                {t(`baton.${id}.label`)}
+              </button>
+            ))}
+          </div>
+          <p className="footnote footnote--tight">
+            {t('baton.statPower')} {stars(BATONS[batonId].power)} · {t('baton.statPrecision')}{' '}
+            {stars(BATONS[batonId].precision)} · {t('baton.statControl')} {stars(BATONS[batonId].control)}
+          </p>
 
           <div className="segmented" role="group" aria-label={t('menu.langAria')}>
             {LANGS.map((code) => (

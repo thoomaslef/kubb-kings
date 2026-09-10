@@ -36,15 +36,15 @@ export class Baton {
   }
 
   /**
-   * Lance le baton. Une deviation aleatoire de +/- MAX_AIM_DEVIATION_DEG degres
-   * est ajoutee a l'angle vise : c'est "l'effet" leger du MVP.
+   * Lance le baton. Une deviation aleatoire de +/- deviationDeg degres (par
+   * defaut MAX_AIM_DEVIATION_DEG) est ajoutee a l'angle vise : c'est "l'effet"
+   * leger du MVP. `speedMultiplier` (baton du joueur, cf. batons.ts) module la
+   * vitesse atteinte a jauge egale — 1 par defaut (baton de base / IA).
    */
-  launch(angle: number, power: number) {
-    const deviation = Phaser.Math.DegToRad(
-      Phaser.Math.FloatBetween(-MAX_AIM_DEVIATION_DEG, MAX_AIM_DEVIATION_DEG)
-    );
+  launch(angle: number, power: number, deviationDeg = MAX_AIM_DEVIATION_DEG, speedMultiplier = 1) {
+    const deviation = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-deviationDeg, deviationDeg));
     const finalAngle = angle + deviation;
-    const speed = THROW.maxSpeed * power;
+    const speed = THROW.maxSpeed * power * speedMultiplier;
 
     // La texture est verticale : on aligne son grand axe sur la trajectoire.
     this.sprite.setRotation(finalAngle - Math.PI / 2);

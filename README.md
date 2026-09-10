@@ -273,6 +273,38 @@ simulation n&apos;est necessaire pour cette fonctionnalite. Stocke dans le store
 
 ---
 
+## Batons
+
+Contrairement aux skins, un vrai effet de jeu — la progression du joueur passe par le
+style plutot que par la puissance brute : chaque baton est un compromis, pas un strict
+progres. Choisi librement au menu ([`src/game/batons.ts`](src/game/batons.ts)), 3 stats
+affichees en etoiles (1 a 5, 3 = le baton de base) :
+
+| Baton        | Puissance | Precision | Controle |
+| ------------ | :-------: | :-------: | :------: |
+| **De base**  | ★★★☆☆     | ★★★☆☆     | ★★★☆☆    |
+| **Nordique** | ★★★★☆     | ★★☆☆☆     | ★★★☆☆    |
+| **Sniper**   | ★★☆☆☆     | ★★★★★     | ★★★☆☆    |
+| **Lourd**    | ★★★★★     | ★★☆☆☆     | ★★★☆☆    |
+
+- **Puissance** module la vitesse max du baton (+/-6% par etoile au-dessus/en-dessous de
+  la baseline).
+- **Precision** module la deviation aleatoire du jeu (+/-18% par etoile, MOINS de
+  deviation pour PLUS d&apos;etoiles).
+- **Controle** module l&apos;effet du vent ressenti par ce baton (+/-15% par etoile, MOINS
+  d&apos;effet pour PLUS d&apos;etoiles) — donne un vrai enjeu strategique au vent : un
+  baton bien controle est un atout par jour de tempete.
+
+**Jamais l&apos;IA.** Seules les equipes tenues par un joueur humain beneficient de ces
+multiplicateurs (`MatchScene::activeBatonStats`) — l&apos;IA reste toujours sur le baton
+de base, quel que soit le choix au menu. Ce choix ne touche donc a aucun des reglages de
+securite de l&apos;IA (`decideThrow`/`decideApproachThrow`) : aucune simulation de
+suicide n&apos;etait necessaire pour cette fonctionnalite, seulement une verification en
+navigateur (stats correctement appliquees au joueur, jamais a l&apos;IA, meme quand un
+baton different est choisi ; lancer reel fonctionnel ; zero erreur).
+
+---
+
 ## Meteo (vent)
 
 Bouton au menu, off par defaut (`windEnabled` dans le store) — toujours un simple
