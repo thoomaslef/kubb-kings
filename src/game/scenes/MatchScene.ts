@@ -275,7 +275,7 @@ export class MatchScene extends Phaser.Scene {
 
     if (this.phase === 'flying' && this.baton) {
       if (this.wind) this.applyWind(delta);
-      if (FIELD_PRESETS[this.fieldPreset].hasHill) this.applyHillFriction();
+      this.applyTerrainFriction();
 
       this.flightMs += delta;
       this.restMs = this.baton.speed < THROW.restSpeed ? this.restMs + delta : 0;
@@ -403,26 +403,42 @@ export class MatchScene extends Phaser.Scene {
   }
 
   /**
-   * Colline (terrain "Colline", rules.ts) : frictionAir du corps Matter du
-   * baton relevee tant qu'il est dans la zone (HILL_RADIUS, centree comme le
-   * roi), remise a la valeur de base sinon — Matter applique alors lui-meme
-   * le bon amortissement a chaque sous-pas, sans qu'on ait besoin de
-   * modifier sa vitesse a la main comme pour le vent (ai.ts::
-   * simulateWindFlight/powerForDistance suivent exactement la meme regle).
+   * Terrain (rules.ts::FieldPreset) : frictionAir du corps Matter du
+   * projectile ajustee a chaque frame de vol, remise a la valeur de base
+   * sinon — Matter applique alors lui-meme le bon amortissement a chaque
+   * sous-pas, sans qu'on ait besoin de modifier la vitesse a la main comme
+   * pour le vent (ai.ts::simulateWindFlight/powerForDistance suivent
+   * exactement la meme regle, pour que l'IA calcule la bonne puissance).
+   *
+   * "Colline" (hasHill) ajoute HILL_EXTRA_FRICTION tant que le baton est
+   * dans la zone (HILL_RADIUS, centree comme le roi). "Glace"/"Sable"
+   * (frictionMultiplier) s'appliquent partout sur le terrain, et different
+   * selon la forme du projectile (frictionMultiplierBall pour la boule,
+   * qui s'enfonce dans le sable bien plus qu'un baton n'y glisse dessus).
    */
-  private applyHillFriction() {
+  private applyTerrainFriction() {
     if (!this.baton) return;
+    const preset = FIELD_PRESETS[this.fieldPreset];
+    const shape = this.activeBatonStats().shape;
+    const multiplier = (shape === 'boule' ? preset.frictionMultiplierBall : undefined) ?? preset.frictionMultiplier;
+    const base = BATON_BODY.frictionAir * multiplier;
+
     const body = this.baton.sprite.body as MatterJS.BodyType;
+    if (!preset.hasHill) {
+      body.frictionAir = base;
+      return;
+    }
     const inside =
       Phaser.Math.Distance.Between(body.position.x, body.position.y, FIELD_CENTER_X, FIELD_CENTER_Y) <= HILL_RADIUS;
-    body.frictionAir = inside ? BATON_BODY.frictionAir + HILL_EXTRA_FRICTION : BATON_BODY.frictionAir;
+    body.frictionAir = inside ? base + HILL_EXTRA_FRICTION : base;
   }
 
   private launch() {
     const origin = this.origin();
     this.updateFarthestTarget(origin);
     const stats = this.activeBatonStats();
-    this.baton = new Baton(this, origin.x, origin.y, stats.shape);
+    const preset = FIELD_PRESETS[this.fieldPreset];
+    this.baton = new Baton(this, origin.x, origin.y, stats.shape, preset.restitutionMultiplier);
     this.baton.launch(
       this.aimAngle,
       this.aimPower,
@@ -770,6 +786,7 @@ export class MatchScene extends Phaser.Scene {
           obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
           ownStanding: this.teams[AI_TEAM].kubbs.map((k) => k.isStanding),
           hasHill: FIELD_PRESETS[this.fieldPreset].hasHill,
+          frictionMultiplier: FIELD_PRESETS[this.fieldPreset].frictionMultiplier,
           ...(this.wind ? { wind: this.wind } : {})
         },
         profile
@@ -813,6 +830,7 @@ export class MatchScene extends Phaser.Scene {
           direction: TEAMS[AI_TEAM].direction,
           obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
           hasHill: FIELD_PRESETS[this.fieldPreset].hasHill,
+          frictionMultiplier: FIELD_PRESETS[this.fieldPreset].frictionMultiplier,
           ...(this.wind ? { wind: this.wind } : {})
         },
         profile
@@ -1195,8 +1213,11 @@ export class MatchScene extends Phaser.Scene {
    * separement par createWalls().
    */
   private drawField() {
-    // Pelouse : la tuile generee au boot est repetee, plutot qu'un aplat vert.
-    this.add.tileSprite(FIELD.x, FIELD.y, FIELD.width, FIELD.height, 'grass').setOrigin(0, 0).setDepth(0);
+    // Sol : la tuile generee au boot est repetee, plutot qu'un aplat de couleur.
+    // 'grass' sauf sur Glace/Sable (FieldPreset.groundTexture), qui remplacent
+    // la pelouse sur tout le terrain plutot que d'ajouter un element par-dessus.
+    const ground = FIELD_PRESETS[this.fieldPreset].groundTexture;
+    this.add.tileSprite(FIELD.x, FIELD.y, FIELD.width, FIELD.height, ground).setOrigin(0, 0).setDepth(0);
 
     const g = this.add.graphics().setDepth(0);
 

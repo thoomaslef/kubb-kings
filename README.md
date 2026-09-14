@@ -229,10 +229,11 @@ comptent dans le total de 12 par equipe (`MatchScene.beginOpeningThrow` / `resol
 
 ## Terrains a obstacles
 
-Quatre presets, choisis au menu, dans [`src/game/rules.ts`](src/game/rules.ts)
+Six presets, choisis au menu, dans [`src/game/rules.ts`](src/game/rules.ts)
 (`FIELD_PRESETS`) : le terrain (`FIELD`, l&apos;espacement des kubbs, les hitboxes) ne
 change jamais — seuls des rochers statiques s&apos;ajoutent, definis en decalage
-(dx, dy) depuis le centre (sauf "Colline", differente — voir plus bas).
+(dx, dy) depuis le centre (sauf "Colline", "Glace" et "Sable", differentes —
+voir plus bas).
 
 | Preset         | Effet                                                          |
 | -------------- | ------------------------------------------------------------------ |
@@ -240,6 +241,8 @@ change jamais — seuls des rochers statiques s&apos;ajoutent, definis en decala
 | **Chicane**    | Deux rochers en S, hors de l&apos;axe : recompense le repositionnement le long de la ligne de lancer |
 | **Sentinelle** | Deux rochers sur l&apos;axe, de part et d&apos;autre du roi : un tir droit depuis le centre de la ligne les percute avant sa cible |
 | **Colline**    | Un monticule au centre (zone de friction accrue, pas un rocher) : le traverser use plus de vitesse, il faut y mettre plus de puissance pour ressortir avec assez de force — cf. plus bas |
+| **Glace**      | Terrain entier a friction reduite et rebonds plus francs : le baton glisse plus loin et rebondit plus fort sur les bandes — cf. plus bas |
+| **Sable**      | Terrain entier a friction accrue et rebonds plus mous, la boule y patine bien plus que le baton — cf. plus bas |
 
 Un rocher ne tombe jamais et ne fait tomber personne : il fait rebondir le baton comme
 une bande (`src/game/entities/Obstacle.ts`, corps Matter statique).
@@ -274,6 +277,39 @@ diametre, a distance egale). Puis en navigateur reel (vraie physique Matter) : u
 puissance egale ressort mesurablement plus lent en traversant la colline qu&apos;a cote
 (11,27 contre 12,20 apres la meme distance parcourue), et 8 parties completes en
 Solo/Difficile — zero suicide, IA toujours gagnante.
+
+**Glace** et **Sable** sont plus simples que Colline : pas une zone localisee, un effet
+uniforme sur TOUT le terrain — un simple multiplicateur scalaire sur
+`BATON_BODY.frictionAir` (`frictionMultiplier` : x0,5 sur Glace, x1,6 sur Sable pour le
+baton) et sur `BATON_BODY.restitution` (`restitutionMultiplier` : x1,7 sur Glace pour des
+rebonds plus francs sur les bandes, x0,35 sur Sable pour des rebonds mous), applique des
+le lancer (`Baton.ts`) et a chaque frame de vol (`MatchScene::applyTerrainFriction`).
+Sable penalise en plus la boule specifiquement (`frictionMultiplierBall` : x2,8, contre
+x1,6 pour le baton) — le meme mecanisme qui differencie deja les deux formes de baton
+(voir plus bas) sert ici a rendre la boule nettement moins efficace dans le sable, sans
+toucher a l&apos;IA (qui ne joue jamais la boule). Cote IA, `simulateWindFlight`,
+`powerForDistance` et `speedAfter` prennent toutes un `frictionMultiplier` qui remplace
+uniformement le coefficient de friction sur toute la trajectoire — plus simple que la
+geometrie de corde de Colline puisqu&apos;aucun segment/zone n&apos;entre en jeu.
+
+Cette fonctionnalite a fait remonter un vrai bug de securite via la simulation
+obligatoire avant mise en ligne : sous vent fort et en difficulte Facile, `decideThrow`
+pouvait choisir un lancer que `curvedKingDanger` jugeait sur — mais le controle ne
+testait QUE le cas ou l&apos;imprecision du niveau (`applyImprecision`, appliquee APRES
+ce controle) rendait le lancer plus fort que prevu. Sur un terrain a friction reduite,
+un lancer plus FAIBLE que prevu reste plus longtemps expose au vent avant de croiser le
+roi, ce qui peut au contraire le rapprocher davantage — un cas jamais teste jusque-la
+(la friction normale masquait l&apos;effet). Corrige en testant les deux bornes de
+puissance (`power*(1-powerErrorRatio)` et `power*(1+powerErrorRatio)`), dans
+`curvedKingDanger` et dans le controle equivalent de `decideApproachThrow`. Reverifie
+ensuite par simulation (17 etats de vent x 3 niveaux x 2 terrains, 102 combinaisons,
+300 matchs chacune, 30&nbsp;600 matchs) : zero suicide. Puis en navigateur reel (vraie
+physique Matter) : glace et sable listes au menu, un tir a puissance egale ressort plus
+rapide sur glace qu&apos;en classique (12,15 contre 9,82 apres la meme distance), la
+boule patine plus que le baton dans le sable (11,17 contre 15,22), et le ratio de vitesse
+mesure juste avant/apres un rebond sur une bande confirme des rebonds plus francs sur
+glace (0,985) et plus mous sur sable (0,953) qu&apos;en classique (0,970) — et 6 parties
+completes en Solo (Facile/Moyen/Difficile x Glace/Sable) sans erreur console.
 
 ---
 

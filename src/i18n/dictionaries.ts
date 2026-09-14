@@ -57,6 +57,10 @@ const fr: Record<string, string> = {
   'terrain.sentinelle.hint': 'Le roi, garde des deux cotes',
   'terrain.colline.label': 'Colline',
   'terrain.colline.hint': 'Un monticule au centre : plus dur a franchir, plus de puissance necessaire',
+  'terrain.glace.label': 'Glace',
+  'terrain.glace.hint': 'Terrain glissant : le tir va bien plus loin, et rebondit plus fort sur les bandes',
+  'terrain.sable.label': 'Sable',
+  'terrain.sable.hint': 'Terrain qui freine, surtout la boule : rebonds plus mous sur les bandes',
 
   // ---- skin (theme.ts)
   'skin.bois.label': 'Bois',
@@ -353,6 +357,10 @@ const en: Record<string, string> = {
   'terrain.sentinelle.hint': 'The king, guarded on both sides',
   'terrain.colline.label': 'Hill',
   'terrain.colline.hint': 'A mound in the middle: harder to clear, needs more power',
+  'terrain.glace.label': 'Ice',
+  'terrain.glace.hint': 'Slippery ground: throws go much farther, and bounce harder off the walls',
+  'terrain.sable.label': 'Sand',
+  'terrain.sable.hint': 'Ground that slows you down, especially the ball: softer bounces off the walls',
 
   // ---- skin
   'skin.bois.label': 'Wood',

@@ -101,8 +101,15 @@ export const HITBOX = {
  * traverse ressort plus lent qu'il n'y est entre, sans jamais rebondir ni
  * changer de trajectoire. Il faut donc y mettre plus de puissance pour
  * ressortir avec assez de vitesse. Cf. HILL_RADIUS/HILL_EXTRA_FRICTION.
+ *
+ * "Glace" et "Sable" sont differents encore : pas une zone localisee, tout
+ * le terrain a une friction (et un rebond sur les bandes/rochers) modifies
+ * pour la partie entiere — frictionMultiplier/restitutionMultiplier,
+ * multiplicatifs sur BATON_BODY.frictionAir/restitution. "Sable" penalise en
+ * plus la boule bien plus que le baton (frictionMultiplierBall) : une bille
+ * s'enfonce dans le sable, un baton glisse dessus.
  */
-export type FieldPresetId = 'classique' | 'chicane' | 'sentinelle' | 'colline';
+export type FieldPresetId = 'classique' | 'chicane' | 'sentinelle' | 'colline' | 'glace' | 'sable';
 
 export interface FieldPreset {
   id: FieldPresetId;
@@ -110,6 +117,23 @@ export interface FieldPreset {
   obstacles: ReadonlyArray<{ dx: number; dy: number }>;
   /** true si ce preset a la zone de friction "colline" (toujours centree sur le terrain). */
   hasHill: boolean;
+  /**
+   * Multiplicateur sur BATON_BODY.frictionAir, pour tout le terrain (1 =
+   * normal). S'applique en plus de HILL_EXTRA_FRICTION si hasHill est vrai
+   * (les deux sont independants, meme si aucun preset ne les combine pour
+   * l'instant).
+   */
+  frictionMultiplier: number;
+  /**
+   * Variante de frictionMultiplier pour la boule (batons.ts shape:'boule')
+   * uniquement — absente = meme valeur que frictionMultiplier pour tous les
+   * projectiles (baton comme boule).
+   */
+  frictionMultiplierBall?: number;
+  /** Multiplicateur sur BATON_BODY.restitution (rebond aux bandes/rochers), pour tout le terrain (1 = normal). */
+  restitutionMultiplier: number;
+  /** Texture de sol (BootScene) dessinee sur tout le terrain — 'grass' par defaut. */
+  groundTexture: 'grass' | 'ice' | 'sand';
 }
 
 /** Rayon d'un rocher, en pixels de design — un peu plus large que le roi. */
@@ -128,12 +152,37 @@ export const HILL_RADIUS = 130;
  */
 export const HILL_EXTRA_FRICTION = 0.012;
 
+/**
+ * "Glace" : moitie moins de friction sur tout le terrain (baton comme
+ * boule) — un tir va bien plus loin a puissance egale, il faut donc doser
+ * plus finement. Rebond plus vif sur les bandes/rochers (restitution x1.7,
+ * 0.35 -> ~0.6, reste sous 1 donc toujours amorti) : un tir qui les touche
+ * repart avec plus d'energie qu'en temps normal.
+ */
+const ICE_FRICTION_MULTIPLIER = 0.5;
+const ICE_RESTITUTION_MULTIPLIER = 1.7;
+
+/**
+ * "Sable" : plus de friction sur tout le terrain, et bien plus pour la
+ * boule que pour le baton (elle s'enfonce, le baton glisse dessus) — le
+ * meme ecart Precision/Controle qui distingue deja les deux projectiles
+ * (batons.ts) devient donc un vrai choix de terrain. Rebond plus mou sur
+ * les bandes/rochers (restitution x0.35, 0.35 -> ~0.12, proche de
+ * l'amortissement d'un kubb) : un tir qui les touche y perd presque tout.
+ */
+const SAND_FRICTION_MULTIPLIER = 1.6;
+const SAND_FRICTION_MULTIPLIER_BALL = 2.8;
+const SAND_RESTITUTION_MULTIPLIER = 0.35;
+
 // Libelles et indices : src/i18n/dictionaries.ts (terrain.<id>.label / .hint).
 export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
   classique: {
     id: 'classique',
     obstacles: [],
-    hasHill: false
+    hasHill: false,
+    frictionMultiplier: 1,
+    restitutionMultiplier: 1,
+    groundTexture: 'grass'
   },
   chicane: {
     id: 'chicane',
@@ -141,7 +190,10 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
       { dx: 85, dy: 130 },
       { dx: -85, dy: -130 }
     ],
-    hasHill: false
+    hasHill: false,
+    frictionMultiplier: 1,
+    restitutionMultiplier: 1,
+    groundTexture: 'grass'
   },
   sentinelle: {
     id: 'sentinelle',
@@ -151,12 +203,35 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
       { dx: 0, dy: 70 },
       { dx: 0, dy: -70 }
     ],
-    hasHill: false
+    hasHill: false,
+    frictionMultiplier: 1,
+    restitutionMultiplier: 1,
+    groundTexture: 'grass'
   },
   colline: {
     id: 'colline',
     obstacles: [],
-    hasHill: true
+    hasHill: true,
+    frictionMultiplier: 1,
+    restitutionMultiplier: 1,
+    groundTexture: 'grass'
+  },
+  glace: {
+    id: 'glace',
+    obstacles: [],
+    hasHill: false,
+    frictionMultiplier: ICE_FRICTION_MULTIPLIER,
+    restitutionMultiplier: ICE_RESTITUTION_MULTIPLIER,
+    groundTexture: 'ice'
+  },
+  sable: {
+    id: 'sable',
+    obstacles: [],
+    hasHill: false,
+    frictionMultiplier: SAND_FRICTION_MULTIPLIER,
+    frictionMultiplierBall: SAND_FRICTION_MULTIPLIER_BALL,
+    restitutionMultiplier: SAND_RESTITUTION_MULTIPLIER,
+    groundTexture: 'sand'
   }
 };
 

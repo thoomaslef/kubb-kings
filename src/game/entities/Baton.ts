@@ -19,7 +19,19 @@ export class Baton {
   /** Texture reellement utilisee (depend de la forme) — pour la trainee (Juice.trail). */
   readonly textureKey: string;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, shape: BatonStats['shape'] = 'baton') {
+  /**
+   * `restitutionMultiplier` (terrain, rules.ts::FieldPreset) : rebond aux
+   * bandes/rochers pour toute la partie — fixe au lancer (contrairement a
+   * frictionAir, qui varie par frame selon la position, cf.
+   * MatchScene::applyTerrainFriction), le terrain ne change pas en cours de vol.
+   */
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    shape: BatonStats['shape'] = 'baton',
+    restitutionMultiplier = 1
+  ) {
     this.textureKey = shape === 'boule' ? 'boule' : 'baton';
 
     // La boule est ronde : ombre circulaire (pas d'allongement, contrairement
@@ -32,6 +44,7 @@ export class Baton {
 
     this.sprite = scene.matter.add.image(x, y, this.textureKey, undefined, {
       ...BATON_BODY,
+      restitution: BATON_BODY.restitution * restitutionMultiplier,
       ...(shape === 'boule'
         ? { shape: { type: 'circle', radius: HITBOX.ballRadius } }
         : { chamfer: { radius: 6 }, shape: { type: 'rectangle', width: HITBOX.batonWidth, height: HITBOX.batonLength } })

@@ -127,6 +127,13 @@ export interface AiBoard {
    * puissance. Cf. powerForDistance/speedAfter/simulateWindFlight.
    */
   hasHill?: boolean;
+  /**
+   * Multiplicateur de friction pour tout le terrain ("Glace"/"Sable",
+   * rules.ts::FieldPreset.frictionMultiplier) — absent ou 1 = normal.
+   * Toujours le multiplicateur "baton" du preset : l'IA reste toujours sur
+   * le baton de base, jamais frictionMultiplierBall.
+   */
+  frictionMultiplier?: number;
 }
 
 export interface AiThrow {
@@ -166,15 +173,22 @@ function wrapAngle(angle: number): number {
  * coefficient de friction est constant sur chaque segment), donc s'ajoute
  * simplement au terme de distance normal avec son propre coefficient
  * (HILL_EXTRA_FRICTION plutot que BATON_BODY.frictionAir).
+ *
+ * `frictionMultiplier` (terrains "Glace"/"Sable", rules.ts) : multiplicatif
+ * sur BATON_BODY.frictionAir pour tout le trajet (1 = normal) — l'IA reste
+ * toujours sur le baton de base, jamais la boule, donc toujours le
+ * multiplicateur "baton" du preset (FieldPreset.frictionMultiplier), jamais
+ * frictionMultiplierBall.
  */
-export function powerForDistance(distance: number, margin = 1.55, hillCrossing = 0): number {
-  const needed = KNOCKDOWN_IMPACT_SPEED * margin + BATON_BODY.frictionAir * distance + HILL_EXTRA_FRICTION * hillCrossing;
+export function powerForDistance(distance: number, margin = 1.55, hillCrossing = 0, frictionMultiplier = 1): number {
+  const needed =
+    KNOCKDOWN_IMPACT_SPEED * margin + BATON_BODY.frictionAir * frictionMultiplier * distance + HILL_EXTRA_FRICTION * hillCrossing;
   return Math.max(AIM.minPower, Math.min(1, needed / THROW.maxSpeed));
 }
 
 /** Vitesse restante apres avoir parcouru `distance`, cf. powerForDistance. */
-function speedAfter(power: number, distance: number, hillCrossing = 0): number {
-  return THROW.maxSpeed * power - BATON_BODY.frictionAir * distance - HILL_EXTRA_FRICTION * hillCrossing;
+function speedAfter(power: number, distance: number, hillCrossing = 0, frictionMultiplier = 1): number {
+  return THROW.maxSpeed * power - BATON_BODY.frictionAir * frictionMultiplier * distance - HILL_EXTRA_FRICTION * hillCrossing;
 }
 
 /**
@@ -229,9 +243,10 @@ export function simulateWindFlight(
   angle: number,
   power: number,
   windAccel: Point = NO_WIND_ACCEL,
-  hasHill = false
+  hasHill = false,
+  frictionMultiplier = 1
 ): FlightStep[] {
-  const k = BATON_BODY.frictionAir;
+  const k = BATON_BODY.frictionAir * frictionMultiplier;
   let vx = Math.cos(angle) * THROW.maxSpeed * power;
   let vy = Math.sin(angle) * THROW.maxSpeed * power;
   let x = origin.x;
@@ -299,11 +314,12 @@ function windCompensatedAngle(
   power: number,
   distance: number,
   windAccel: Point,
-  hasHill: boolean
+  hasHill: boolean,
+  frictionMultiplier: number
 ): number {
   let angle = naiveAngle;
   for (let pass = 0; pass < 2; pass += 1) {
-    const path = simulateWindFlight(origin, angle, power, windAccel, hasHill);
+    const path = simulateWindFlight(origin, angle, power, windAccel, hasHill, frictionMultiplier);
     const lateral = lateralOffsetAt(path, origin, naiveAngle, distance);
     angle += lateral / distance;
   }
@@ -352,12 +368,10 @@ const KING_WIND_SAFETY_STEPS = 151;
 /**
  * Marge de securite ajoutee a KING_HIT_RADIUS pour ce seul controle courbe
  * (jamais pour le rendu ni la detection de contact reelle) : absorbe le
- * residu de discretisation de KING_WIND_SAFETY_STEPS et le pire cas de
- * puissance (powerError, applique apres coup par applyImprecision — d'ou la
- * puissance majoree utilisee ci-dessous, meme logique que safetyPower dans
- * decideApproachThrow). Valeur issue d'un balayage en simulation
- * (scripts/scratchpad, trajectoire courbee reelle) : zero suicide mesure
- * avec cette marge, aux 2 forces de vent et aux 8 directions.
+ * residu de discretisation de KING_WIND_SAFETY_STEPS. Valeur issue d'un
+ * balayage en simulation (scripts/scratchpad, trajectoire courbee reelle) :
+ * zero suicide mesure avec cette marge, aux 2 forces de vent et aux 8
+ * directions.
  */
 const KING_WIND_SAFETY_MARGIN = 60;
 
@@ -386,17 +400,28 @@ function curvedKingDanger(
   profile: AiProfile,
   windAccel: Point,
   king: Point,
-  hasHill: boolean
+  hasHill: boolean,
+  frictionMultiplier: number
 ): boolean {
   const maxOffset = profile.aimErrorDeg + MAX_AIM_DEVIATION_DEG;
-  const safetyPower = Math.min(1, power * (1 + profile.powerErrorRatio));
+  // Le lancer reellement execute peut recevoir jusqu'a +-powerErrorRatio de
+  // puissance (applyImprecision, applique APRES ce controle) : un baton plus
+  // faible reste plus longtemps expose au vent avant de croiser le roi, ce
+  // qui peut le rapprocher davantage qu'un baton plus fort (qui, lui, quitte
+  // la zone plus vite) — surtout sur un terrain a friction reduite (Glace).
+  // Le pire cas n'est donc pas toujours la puissance haute : les DEUX bornes
+  // doivent etre testees.
+  const powerHigh = Math.min(1, power * (1 + profile.powerErrorRatio));
+  const powerLow = Math.max(AIM.minPower, power * (1 - profile.powerErrorRatio));
 
-  for (let s = 0; s < KING_WIND_SAFETY_STEPS; s += 1) {
-    const offset = ((2 * s) / (KING_WIND_SAFETY_STEPS - 1) - 1) * maxOffset;
-    const path = simulateWindFlight(origin, angle + offset * DEG, safetyPower, windAccel, hasHill);
-    for (const step of path) {
-      const dist = Math.hypot(step.x - king.x, step.y - king.y);
-      if (dist <= KING_HIT_RADIUS + KING_WIND_SAFETY_MARGIN) return true;
+  for (const safetyPower of [powerLow, powerHigh]) {
+    for (let s = 0; s < KING_WIND_SAFETY_STEPS; s += 1) {
+      const offset = ((2 * s) / (KING_WIND_SAFETY_STEPS - 1) - 1) * maxOffset;
+      const path = simulateWindFlight(origin, angle + offset * DEG, safetyPower, windAccel, hasHill, frictionMultiplier);
+      for (const step of path) {
+        const dist = Math.hypot(step.x - king.x, step.y - king.y);
+        if (dist <= KING_HIT_RADIUS + KING_WIND_SAFETY_MARGIN) return true;
+      }
     }
   }
   return false;
@@ -477,6 +502,9 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
   const forward = board.direction === -1 ? -Math.PI / 2 : Math.PI / 2;
   const maxDelta = AIM.maxAngleDeg * DEG;
   const positions = board.ownStanding ? availableThrowPositions(board.ownStanding) : THROW_POSITIONS;
+  // L'IA reste toujours sur le baton de base : toujours le multiplicateur
+  // "baton" du preset ("Glace"/"Sable", rules.ts), jamais frictionMultiplierBall.
+  const frictionMultiplier = board.frictionMultiplier ?? 1;
 
   const candidates: Candidate[] = [];
 
@@ -489,17 +517,18 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
       // supplementaire sur la portion du trajet qui la traverse (0 hors de
       // ce terrain, ou si la ligne droite vers cette cible ne la croise pas).
       const hillCrossing = hillCrossingToTarget(origin, target, distance, !!board.hasHill);
-      const power = powerForDistance(distance, undefined, hillCrossing);
+      const power = powerForDistance(distance, undefined, hillCrossing, frictionMultiplier);
       const naiveAngle = Math.atan2(target.y - origin.y, target.x - origin.x);
       // Vise en amont du vent quand il souffle : l'angle "naif" ne suffirait
       // qu'a atteindre la cible sans lui, jamais avec.
       const angle = windAccel
-        ? windCompensatedAngle(origin, naiveAngle, power, distance, windAccel, !!board.hasHill)
+        ? windCompensatedAngle(origin, naiveAngle, power, distance, windAccel, !!board.hasHill, frictionMultiplier)
         : naiveAngle;
       if (Math.abs(wrapAngle(angle - forward)) > maxDelta) continue;
 
       if (windAccel && board.kingStanding && !aimingAtKing) {
-        if (curvedKingDanger(origin, angle, power, profile, windAccel, king, !!board.hasHill)) continue;
+        const danger = curvedKingDanger(origin, angle, power, profile, windAccel, king, !!board.hasHill, frictionMultiplier);
+        if (danger) continue;
       }
 
       let knockdowns = 0;
@@ -532,7 +561,7 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
           const sampleHillCrossing = board.hasHill
             ? hillCrossingOnRay(origin, Math.cos(sampleAngle), Math.sin(sampleAngle), hit.distance, true)
             : 0;
-          if (speedAfter(power, hit.distance, sampleHillCrossing) >= KNOCKDOWN_IMPACT_SPEED) knockdowns += 1;
+          if (speedAfter(power, hit.distance, sampleHillCrossing, frictionMultiplier) >= KNOCKDOWN_IMPACT_SPEED) knockdowns += 1;
         }
       }
 
@@ -600,6 +629,8 @@ export interface ApproachBoard {
   wind?: Wind;
   /** true sur le terrain "Colline" — cf. AiBoard.hasHill. */
   hasHill?: boolean;
+  /** Multiplicateur de friction du terrain — cf. AiBoard.frictionMultiplier. */
+  frictionMultiplier?: number;
 }
 
 const APPROACH_ANGLE_STEPS = 11;
@@ -686,30 +717,34 @@ export function decideApproachThrow(board: ApproachBoard, profile: AiProfile, rn
 
       for (let pi = 0; pi < APPROACH_POWER_STEPS; pi += 1) {
         const power = AIM.minPower + ((1 - AIM.minPower) * pi) / (APPROACH_POWER_STEPS - 1);
-        // Le lancer reellement execute peut recevoir jusqu'a +powerErrorRatio
-        // de puissance en plus (imprecision du niveau, appliquee apres ce
-        // controle) : un baton plus fort va plus loin sur la MEME droite, et
-        // peut donc atteindre un point plus proche du roi que celui-ci n'a
-        // jamais teste si on ne verifiait qu'avec la puissance nominale.
-        const safetyPower = Math.min(1, power * (1 + profile.powerErrorRatio));
+        // Le lancer reellement execute peut recevoir jusqu'a +-powerErrorRatio
+        // de puissance (imprecision du niveau, appliquee apres ce controle).
+        // Un baton plus fort va plus loin sur la MEME droite ; mais un baton
+        // plus faible reste plus longtemps expose au vent avant de croiser le
+        // roi, ce qui peut le rapprocher davantage (surtout sur un terrain a
+        // friction reduite) — les DEUX bornes doivent donc etre testees, pas
+        // seulement la haute.
+        const powerHigh = Math.min(1, power * (1 + profile.powerErrorRatio));
+        const powerLow = Math.max(AIM.minPower, power * (1 - profile.powerErrorRatio));
 
         const maxOffset = profile.aimErrorDeg + MAX_AIM_DEVIATION_DEG;
         let safe = true;
         let nominalPath: FlightStep[] | null = null;
 
-        for (let s = 0; s < APPROACH_SAFETY_STEPS && safe; s += 1) {
-          const offset = ((2 * s) / (APPROACH_SAFETY_STEPS - 1) - 1) * maxOffset;
-          const path = simulateWindFlight(origin, angle + offset * DEG, safetyPower, windAccel, !!board.hasHill);
+        for (const safetyPower of [powerLow, powerHigh]) {
+          for (let s = 0; s < APPROACH_SAFETY_STEPS && safe; s += 1) {
+            const offset = ((2 * s) / (APPROACH_SAFETY_STEPS - 1) - 1) * maxOffset;
+            const path = simulateWindFlight(origin, angle + offset * DEG, safetyPower, windAccel, !!board.hasHill, board.frictionMultiplier ?? 1);
 
-          let closest = Infinity;
-          for (const step of path) {
-            const dist = Math.hypot(step.x - king.x, step.y - king.y);
-            if (dist < closest) closest = dist;
+            let closest = Infinity;
+            for (const step of path) {
+              const dist = Math.hypot(step.x - king.x, step.y - king.y);
+              if (dist < closest) closest = dist;
+            }
+            if (closest <= KING_HIT_RADIUS + APPROACH_SAFETY_MARGIN) safe = false;
           }
-          if (closest <= KING_HIT_RADIUS + APPROACH_SAFETY_MARGIN) safe = false;
-
-          if (offset === 0) nominalPath = simulateWindFlight(origin, angle, power, windAccel, !!board.hasHill);
         }
+        if (safe) nominalPath = simulateWindFlight(origin, angle, power, windAccel, !!board.hasHill, board.frictionMultiplier ?? 1);
 
         if (!safe || !nominalPath) continue;
 

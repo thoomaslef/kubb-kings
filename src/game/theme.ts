@@ -48,7 +48,15 @@ export const PALETTE = {
   /** Colline (terrain "Colline") : monticule d'herbe seche, plus clair que la pelouse. */
   hill: 0x8a9c5a,
   hillLight: 0xa8b877,
-  hillDark: 0x5f6e3d
+  hillDark: 0x5f6e3d,
+  /** Glace (terrain "Glace") : remplace la pelouse sur tout le terrain. */
+  ice: 0xbfe3ef,
+  iceLight: 0xe6f6fa,
+  iceDark: 0x8fc3d6,
+  /** Sable (terrain "Sable") : remplace la pelouse sur tout le terrain. */
+  sand: 0xd9c48a,
+  sandLight: 0xecdcac,
+  sandDark: 0xb89f5f
 } as const;
 
 /**

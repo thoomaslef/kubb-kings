@@ -18,6 +18,8 @@ export class BootScene extends Phaser.Scene {
 
   create() {
     this.buildGrassTexture();
+    this.buildIceTexture();
+    this.buildSandTexture();
     this.buildBatonTexture();
     this.buildBoulTexture();
     this.buildKubbTextures();
@@ -91,6 +93,63 @@ export class BootScene extends Phaser.Scene {
         const y = Math.random() * size;
         g.lineStyle(1, PALETTE.blade, 0.3);
         g.lineBetween(x, y, x + (Math.random() * 4 - 2), y + 3 + Math.random() * 3);
+      }
+    });
+  }
+
+  /**
+   * Tuile de glace, terrain "Glace" (remplace la pelouse sur tout le
+   * terrain, cf. MatchScene::drawField) : quelques craquelures et reflets,
+   * plus froid et plus lisse qu'un aplat de bleu clair.
+   */
+  private buildIceTexture() {
+    const size = 128;
+    this.texture('ice', size, size, (g) => {
+      g.fillStyle(PALETTE.ice, 1);
+      g.fillRect(0, 0, size, size);
+
+      for (let i = 0; i < 90; i += 1) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        g.fillStyle(Math.random() < 0.5 ? PALETTE.iceLight : PALETTE.iceDark, 0.3);
+        g.fillRect(x, y, 3 + Math.random() * 6, 1 + Math.random() * 2);
+      }
+
+      // Craquelures : quelques traits fins et anguleux.
+      for (let i = 0; i < 10; i += 1) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        g.lineStyle(1, PALETTE.iceDark, 0.35);
+        const midX = x + (Math.random() * 30 - 15);
+        const midY = y + (Math.random() * 30 - 15);
+        g.lineBetween(x, y, midX, midY);
+        g.lineBetween(midX, midY, midX + (Math.random() * 24 - 12), midY + (Math.random() * 24 - 12));
+      }
+    });
+  }
+
+  /**
+   * Tuile de sable, terrain "Sable" (remplace la pelouse sur tout le
+   * terrain) : grain fin et quelques ondulations, comme une dune vue de dessus.
+   */
+  private buildSandTexture() {
+    const size = 128;
+    this.texture('sand', size, size, (g) => {
+      g.fillStyle(PALETTE.sand, 1);
+      g.fillRect(0, 0, size, size);
+
+      for (let i = 0; i < 380; i += 1) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        g.fillStyle(Math.random() < 0.5 ? PALETTE.sandLight : PALETTE.sandDark, 0.4);
+        g.fillRect(x, y, 1 + Math.random() * 2, 1 + Math.random() * 2);
+      }
+
+      // Ondulations : bandes courbes tres subtiles.
+      for (let i = 0; i < 5; i += 1) {
+        const y = (i + 0.5) * (size / 5);
+        g.lineStyle(2, PALETTE.sandDark, 0.18);
+        g.lineBetween(0, y, size, y + (Math.random() * 10 - 5));
       }
     });
   }
