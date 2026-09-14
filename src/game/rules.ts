@@ -87,7 +87,7 @@ export const HITBOX = {
  * (dx, dy) depuis le centre du terrain. Un rocher ne peut rien faire tomber
  * ni etre abattu : il fait juste rebondir le baton, comme une bande.
  */
-export type FieldPresetId = 'classique' | 'chicane' | 'sentinelle';
+export type FieldPresetId = 'classique' | 'chicane' | 'sentinelle' | 'menhir';
 
 export interface FieldPreset {
   id: FieldPresetId;
@@ -119,6 +119,14 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
       { dx: 0, dy: 70 },
       { dx: 0, dy: -70 }
     ]
+  },
+  menhir: {
+    id: 'menhir',
+    // Un seul rocher, en plein centre (meme decalage que l'un des deux de
+    // "sentinelle", mais isole) : contrairement a "sentinelle" qui garde le
+    // roi symetriquement des deux cotes, ce rocher unique gene surtout
+    // l'equipe dont la ligne de tir passe par ce cote-la du roi.
+    obstacles: [{ dx: 0, dy: 70 }]
   }
 };
 
