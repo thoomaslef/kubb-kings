@@ -55,8 +55,6 @@ const fr: Record<string, string> = {
   'terrain.chicane.hint': "Deux rochers en S, hors de l'axe",
   'terrain.sentinelle.label': 'Sentinelle',
   'terrain.sentinelle.hint': 'Le roi, garde des deux cotes',
-  'terrain.menhir.label': 'Menhir',
-  'terrain.menhir.hint': 'Un rocher isole, tout pres du roi',
 
   // ---- skin (theme.ts)
   'skin.bois.label': 'Bois',
@@ -350,8 +348,6 @@ const en: Record<string, string> = {
   'terrain.chicane.hint': 'Two rocks in an S, off the centerline',
   'terrain.sentinelle.label': 'Sentinel',
   'terrain.sentinelle.hint': 'The king, guarded on both sides',
-  'terrain.menhir.label': 'Menhir',
-  'terrain.menhir.hint': 'A lone rock, right next to the king',
 
   // ---- skin
   'skin.bois.label': 'Wood',
