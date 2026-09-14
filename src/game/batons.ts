@@ -11,17 +11,24 @@
  * - Controle : resistance au vent (+/-15% par etoile, MOINS d'effet du vent
  *   pour PLUS d'etoiles) — donne un vrai enjeu strategique au vent.
  *
- * L'IA n'utilise jamais ces multiplicateurs (toujours le baton de base) :
- * ce choix ne touche donc a aucun des reglages de securite de l'IA.
+ * Un baton a aussi une forme (`shape`) : 'baton' (le rectangle allonge par
+ * defaut) ou 'boule' (un corps Matter circulaire, cf. HITBOX.ballRadius dans
+ * rules.ts et Baton.ts) — purement une question de corps physique/texture,
+ * les memes multiplicateurs de stats s'appliquent quelle que soit la forme.
+ *
+ * L'IA n'utilise jamais ces multiplicateurs ni cette forme (toujours le
+ * baton de base) : ce choix ne touche donc a aucun des reglages de securite
+ * de l'IA.
  */
 
 /**
- * 'stabilise' est un baton de boutique (src/game/shop.ts) : verrouille tant
- * qu'il n'a pas ete achete. Les 4 autres restent disponibles d'office.
+ * 'stabilise' et 'boule' sont des batons de boutique (src/game/shop.ts) :
+ * verrouilles tant qu'ils n'ont pas ete achetes. Les 4 autres restent
+ * disponibles d'office.
  */
-export type BatonId = 'base' | 'nordique' | 'sniper' | 'lourd' | 'stabilise';
+export type BatonId = 'base' | 'nordique' | 'sniper' | 'lourd' | 'stabilise' | 'boule';
 
-export const BATON_IDS: readonly BatonId[] = ['base', 'nordique', 'sniper', 'lourd', 'stabilise'];
+export const BATON_IDS: readonly BatonId[] = ['base', 'nordique', 'sniper', 'lourd', 'stabilise', 'boule'];
 
 /** Batons disponibles d'office, sans passer par la boutique. */
 export const FREE_BATON_IDS: readonly BatonId[] = ['base', 'nordique', 'sniper', 'lourd'];
@@ -31,16 +38,26 @@ export interface BatonStats {
   power: number;
   precision: number;
   control: number;
+  /**
+   * Forme du projectile : 'baton' (rectangle allonge, par defaut) ou
+   * 'boule' (corps Matter circulaire, cf. HITBOX.ballRadius dans rules.ts
+   * et Baton.ts). Purement une question de corps physique/texture — l'IA
+   * n'a aucune notion de forme, elle reste toujours sur le baton de base.
+   */
+  shape: 'baton' | 'boule';
 }
 
 export const BATONS: Record<BatonId, BatonStats> = {
-  base: { power: 3, precision: 3, control: 3 },
-  nordique: { power: 4, precision: 2, control: 3 },
-  sniper: { power: 2, precision: 5, control: 3 },
-  lourd: { power: 5, precision: 2, control: 3 },
+  base: { power: 3, precision: 3, control: 3, shape: 'baton' },
+  nordique: { power: 4, precision: 2, control: 3, shape: 'baton' },
+  sniper: { power: 2, precision: 5, control: 3, shape: 'baton' },
+  lourd: { power: 5, precision: 2, control: 3, shape: 'baton' },
   // Seul baton a vraiment jouer sur le Controle (les 4 autres restent tous a
   // 3) : un compromis different, pas un strict progres — baseline ailleurs.
-  stabilise: { power: 3, precision: 3, control: 5 }
+  stabilise: { power: 3, precision: 3, control: 5, shape: 'baton' },
+  // Boule : roule droit (Precision haute) mais plus dure a doser sous le
+  // vent, sans l'allonge du baton (Controle bas) — Puissance au baseline.
+  boule: { power: 3, precision: 4, control: 2, shape: 'boule' }
 };
 
 const STARS_BASELINE = 3;

@@ -25,7 +25,8 @@ export const SHOP_ITEMS: readonly ShopItem[] = [
   { id: 'skin-ardoise', category: 'skin', refId: 'ardoise', price: 300 },
   { id: 'trail-feu', category: 'trail', refId: 'feu', price: 150 },
   { id: 'trail-glace', category: 'trail', refId: 'glace', price: 150 },
-  { id: 'baton-stabilise', category: 'baton', refId: 'stabilise', price: 500 }
+  { id: 'baton-stabilise', category: 'baton', refId: 'stabilise', price: 500 },
+  { id: 'baton-boule', category: 'baton', refId: 'boule', price: 400 }
 ];
 
 /**

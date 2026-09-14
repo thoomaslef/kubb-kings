@@ -2,10 +2,13 @@ import Phaser from 'phaser';
 import { BATON_BODY } from '../physics/matterConfig';
 import { THROW, MAX_AIM_DEVIATION_DEG, HITBOX } from '../rules';
 import { SHADOW } from '../theme';
+import type { BatonStats } from '../batons';
 
 /**
- * Le baton lance par le joueur actif.
- * Corps Matter allonge, tres peu amorti : il glisse sur le terrain vu de dessus.
+ * Le projectile lance par le joueur actif : le baton par defaut (rectangle
+ * allonge), ou la boule de boutique (cercle) — cf. `shape` dans batons.ts.
+ * Corps Matter tres peu amorti dans les deux cas : il glisse sur le terrain
+ * vu de dessus.
  */
 export class Baton {
   readonly sprite: Phaser.Physics.Matter.Image;
@@ -13,18 +16,25 @@ export class Baton {
   private readonly shadow: Phaser.GameObjects.Image;
   /** Vitesse observee a la frame precedente, utilisee pour mesurer la force d'impact. */
   private previousSpeed = 0;
+  /** Texture reellement utilisee (depend de la forme) — pour la trainee (Juice.trail). */
+  readonly textureKey: string;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  constructor(scene: Phaser.Scene, x: number, y: number, shape: BatonStats['shape'] = 'baton') {
+    this.textureKey = shape === 'boule' ? 'boule' : 'baton';
+
+    // La boule est ronde : ombre circulaire (pas d'allongement, contrairement
+    // au baton dont l'ombre suit son grand axe).
     this.shadow = scene.add
       .image(x + SHADOW.offsetX, y + SHADOW.offsetY, 'shadow')
       .setDepth(3)
       .setAlpha(SHADOW.alpha * 0.8)
-      .setScale(SHADOW.scale.baton, SHADOW.scale.baton * 1.5);
+      .setScale(SHADOW.scale.baton, shape === 'boule' ? SHADOW.scale.baton : SHADOW.scale.baton * 1.5);
 
-    this.sprite = scene.matter.add.image(x, y, 'baton', undefined, {
+    this.sprite = scene.matter.add.image(x, y, this.textureKey, undefined, {
       ...BATON_BODY,
-      chamfer: { radius: 6 },
-      shape: { type: 'rectangle', width: HITBOX.batonWidth, height: HITBOX.batonLength }
+      ...(shape === 'boule'
+        ? { shape: { type: 'circle', radius: HITBOX.ballRadius } }
+        : { chamfer: { radius: 6 }, shape: { type: 'rectangle', width: HITBOX.batonWidth, height: HITBOX.batonLength } })
     });
     this.sprite.setDepth(6);
   }

@@ -435,21 +435,31 @@ pour l&apos;instant.
 | Feu (trainee de lancer)       | Effet de lancer  | 150  |
 | Glace (trainee de lancer)     | Effet de lancer  | 150  |
 | Stabilise (baton)            | Baton            | 500  |
+| Boule (baton)                 | Baton            | 400  |
 
 Le baton **Stabilise** (Controle ★★★★★, Puissance/Precision au baseline ★★★) ne casse
 pas la regle deja posee pour les 4 batons gratuits (`batons.ts`) : un choix de style, pas
 un strict progres — il ameliore uniquement la resistance au vent, un axe qu&apos;aucun
 autre baton ne touche.
 
+Le baton **Boule** (Precision ★★★★☆, Controle ★★☆☆☆, Puissance au baseline ★★★) est le
+premier a changer de FORME plutot que de simples multiplicateurs : un corps Matter
+circulaire (`HITBOX.ballRadius`, `Baton.ts`) plutot que le rectangle allonge habituel,
+avec sa propre texture (`BootScene::buildBoulTexture`) et sa propre trainee
+(`Juice.trail` accepte desormais une cle de texture). Roule droit (Precision haute) mais
+plus dur a doser sous le vent, sans l&apos;allonge du baton pour compenser (Controle bas).
+
 **Aucun effet sur l&apos;IA ni sur les regles.** Comme les batons et les skins, la
 boutique reste un systeme cote joueur uniquement : l&apos;IA ne possede jamais rien et
-joue toujours avec le baton de base. Verifie en navigateur reel (achat via le bouton
-de la boutique, solde et articles possedes persistants apres rechargement, refus
-d&apos;achat si solde insuffisant ou article deja possede, selecteurs du menu qui ne
-proposent que les articles gratuits ou achetes, teinte de trainee appliquee au bon
-lancer et jamais a celui de l&apos;IA, gain de pieces reel en fin de match) — aucune
-simulation IA necessaire, ce systeme n&apos;influence jamais `decideThrow` ni
-`decideApproachThrow`.
+joue toujours avec le baton de base (donc toujours la forme rectangulaire — `ai.ts` n&apos;a
+aucune notion de forme). Verifie en navigateur reel (achat via le bouton de la boutique,
+solde et articles possedes persistants apres rechargement, refus d&apos;achat si solde
+insuffisant ou article deja possede, selecteurs du menu qui ne proposent que les articles
+gratuits ou achetes, teinte de trainee appliquee au bon lancer et jamais a celui de
+l&apos;IA, gain de pieces reel en fin de match ; pour la Boule specifiquement : corps
+Matter reellement circulaire au lancer, rendu visuel distinct du baton, et un abattage de
+kubb reel via cette collision) — aucune simulation IA necessaire, ce systeme
+n&apos;influence jamais `decideThrow` ni `decideApproachThrow`.
 
 ---
 

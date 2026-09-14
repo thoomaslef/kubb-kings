@@ -94,19 +94,28 @@ export class Juice {
   }
 
   /**
-   * Images remanentes derriere le baton. Appele a chaque frame de vol :
+   * Images remanentes derriere le projectile. Appele a chaque frame de vol :
    * l'accumulateur espace les copies pour que la trainee ne depende pas du framerate.
+   * `textureKey` : 'baton' ou 'boule' selon le projectile en jeu (Baton.textureKey).
    * `tint` (effet de lancer de boutique, cf. throwEffects.ts) : null = couleur
-   * d'origine du baton, sinon teinte les fantomes de la trainee.
+   * d'origine du projectile, sinon teinte les fantomes de la trainee.
    */
-  trail(delta: number, x: number, y: number, rotation: number, speedRatio: number, tint: number | null = null) {
+  trail(
+    delta: number,
+    x: number,
+    y: number,
+    rotation: number,
+    speedRatio: number,
+    tint: number | null = null,
+    textureKey = 'baton'
+  ) {
     if (speedRatio < 0.12) return;
     this.trailMs += delta;
     if (this.trailMs < FEEL.trailIntervalMs) return;
     this.trailMs = 0;
 
     const ghost = this.scene.add
-      .image(x, y, 'baton')
+      .image(x, y, textureKey)
       .setDepth(5)
       .setRotation(rotation)
       .setAlpha(0.3 * speedRatio);

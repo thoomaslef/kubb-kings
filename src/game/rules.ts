@@ -75,7 +75,16 @@ export const HITBOX = {
   kubb: 36,
   batonWidth: 14,
   batonLength: 62,
-  kingRadius: 20
+  kingRadius: 20,
+  /**
+   * Rayon de la "boule" (projectile de boutique, batons.ts shape:'boule') —
+   * un corps Matter circulaire plutot que le rectangle allonge du baton.
+   * Volontairement egal a batonWidth/2 : meme empan de contact qu'un coup
+   * de baton bien centre, sans l'allonge que la rotation donne au baton
+   * (cf. KING_DANGER_RADIUS dans ai.ts, qui n'a jamais connaissance de la
+   * boule — l'IA reste toujours sur le baton de base).
+   */
+  ballRadius: 14
 } as const;
 
 /**

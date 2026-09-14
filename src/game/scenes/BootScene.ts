@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { TEAMS } from '../entities/Team';
 import { PALETTE, KUBB_SKINS, type KubbSkin } from '../theme';
-import { OBSTACLE_RADIUS } from '../rules';
+import { HITBOX, OBSTACLE_RADIUS } from '../rules';
 
 /**
  * Genere toutes les textures du jeu par code (aucun asset externe a charger),
@@ -19,6 +19,7 @@ export class BootScene extends Phaser.Scene {
   create() {
     this.buildGrassTexture();
     this.buildBatonTexture();
+    this.buildBoulTexture();
     this.buildKubbTextures();
     this.buildKingTextures();
     this.buildThrowerTextures();
@@ -114,6 +115,34 @@ export class BootScene extends Phaser.Scene {
       g.fillStyle(PALETTE.batonWoodDark, 0.4);
       g.fillRoundedRect(1, 1, 14, 5, 3);
       g.fillRoundedRect(1, 60, 14, 5, 3);
+    });
+  }
+
+  /**
+   * Boule (baton de boutique, shape:'boule' dans batons.ts) : meme bois que
+   * le baton, mais un disque plutot qu'un rectangle allonge. La couture en
+   * croix (comme une boule de petanque en bois) donne un repere visuel a la
+   * rotation en vol, sans quoi une simple sphere semble immobile en tournant
+   * sur elle-meme.
+   */
+  private buildBoulTexture() {
+    const size = HITBOX.ballRadius * 2 + 4;
+    const r = HITBOX.ballRadius;
+    const cx = size / 2;
+    const cy = size / 2;
+    this.texture('boule', size, size, (g) => {
+      g.fillStyle(PALETTE.batonWoodDark, 1);
+      g.fillCircle(cx, cy, r + 2);
+      g.fillStyle(PALETTE.batonWood, 1);
+      g.fillCircle(cx, cy, r);
+
+      g.fillStyle(PALETTE.batonWoodLight, 0.55);
+      g.fillCircle(cx - r * 0.32, cy - r * 0.32, r * 0.45);
+
+      g.lineStyle(1.5, PALETTE.batonWoodDark, 0.55);
+      g.strokeCircle(cx, cy, r * 0.62);
+      g.lineBetween(cx - r * 0.62, cy, cx + r * 0.62, cy);
+      g.lineBetween(cx, cy - r * 0.62, cx, cy + r * 0.62);
     });
   }
 

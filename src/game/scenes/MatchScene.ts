@@ -285,7 +285,8 @@ export class MatchScene extends Phaser.Scene {
         this.baton.sprite.y,
         this.baton.sprite.rotation,
         this.baton.speed / THROW.maxSpeed,
-        this.activeTrailTint()
+        this.activeTrailTint(),
+        this.baton.textureKey
       );
       this.baton.rememberSpeed();
 
@@ -420,8 +421,8 @@ export class MatchScene extends Phaser.Scene {
   private launch() {
     const origin = this.origin();
     this.updateFarthestTarget(origin);
-    this.baton = new Baton(this, origin.x, origin.y);
     const stats = this.activeBatonStats();
+    this.baton = new Baton(this, origin.x, origin.y, stats.shape);
     this.baton.launch(
       this.aimAngle,
       this.aimPower,
