@@ -44,7 +44,11 @@ export const PALETTE = {
   /** Base sombre des blocs "ardoise" (boutique). */
   slate: 0x2f3438,
   slateLight: 0x4a5257,
-  slateDark: 0x181b1d
+  slateDark: 0x181b1d,
+  /** Colline (terrain "Colline") : monticule d'herbe seche, plus clair que la pelouse. */
+  hill: 0x8a9c5a,
+  hillLight: 0xa8b877,
+  hillDark: 0x5f6e3d
 } as const;
 
 /**

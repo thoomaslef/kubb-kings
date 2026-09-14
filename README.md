@@ -229,16 +229,17 @@ comptent dans le total de 12 par equipe (`MatchScene.beginOpeningThrow` / `resol
 
 ## Terrains a obstacles
 
-Trois presets, choisis au menu, dans [`src/game/rules.ts`](src/game/rules.ts)
+Quatre presets, choisis au menu, dans [`src/game/rules.ts`](src/game/rules.ts)
 (`FIELD_PRESETS`) : le terrain (`FIELD`, l&apos;espacement des kubbs, les hitboxes) ne
 change jamais — seuls des rochers statiques s&apos;ajoutent, definis en decalage
-(dx, dy) depuis le centre.
+(dx, dy) depuis le centre (sauf "Colline", differente — voir plus bas).
 
-| Preset         | Rochers                                                          |
+| Preset         | Effet                                                          |
 | -------------- | ------------------------------------------------------------------ |
 | **Classique**  | Aucun (terrain d&apos;origine)                                      |
 | **Chicane**    | Deux rochers en S, hors de l&apos;axe : recompense le repositionnement le long de la ligne de lancer |
 | **Sentinelle** | Deux rochers sur l&apos;axe, de part et d&apos;autre du roi : un tir droit depuis le centre de la ligne les percute avant sa cible |
+| **Colline**    | Un monticule au centre (zone de friction accrue, pas un rocher) : le traverser use plus de vitesse, il faut y mettre plus de puissance pour ressortir avec assez de force — cf. plus bas |
 
 Un rocher ne tombe jamais et ne fait tomber personne : il fait rebondir le baton comme
 une bande (`src/game/entities/Obstacle.ts`, corps Matter statique).
@@ -247,9 +248,32 @@ une bande (`src/game/entities/Obstacle.ts`, corps Matter statique).
 passe leur position ; son cone d&apos;incertitude les traite comme un troisieme type
 d&apos;obstacle (`kind: 'block'`, distinct de `'kubb'` et `'king'`) : un tir qui les
 percute est simplement gache pour cet echantillon, jamais compte comme une faute contre
-le roi. Verifie par simulation sur les 3 presets x 3 niveaux (9 combinaisons, 2000 matchs
-chacune) : zero suicide sur le roi partout, et une IA qui contourne les rochers la plupart
-du temps plutot que de leur foncer dedans.
+le roi. Verifie par simulation sur les 3 premiers presets x 3 niveaux (9 combinaisons,
+2000 matchs chacune) : zero suicide sur le roi partout, et une IA qui contourne les
+rochers la plupart du temps plutot que de leur foncer dedans.
+
+**Colline** est un mecanisme different : pas un rocher qui rebondit, une zone circulaire
+(`HILL_RADIUS` = 130px autour du centre, comme le roi) de friction Matter accrue
+(`HILL_EXTRA_FRICTION`, en plus de `BATON_BODY.frictionAir`) — le baton ne devie ni ne
+rebondit, il ressort simplement plus lent qu&apos;il n&apos;y est entre. Traverser tout
+son diametre coute environ 10% de jauge de puissance en plus pour arriver avec la meme
+force. Cote IA (`ai.ts`), la compensation est exacte des que possible : `simulateWindFlight`
+(donc `curvedKingDanger` et `decideApproachThrow`, deja bases sur une simulation complete
+pas a pas) integre directement la friction accrue selon la position reelle du baton a
+chaque pas ; `decideThrow`, qui evite cette simulation complete pour des raisons de
+performance, calcule la longueur du trajet qui traverse le disque (geometrie exacte d&apos;une
+corde de cercle) et l&apos;ajoute au terme de friction normal de `powerForDistance`/`speedAfter`
+— la meme identite algebrique (v(d) = v0 - k*d) s&apos;applique par morceau, un coefficient
+different sur la portion a l&apos;interieur. Verifie par simulation (17 etats de vent x 3
+niveaux, 51 combinaisons, 2160 matchs, verite terrain = trajectoire courbee reelle avec
+la meme friction que le jeu) : zero suicide, une IA toujours capable d&apos;abattre des
+kubbs a travers la colline (5,50 kubbs/match en moyenne contre 6,44 sans, une baisse
+sensible mais pas paralysante) et une puissance calculee qui augmente bien avec la
+traversee (verifie directement : 0,510 sans colline contre 0,614 en traversant tout le
+diametre, a distance egale). Puis en navigateur reel (vraie physique Matter) : un tir a
+puissance egale ressort mesurablement plus lent en traversant la colline qu&apos;a cote
+(11,27 contre 12,20 apres la meme distance parcourue), et 8 parties completes en
+Solo/Difficile — zero suicide, IA toujours gagnante.
 
 ---
 

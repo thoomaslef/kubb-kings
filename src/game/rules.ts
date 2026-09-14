@@ -86,30 +86,53 @@ export const HITBOX = {
  * seuls des blocs supplementaires apparaissent, positionnes en decalage
  * (dx, dy) depuis le centre du terrain. Un rocher ne peut rien faire tomber
  * ni etre abattu : il fait juste rebondir le baton, comme une bande.
+ *
+ * "Colline" (hasHill) est different : pas un rocher, une zone circulaire de
+ * friction accrue centree sur le terrain (comme le roi) — un tir qui la
+ * traverse ressort plus lent qu'il n'y est entre, sans jamais rebondir ni
+ * changer de trajectoire. Il faut donc y mettre plus de puissance pour
+ * ressortir avec assez de vitesse. Cf. HILL_RADIUS/HILL_EXTRA_FRICTION.
  */
-export type FieldPresetId = 'classique' | 'chicane' | 'sentinelle';
+export type FieldPresetId = 'classique' | 'chicane' | 'sentinelle' | 'colline';
 
 export interface FieldPreset {
   id: FieldPresetId;
   /** Decalages (dx, dy) depuis FIELD_CENTER_X/Y, en pixels de design. */
   obstacles: ReadonlyArray<{ dx: number; dy: number }>;
+  /** true si ce preset a la zone de friction "colline" (toujours centree sur le terrain). */
+  hasHill: boolean;
 }
 
 /** Rayon d'un rocher, en pixels de design — un peu plus large que le roi. */
 export const OBSTACLE_RADIUS = 22;
 
+/** Rayon de la zone de friction de "Colline", en pixels de design, centree sur FIELD_CENTER. */
+export const HILL_RADIUS = 130;
+/**
+ * frictionAir SUPPLEMENTAIRE a l'interieur de la colline, en plus de
+ * BATON_BODY.frictionAir (0.015) — traverser tout le diametre (260px) coute
+ * environ 0.012*260 = 3.1 de vitesse en plus a compenser, soit ~10% de jauge
+ * de puissance en plus (THROW.maxSpeed = 30) pour un tir qui la traverse en
+ * ligne droite. Applique par MatchScene (frictionAir du corps Matter du
+ * baton, ajuste selon sa position) et par ai.ts (powerForDistance,
+ * simulateWindFlight) — cf. leurs docblocks respectifs.
+ */
+export const HILL_EXTRA_FRICTION = 0.012;
+
 // Libelles et indices : src/i18n/dictionaries.ts (terrain.<id>.label / .hint).
 export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
   classique: {
     id: 'classique',
-    obstacles: []
+    obstacles: [],
+    hasHill: false
   },
   chicane: {
     id: 'chicane',
     obstacles: [
       { dx: 85, dy: 130 },
       { dx: -85, dy: -130 }
-    ]
+    ],
+    hasHill: false
   },
   sentinelle: {
     id: 'sentinelle',
@@ -118,7 +141,13 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     obstacles: [
       { dx: 0, dy: 70 },
       { dx: 0, dy: -70 }
-    ]
+    ],
+    hasHill: false
+  },
+  colline: {
+    id: 'colline',
+    obstacles: [],
+    hasHill: true
   }
 };
 

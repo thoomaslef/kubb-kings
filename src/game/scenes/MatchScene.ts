@@ -12,7 +12,7 @@ import type { Kubb } from '../entities/Kubb';
 import { King } from '../entities/King';
 import { Baton } from '../entities/Baton';
 import { Obstacle } from '../entities/Obstacle';
-import { WALL_BODY } from '../physics/matterConfig';
+import { BATON_BODY, WALL_BODY } from '../physics/matterConfig';
 import { Juice } from '../juice';
 import { PALETTE, BORDER_WIDTH } from '../theme';
 import { AI_PROFILES, AI_TEAM, decideApproachThrow, decideThrow, type AiProfile } from '../ai';
@@ -25,6 +25,8 @@ import {
   FIELD_CENTER_X,
   FIELD_CENTER_Y,
   FIELD_PRESETS,
+  HILL_EXTRA_FRICTION,
+  HILL_RADIUS,
   KNOCKDOWN_IMPACT_SPEED,
   MATCH_DURATION_MS,
   MAX_AIM_DEVIATION_DEG,
@@ -273,6 +275,7 @@ export class MatchScene extends Phaser.Scene {
 
     if (this.phase === 'flying' && this.baton) {
       if (this.wind) this.applyWind(delta);
+      if (FIELD_PRESETS[this.fieldPreset].hasHill) this.applyHillFriction();
 
       this.flightMs += delta;
       this.restMs = this.baton.speed < THROW.restSpeed ? this.restMs + delta : 0;
@@ -396,6 +399,22 @@ export class MatchScene extends Phaser.Scene {
     const accel = windAcceleration(this.wind);
     const mult = batonWindMultiplier(this.activeBatonStats());
     this.baton.sprite.setVelocity(body.velocity.x + accel.x * mult * steps, body.velocity.y + accel.y * mult * steps);
+  }
+
+  /**
+   * Colline (terrain "Colline", rules.ts) : frictionAir du corps Matter du
+   * baton relevee tant qu'il est dans la zone (HILL_RADIUS, centree comme le
+   * roi), remise a la valeur de base sinon — Matter applique alors lui-meme
+   * le bon amortissement a chaque sous-pas, sans qu'on ait besoin de
+   * modifier sa vitesse a la main comme pour le vent (ai.ts::
+   * simulateWindFlight/powerForDistance suivent exactement la meme regle).
+   */
+  private applyHillFriction() {
+    if (!this.baton) return;
+    const body = this.baton.sprite.body as MatterJS.BodyType;
+    const inside =
+      Phaser.Math.Distance.Between(body.position.x, body.position.y, FIELD_CENTER_X, FIELD_CENTER_Y) <= HILL_RADIUS;
+    body.frictionAir = inside ? BATON_BODY.frictionAir + HILL_EXTRA_FRICTION : BATON_BODY.frictionAir;
   }
 
   private launch() {
@@ -749,6 +768,7 @@ export class MatchScene extends Phaser.Scene {
           kingStanding: this.king.isStanding,
           obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
           ownStanding: this.teams[AI_TEAM].kubbs.map((k) => k.isStanding),
+          hasHill: FIELD_PRESETS[this.fieldPreset].hasHill,
           ...(this.wind ? { wind: this.wind } : {})
         },
         profile
@@ -791,6 +811,7 @@ export class MatchScene extends Phaser.Scene {
           throwerY: TEAMS[AI_TEAM].throwerY,
           direction: TEAMS[AI_TEAM].direction,
           obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
+          hasHill: FIELD_PRESETS[this.fieldPreset].hasHill,
           ...(this.wind ? { wind: this.wind } : {})
         },
         profile
@@ -1178,6 +1199,10 @@ export class MatchScene extends Phaser.Scene {
 
     const g = this.add.graphics().setDepth(0);
 
+    // Colline : dessinee avant tout le reste (traces de tonte, lignes...),
+    // qui restent visibles par-dessus, comme un vrai relief sous le terrain.
+    if (FIELD_PRESETS[this.fieldPreset].hasHill) this.drawHill(g);
+
     // Traces de tonte : bandes alternees, juste assez marquees pour se voir.
     for (let y = FIELD.y; y < FIELD.y + FIELD.height; y += 128) {
       g.fillStyle(PALETTE.mow, 0.045);
@@ -1207,6 +1232,25 @@ export class MatchScene extends Phaser.Scene {
 
     this.drawVignette(g);
     this.drawBorder();
+  }
+
+  /**
+   * Rendu du terrain "Colline" : un monticule circulaire purement decoratif,
+   * au meme rayon que la zone de friction reelle (HILL_RADIUS dans
+   * rules.ts) — le joueur voit ainsi exactement ou elle commence.
+   */
+  private drawHill(g: Phaser.GameObjects.Graphics) {
+    const rings = 5;
+    const light = Phaser.Display.Color.ValueToColor(PALETTE.hillLight);
+    const dark = Phaser.Display.Color.ValueToColor(PALETTE.hill);
+    for (let i = rings; i >= 1; i -= 1) {
+      const r = (HILL_RADIUS * i) / rings;
+      const mix = Phaser.Display.Color.Interpolate.ColorWithColor(light, dark, 100, (i / rings) * 100);
+      g.fillStyle(Phaser.Display.Color.GetColor(mix.r, mix.g, mix.b), 0.5);
+      g.fillCircle(FIELD_CENTER_X, FIELD_CENTER_Y, r);
+    }
+    g.lineStyle(2, PALETTE.hillDark, 0.4);
+    g.strokeCircle(FIELD_CENTER_X, FIELD_CENTER_Y, HILL_RADIUS);
   }
 
   /** Assombrit les bords : donne du volume a une vue de dessus tres plate. */

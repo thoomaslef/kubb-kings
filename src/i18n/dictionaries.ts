@@ -55,6 +55,8 @@ const fr: Record<string, string> = {
   'terrain.chicane.hint': "Deux rochers en S, hors de l'axe",
   'terrain.sentinelle.label': 'Sentinelle',
   'terrain.sentinelle.hint': 'Le roi, garde des deux cotes',
+  'terrain.colline.label': 'Colline',
+  'terrain.colline.hint': 'Un monticule au centre : plus dur a franchir, plus de puissance necessaire',
 
   // ---- skin (theme.ts)
   'skin.bois.label': 'Bois',
@@ -348,6 +350,8 @@ const en: Record<string, string> = {
   'terrain.chicane.hint': 'Two rocks in an S, off the centerline',
   'terrain.sentinelle.label': 'Sentinel',
   'terrain.sentinelle.hint': 'The king, guarded on both sides',
+  'terrain.colline.label': 'Hill',
+  'terrain.colline.hint': 'A mound in the middle: harder to clear, needs more power',
 
   // ---- skin
   'skin.bois.label': 'Wood',
