@@ -44,8 +44,8 @@ export const FREE_BATON_IDS: readonly BatonId[] = ['base', 'nordique', 'sniper',
  */
 export const BATON_MIN_LEVEL: Partial<Record<BatonId, number>> = {
   nordique: 3,
-  sniper: 5,
-  lourd: 7
+  sniper: 7,
+  lourd: 11
 };
 
 export interface BatonStats {

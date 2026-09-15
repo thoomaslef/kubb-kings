@@ -239,10 +239,10 @@ voir plus bas).
 | -------------- | ------------------------------------------------------------------ | :-----------: |
 | **Classique**  | Aucun (terrain d&apos;origine)                                      | 1 (des le debut) |
 | **Chicane**    | Deux rochers en S, hors de l&apos;axe : recompense le repositionnement le long de la ligne de lancer | 2 |
-| **Sentinelle** | Deux rochers sur l&apos;axe, de part et d&apos;autre du roi : un tir droit depuis le centre de la ligne les percute avant sa cible | 4 |
-| **Colline**    | Un monticule au centre (zone de friction accrue, pas un rocher) : le traverser use plus de vitesse, il faut y mettre plus de puissance pour ressortir avec assez de force — cf. plus bas | 6 |
-| **Glace**      | Terrain entier a friction reduite et rebonds plus francs : le baton glisse plus loin et rebondit plus fort sur les bandes — cf. plus bas | 8 |
-| **Sable**      | Terrain entier a friction accrue et rebonds plus mous, la boule y patine bien plus que le baton — cf. plus bas | 10 |
+| **Sentinelle** | Deux rochers sur l&apos;axe, de part et d&apos;autre du roi : un tir droit depuis le centre de la ligne les percute avant sa cible | 6 |
+| **Colline**    | Un monticule au centre (zone de friction accrue, pas un rocher) : le traverser use plus de vitesse, il faut y mettre plus de puissance pour ressortir avec assez de force — cf. plus bas | 9 |
+| **Glace**      | Terrain entier a friction reduite et rebonds plus francs : le baton glisse plus loin et rebondit plus fort sur les bandes — cf. plus bas | 13 |
+| **Sable**      | Terrain entier a friction accrue et rebonds plus mous, la boule y patine bien plus que le baton — cf. plus bas | 15 |
 
 (Niveaux requis : cf. section "Deverrouillage par niveau" plus bas — une restriction de
 menu joueur uniquement, sans effet sur `decideThrow`/`decideApproachThrow`.)
@@ -347,8 +347,8 @@ affichees en etoiles (1 a 5, 3 = le baton de base) :
 | ------------ | :-------: | :-------: | :------: | :-----------: |
 | **De base**  | ★★★☆☆     | ★★★☆☆     | ★★★☆☆    | 1 (des le debut) |
 | **Nordique** | ★★★★☆     | ★★☆☆☆     | ★★★☆☆    | 3             |
-| **Sniper**   | ★★☆☆☆     | ★★★★★     | ★★★☆☆    | 5             |
-| **Lourd**    | ★★★★★     | ★★☆☆☆     | ★★★☆☆    | 7             |
+| **Sniper**   | ★★☆☆☆     | ★★★★★     | ★★★☆☆    | 7             |
+| **Lourd**    | ★★★★★     | ★★☆☆☆     | ★★★☆☆    | 11            |
 
 (Stabilise et Boule, les 2 batons de boutique, sont dans le tableau Boutique plus bas.)
 
@@ -472,11 +472,11 @@ pour l&apos;instant.
 
 | Article                     | Categorie      | Prix | Niveau requis |
 | ------------------------------ | ---------------- | :--: | :-----------: |
-| Glace (trainee de lancer)     | Effet de lancer  | 150  | 3             |
-| Feu (trainee de lancer)       | Effet de lancer  | 150  | 5             |
-| Ardoise (skin de kubb)        | Skin             | 300  | 7             |
-| Boule (baton)                 | Baton            | 400  | 9             |
-| Stabilise (baton)            | Baton            | 500  | 10            |
+| Glace (trainee de lancer)     | Effet de lancer  | 150  | 4             |
+| Feu (trainee de lancer)       | Effet de lancer  | 150  | 8             |
+| Ardoise (skin de kubb)        | Skin             | 300  | 12            |
+| Boule (baton)                 | Baton            | 400  | 14            |
+| Stabilise (baton)            | Baton            | 500  | 17            |
 
 Les deux conditions sont necessaires pour acheter (`ShopItem.minLevel`,
 `useGameStore::purchaseItem`) : avoir assez de pieces ET avoir atteint ce niveau. Le
@@ -515,23 +515,29 @@ n&apos;influence jamais `decideThrow` ni `decideApproachThrow`.
 Jusqu&apos;ici, l&apos;XP/niveau (Phase 2 ci-dessus) ne servait qu&apos;a un titre
 cosmetique au menu : tout le reste du contenu etait soit disponible d&apos;office, soit
 achetable en boutique des la premiere partie — le niveau n&apos;ouvrait jamais rien. Ce
-systeme change ca : au-dela du baton **De base** et du terrain **Classique** (toujours
-disponibles des le niveau 1), les 3 autres batons gratuits, les 5 autres terrains et les
-5 articles de boutique exigent maintenant d&apos;avoir atteint un niveau minimum —
-etale sur les 10 premiers niveaux pour donner des objectifs tot en partie :
+systeme change ca : au-dela du baton **De base** et du terrain **Classique** (le point de
+depart, disponibles des le niveau 1 — il faut bien pouvoir jouer la toute premiere
+partie), les 3 autres batons gratuits, les 5 autres terrains et les 5 articles de
+boutique exigent maintenant d&apos;avoir atteint un niveau minimum — **un seul deblocage
+par niveau au maximum**, en evitant expres les paliers de titre (5/10/16&hellip;, cf.
+plus bas) pour ne jamais cumuler deux choses en meme temps sur un ecran :
 
-| Niveau | Deblocage(s)                                    |
+| Niveau | Deblocage                                       |
 | :----: | ------------------------------------------------- |
-| 1      | De base (baton), Classique (terrain)              |
+| 1      | De base (baton), Classique (terrain) — point de depart |
 | 2      | Chicane (terrain)                                  |
-| 3      | Nordique (baton), Glace (trainee, boutique)        |
-| 4      | Sentinelle (terrain)                               |
-| 5      | Sniper (baton), Feu (trainee, boutique)            |
-| 6      | Colline (terrain)                                  |
-| 7      | Lourd (baton), Ardoise (skin, boutique)            |
-| 8      | Glace (terrain)                                    |
-| 9      | Boule (baton, boutique)                            |
-| 10     | Sable (terrain), Stabilise (baton, boutique)       |
+| 3      | Nordique (baton)                                   |
+| 4      | Glace (trainee, boutique)                          |
+| 6      | Sentinelle (terrain)                               |
+| 7      | Sniper (baton)                                     |
+| 8      | Feu (trainee, boutique)                            |
+| 9      | Colline (terrain)                                  |
+| 11     | Lourd (baton)                                      |
+| 12     | Ardoise (skin, boutique)                           |
+| 13     | Glace (terrain)                                    |
+| 14     | Boule (baton, boutique)                            |
+| 15     | Sable (terrain)                                    |
+| 17     | Stabilise (baton, boutique)                        |
 
 **Deux tables independantes, un seul concept.** Pour les batons/terrains "gratuits"
 (`BATON_MIN_LEVEL` dans `batons.ts`, `FIELD_PRESET_MIN_LEVEL` dans `rules.ts`) le niveau
@@ -542,7 +548,7 @@ reste ensuite quel que soit le niveau (pas de "deniveau" possible). Menu.tsx fil
 selecteurs aux seuls choix debloques (meme mecanisme que le filtrage boutique deja en
 place pour skins/effets/batons — les terrains n&apos;etaient eux, jusqu&apos;ici, jamais
 filtres du tout) et affiche sous chaque selecteur concerne un indice discret sur le
-prochain deblocage a venir (&laquo;&nbsp;🔒 Prochain baton : Sniper — niveau 5&nbsp;&raquo;),
+prochain deblocage a venir (&laquo;&nbsp;🔒 Prochain baton : Sniper — niveau 7&nbsp;&raquo;),
 pour rendre la progression visible sans devoiler tout le contenu d&apos;un coup.
 
 **Purement un systeme cote menu/joueur.** Le niveau ne conditionne jamais ce que l&apos;IA
@@ -561,21 +567,26 @@ console, en francais comme en anglais.
 
 **Ecran "Progression"** (`Progression.tsx`) : le badge de niveau compact du menu devient
 un bouton qui ouvre le detail complet — barre XP avec l&apos;XP exacte restant avant le
-niveau suivant, une feuille de route chronologique de TOUS les paliers (1 a 32 : chaque
+niveau suivant, une feuille de route chronologique de TOUS les paliers (chaque
 baton/terrain/article de boutique cote son niveau requis, fusionne avec les titres
 cosmetiques de `progression.ts`, "Debloque" ou "Niveau X requis" selon le niveau
 courant), et un bloc statistiques (parties jouees, victoires cumulees, serie de
 victoires en cours, meilleure manche Defi, succes/articles de boutique possedes,
-pieces). **Victoires cumulees** (`ProgressionState.totalWins`) est un nouveau champ
-persiste, ajoute pour cet ecran — retro-compatible explicitement verifie : une
-sauvegarde anterieure sans ce champ ne reinitialise PAS le niveau/XP existant (seul
-`totalWins` retombe a 0), contrairement au comportement strict deja en place pour les
-3 autres champs. Verifie en navigateur reel : chargement d&apos;une sauvegarde
-pre-existante (niveau 6 restaure, pas remis a zero), ouverture/fermeture de l&apos;ecran,
-palier par palier (atteints vs verrouilles corrects a un niveau donne, les deux batons+
-terrain+titre du meme niveau bien regroupes sur une seule ligne), victoire/defaite reelles
-via le store qui incrementent/laissent intactes les bonnes statistiques, persistance
-apres rechargement — en francais comme en anglais, zero erreur console. Purement un
+pieces). **Un seul deblocage par ligne** : le baton De base et le terrain Classique (le
+point de depart, pas un deblocage a proprement parler) n&apos;apparaissent pas dans la
+feuille de route, et les 13 niveaux requis ont ete choisis pour ne jamais tomber sur un
+palier de titre (5/10/16/24/32) — chaque ligne du tableau ci-dessus affiche donc
+toujours exactement un seul element, jamais deux cumules. **Victoires cumulees**
+(`ProgressionState.totalWins`) est un nouveau champ persiste, ajoute pour cet ecran —
+retro-compatible explicitement verifie : une sauvegarde anterieure sans ce champ ne
+reinitialise PAS le niveau/XP existant (seul `totalWins` retombe a 0), contrairement au
+comportement strict deja en place pour les 3 autres champs. Verifie en navigateur reel :
+chargement d&apos;une sauvegarde pre-existante au format anterieur (niveau 6 restaure,
+pas remis a zero), ouverture/fermeture de l&apos;ecran, les 19 paliers (1 a 32) balayes un
+par un — chacun affiche exactement une ligne de deblocage, jamais plus, atteint vs
+verrouille corrects pour un niveau donne — victoire/defaite reelles via le store qui
+incrementent/laissent intactes les bonnes statistiques, persistance apres rechargement —
+en francais comme en anglais, zero erreur console. Purement un
 ecran de lecture cote joueur, aucun effet sur l&apos;IA.
 
 ---

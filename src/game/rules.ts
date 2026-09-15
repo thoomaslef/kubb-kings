@@ -185,10 +185,10 @@ const SAND_RESTITUTION_MULTIPLIER = 0.35;
  */
 export const FIELD_PRESET_MIN_LEVEL: Partial<Record<FieldPresetId, number>> = {
   chicane: 2,
-  sentinelle: 4,
-  colline: 6,
-  glace: 8,
-  sable: 10
+  sentinelle: 6,
+  colline: 9,
+  glace: 13,
+  sable: 15
 };
 
 // Libelles et indices : src/i18n/dictionaries.ts (terrain.<id>.label / .hint).

@@ -37,11 +37,11 @@ export interface ShopItem {
 }
 
 export const SHOP_ITEMS: readonly ShopItem[] = [
-  { id: 'trail-glace', category: 'trail', refId: 'glace', price: 150, minLevel: 3 },
-  { id: 'trail-feu', category: 'trail', refId: 'feu', price: 150, minLevel: 5 },
-  { id: 'skin-ardoise', category: 'skin', refId: 'ardoise', price: 300, minLevel: 7 },
-  { id: 'baton-boule', category: 'baton', refId: 'boule', price: 400, minLevel: 9 },
-  { id: 'baton-stabilise', category: 'baton', refId: 'stabilise', price: 500, minLevel: 10 }
+  { id: 'trail-glace', category: 'trail', refId: 'glace', price: 150, minLevel: 4 },
+  { id: 'trail-feu', category: 'trail', refId: 'feu', price: 150, minLevel: 8 },
+  { id: 'skin-ardoise', category: 'skin', refId: 'ardoise', price: 300, minLevel: 12 },
+  { id: 'baton-boule', category: 'baton', refId: 'boule', price: 400, minLevel: 14 },
+  { id: 'baton-stabilise', category: 'baton', refId: 'stabilise', price: 500, minLevel: 17 }
 ];
 
 /**

@@ -44,12 +44,14 @@ export function Progression() {
   const batonLabel = t('menu.batonAria');
   const terrainLabel = t('menu.terrainAria');
 
+  // Le baton De base et le terrain Classique sont le point de depart, pas un
+  // deblocage obtenu en montant de niveau (il faut bien pouvoir jouer la
+  // toute premiere partie) — la feuille de route ne liste donc que ce qui se
+  // debloque APRES le niveau 1, un seul element par niveau au maximum.
   const entries: RoadmapEntry[] = [];
-  entries.push({ level: 1, text: `${t('baton.base.label')} (${batonLabel})` });
   for (const [id, minLevel] of Object.entries(BATON_MIN_LEVEL)) {
     entries.push({ level: minLevel as number, text: `${t(`baton.${id}.label`)} (${batonLabel})` });
   }
-  entries.push({ level: 1, text: `${t('terrain.classique.label')} (${terrainLabel})` });
   for (const [id, minLevel] of Object.entries(FIELD_PRESET_MIN_LEVEL)) {
     entries.push({ level: minLevel as number, text: `${t(`terrain.${id}.label`)} (${terrainLabel})` });
   }
