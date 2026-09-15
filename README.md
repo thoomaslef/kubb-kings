@@ -559,6 +559,25 @@ reussi une fois le niveau atteint, et &laquo;&nbsp;Pieces insuffisantes&nbsp;&ra
 complete jouee au niveau 1 se deroule normalement, XP gagnee comprise — zero erreur
 console, en francais comme en anglais.
 
+**Ecran "Progression"** (`Progression.tsx`) : le badge de niveau compact du menu devient
+un bouton qui ouvre le detail complet — barre XP avec l&apos;XP exacte restant avant le
+niveau suivant, une feuille de route chronologique de TOUS les paliers (1 a 32 : chaque
+baton/terrain/article de boutique cote son niveau requis, fusionne avec les titres
+cosmetiques de `progression.ts`, "Debloque" ou "Niveau X requis" selon le niveau
+courant), et un bloc statistiques (parties jouees, victoires cumulees, serie de
+victoires en cours, meilleure manche Defi, succes/articles de boutique possedes,
+pieces). **Victoires cumulees** (`ProgressionState.totalWins`) est un nouveau champ
+persiste, ajoute pour cet ecran — retro-compatible explicitement verifie : une
+sauvegarde anterieure sans ce champ ne reinitialise PAS le niveau/XP existant (seul
+`totalWins` retombe a 0), contrairement au comportement strict deja en place pour les
+3 autres champs. Verifie en navigateur reel : chargement d&apos;une sauvegarde
+pre-existante (niveau 6 restaure, pas remis a zero), ouverture/fermeture de l&apos;ecran,
+palier par palier (atteints vs verrouilles corrects a un niveau donne, les deux batons+
+terrain+titre du meme niveau bien regroupes sur une seule ligne), victoire/defaite reelles
+via le store qui incrementent/laissent intactes les bonnes statistiques, persistance
+apres rechargement — en francais comme en anglais, zero erreur console. Purement un
+ecran de lecture cote joueur, aucun effet sur l&apos;IA.
+
 ---
 
 ## Succes

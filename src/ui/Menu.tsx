@@ -88,7 +88,12 @@ export function Menu() {
         </h1>
         <p className="subtitle">{t('menu.subtitle')}</p>
 
-        <div className="xp-panel xp-panel--compact">
+        <button
+          type="button"
+          className="xp-panel xp-panel--compact xp-panel--clickable"
+          onClick={() => setScreen('progression')}
+          aria-label={t('menu.progressionAria')}
+        >
           <div className="xp-panel__header">
             <span className="xp-panel__icon">{levelInfo.icon}</span>
             <span className="xp-panel__level">{t('progression.level', { n: levelInfo.level })}</span>
@@ -103,7 +108,7 @@ export function Menu() {
           <p className="xp-panel__bar-label">
             {levelInfo.xpIntoLevel} / {levelInfo.xpForThisLevel} XP
           </p>
-        </div>
+        </button>
 
         <div className="button-column">
           <button className="btn btn--primary" onClick={() => play('solo')}>

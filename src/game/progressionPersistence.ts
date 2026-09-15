@@ -19,7 +19,11 @@ export function loadProgression(): ProgressionState {
     if (!Number.isFinite(totalXp) || !Number.isFinite(winStreak) || !Number.isFinite(gamesPlayed)) {
       return INITIAL_PROGRESSION;
     }
-    return { totalXp, winStreak, gamesPlayed };
+    // totalWins est un champ ajoute apres coup : absent d'une sauvegarde
+    // anterieure, il ne doit PAS invalider le reste (le joueur perdrait son
+    // niveau) — simplement retomber a 0 dans ce cas precis.
+    const totalWins = Number(parsed.totalWins);
+    return { totalXp, winStreak, gamesPlayed, totalWins: Number.isFinite(totalWins) ? totalWins : 0 };
   } catch {
     return INITIAL_PROGRESSION;
   }

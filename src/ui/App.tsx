@@ -12,6 +12,7 @@ import { TournamentSetup } from './TournamentSetup';
 import { TournamentBracket } from './TournamentBracket';
 import { Shop } from './Shop';
 import { Achievements } from './Achievements';
+import { Progression } from './Progression';
 import { Legal } from './Legal';
 import { About } from './About';
 import { Boot } from './Boot';
@@ -50,6 +51,7 @@ export function App() {
       {screen === 'tournament' && <TournamentBracket />}
       {screen === 'shop' && <Shop />}
       {screen === 'achievements' && <Achievements />}
+      {screen === 'progression' && <Progression />}
       {screen === 'legal' && <Legal />}
       {screen === 'about' && <About />}
     </div>

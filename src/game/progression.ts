@@ -14,15 +14,19 @@ export interface ProgressionState {
   totalXp: number;
   winStreak: number;
   gamesPlayed: number;
+  /** Victoires cumulees (toutes manches confondues) — pour l'ecran de progression (Progression.tsx). */
+  totalWins: number;
 }
 
-export const INITIAL_PROGRESSION: ProgressionState = { totalXp: 0, winStreak: 0, gamesPlayed: 0 };
+export const INITIAL_PROGRESSION: ProgressionState = { totalXp: 0, winStreak: 0, gamesPlayed: 0, totalWins: 0 };
 
 /**
  * Palier de titre par niveau (le plus haut palier <= niveau s'applique).
- * Purement cosmetique — aucun effet sur les regles ni sur l'IA.
+ * Purement cosmetique — aucun effet sur les regles ni sur l'IA. Exporte pour
+ * l'ecran de progression (Progression.tsx), qui liste tous les paliers a
+ * venir en plus du titre courant.
  */
-const LEVEL_TITLES: ReadonlyArray<{ minLevel: number; icon: string; titleKey: string }> = [
+export const LEVEL_TITLES: ReadonlyArray<{ minLevel: number; icon: string; titleKey: string }> = [
   { minLevel: 1, icon: '🪵', titleKey: 'progression.title.debutant' },
   { minLevel: 5, icon: '🪵', titleKey: 'progression.title.amateur' },
   { minLevel: 10, icon: '🎯', titleKey: 'progression.title.confirme' },
@@ -155,6 +159,11 @@ export function computeXpAward(stats: MatchXpStats, before: ProgressionState): {
       levelBefore,
       levelAfter
     },
-    after: { totalXp: totalXpAfter, winStreak: winStreakAfter, gamesPlayed: before.gamesPlayed + 1 }
+    after: {
+      totalXp: totalXpAfter,
+      winStreak: winStreakAfter,
+      gamesPlayed: before.gamesPlayed + 1,
+      totalWins: before.totalWins + (stats.won ? 1 : 0)
+    }
   };
 }

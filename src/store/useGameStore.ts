@@ -31,6 +31,7 @@ export type Screen =
   | 'tournament'
   | 'shop'
   | 'achievements'
+  | 'progression'
   | 'legal'
   | 'about';
 
