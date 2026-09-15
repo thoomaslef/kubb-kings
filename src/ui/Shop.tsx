@@ -1,6 +1,7 @@
 import { useGameStore } from '../store/useGameStore';
-import { SHOP_ITEMS, type ShopCategory, type ShopItem } from '../game/shop';
+import { SHOP_ITEMS, isShopItemLevelUnlocked, type ShopCategory, type ShopItem } from '../game/shop';
 import { BATONS, type BatonId } from '../game/batons';
+import { levelFromXp } from '../game/progression';
 import { useT } from '../i18n/useT';
 
 const CATEGORIES: ShopCategory[] = ['skin', 'trail', 'baton'];
@@ -27,6 +28,8 @@ export function Shop() {
   const coins = useGameStore((s) => s.coins);
   const ownedItems = useGameStore((s) => s.ownedItems);
   const purchaseItem = useGameStore((s) => s.purchaseItem);
+  const progression = useGameStore((s) => s.progression);
+  const level = levelFromXp(progression.totalXp).level;
 
   return (
     <div className="overlay overlay--solid">
@@ -45,6 +48,9 @@ export function Shop() {
                 {items.map((item) => {
                   const owned = ownedItems.includes(item.id);
                   const affordable = coins >= item.price;
+                  // Le niveau ouvre le DROIT d'acheter, independamment des pieces
+                  // (les deux conditions sont necessaires — cf. shop.ts docblock).
+                  const levelUnlocked = isShopItemLevelUnlocked(item, level);
                   const hint = hintKey(item);
                   return (
                     <div key={item.id} className={`shop-item${owned ? ' shop-item--owned' : ''}`}>
@@ -66,12 +72,16 @@ export function Shop() {
                           <>
                             <button
                               className="btn btn--primary shop-item__buy"
-                              disabled={!affordable}
+                              disabled={!affordable || !levelUnlocked}
                               onClick={() => purchaseItem(item.id)}
                             >
                               {t('shop.buy', { price: item.price })}
                             </button>
-                            {!affordable && <span className="shop-item__locked">{t('shop.cantAfford')}</span>}
+                            {!levelUnlocked ? (
+                              <span className="shop-item__locked">{t('shop.requiresLevel', { level: item.minLevel })}</span>
+                            ) : (
+                              !affordable && <span className="shop-item__locked">{t('shop.cantAfford')}</span>
+                            )}
                           </>
                         )}
                       </div>

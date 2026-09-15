@@ -93,7 +93,7 @@ const fr: Record<string, string> = {
 
   // ---- Boutique (shop.ts) — Phase 3 de la progression
   'shop.title': 'Boutique',
-  'shop.intro': 'Achetez de nouveaux habillages avec les pieces gagnees en match.',
+  'shop.intro': 'Achetez de nouveaux habillages avec les pieces gagnees en match — certains exigent aussi un niveau minimum.',
   'shop.balance': '{n} pieces',
   'shop.category.skin': 'Skins de kubbs',
   'shop.category.trail': 'Effets de lancer',
@@ -101,10 +101,13 @@ const fr: Record<string, string> = {
   'shop.owned': 'Possede',
   'shop.buy': 'Acheter — {price} 🪙',
   'shop.cantAfford': 'Pieces insuffisantes',
+  'shop.requiresLevel': '🔒 Niveau {level} requis',
   'shop.back': 'Retour',
   'menu.shop': 'Boutique',
   'menu.effectAria': 'Effet de lancer',
   'menu.coinsAria': '{n} pieces',
+  'menu.nextBatonUnlock': '🔒 Prochain baton : {name} — niveau {level}',
+  'menu.nextTerrainUnlock': '🔒 Prochain terrain : {name} — niveau {level}',
 
   // ---- Succes (achievements.ts) — Phase 4 de la progression
   'achievement.unlocked': 'SUCCES DEBLOQUE :',
@@ -393,7 +396,7 @@ const en: Record<string, string> = {
 
   // ---- Shop (shop.ts) — progression Phase 3
   'shop.title': 'Shop',
-  'shop.intro': 'Buy new looks with the coins earned in matches.',
+  'shop.intro': 'Buy new looks with the coins earned in matches — some also require a minimum level.',
   'shop.balance': '{n} coins',
   'shop.category.skin': 'Kubb skins',
   'shop.category.trail': 'Throw effects',
@@ -401,10 +404,13 @@ const en: Record<string, string> = {
   'shop.owned': 'Owned',
   'shop.buy': 'Buy — {price} 🪙',
   'shop.cantAfford': 'Not enough coins',
+  'shop.requiresLevel': '🔒 Requires level {level}',
   'shop.back': 'Back',
   'menu.shop': 'Shop',
   'menu.effectAria': 'Throw effect',
   'menu.coinsAria': '{n} coins',
+  'menu.nextBatonUnlock': '🔒 Next baton: {name} — level {level}',
+  'menu.nextTerrainUnlock': '🔒 Next field: {name} — level {level}',
 
   // ---- Achievements (achievements.ts) — progression Phase 4
   'achievement.unlocked': 'ACHIEVEMENT UNLOCKED:',

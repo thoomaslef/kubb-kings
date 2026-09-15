@@ -307,6 +307,14 @@ body {
   margin: -6px 0 2px;
 }
 
+/* Prochain baton/terrain a debloquer par niveau (Menu.tsx) : distinct du
+   footnote informatif normal, une teinte doree pour se lire comme un
+   objectif plutot qu'une simple description. */
+.footnote--locked {
+  color: var(--gold);
+  opacity: 0.8;
+}
+
 /* ---------- Tournoi local ---------- */
 
 .text-input {

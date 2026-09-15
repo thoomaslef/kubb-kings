@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { AI_PROFILES, type Difficulty } from '../game/ai';
-import { FIELD_PRESETS, type FieldPresetId } from '../game/rules';
-import { BATONS, BATON_IDS } from '../game/batons';
+import { FIELD_PRESETS, FIELD_PRESET_MIN_LEVEL, type FieldPresetId } from '../game/rules';
+import { BATONS, BATON_IDS, BATON_MIN_LEVEL, type BatonId } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { KUBB_SKINS } from '../game/theme';
 import { THROW_EFFECT_IDS } from '../game/throwEffects';
@@ -46,9 +46,24 @@ export function Menu() {
   const trailEffect = useGameStore((s) => s.trailEffect);
   const setTrailEffect = useGameStore((s) => s.setTrailEffect);
 
+  const level = levelInfo.level;
+
   const availableSkins = KUBB_SKINS.filter((skin) => isShopRefOwned('skin', skin, ownedItems));
-  const availableBatons = BATON_IDS.filter((id) => isShopRefOwned('baton', id, ownedItems));
+  const availableBatons = BATON_IDS.filter(
+    (id) => isShopRefOwned('baton', id, ownedItems) && level >= (BATON_MIN_LEVEL[id] ?? 1)
+  );
   const availableEffects = THROW_EFFECT_IDS.filter((id) => isShopRefOwned('trail', id, ownedItems));
+  const availablePresets = PRESETS.filter((id) => level >= (FIELD_PRESET_MIN_LEVEL[id] ?? 1));
+
+  // Prochain deblocage "gratuit" (hors boutique) a venir, pour motiver la
+  // progression : le batons/terrain verrouille par niveau le plus proche,
+  // s'il en reste un. undefined une fois tout debloque.
+  const nextBaton = Object.entries(BATON_MIN_LEVEL)
+    .filter(([, minLevel]) => (minLevel as number) > level)
+    .sort((a, b) => (a[1] as number) - (b[1] as number))[0] as [BatonId, number] | undefined;
+  const nextTerrain = Object.entries(FIELD_PRESET_MIN_LEVEL)
+    .filter(([, minLevel]) => (minLevel as number) > level)
+    .sort((a, b) => (a[1] as number) - (b[1] as number))[0] as [FieldPresetId, number] | undefined;
 
   // Lue une seule fois au montage : elle ne peut changer que pendant une run,
   // ecran que ce composant n'affiche jamais.
@@ -131,7 +146,7 @@ export function Menu() {
           )}
 
           <div className="segmented" role="group" aria-label={t('menu.terrainAria')}>
-            {PRESETS.map((id) => (
+            {availablePresets.map((id) => (
               <button
                 key={id}
                 className={`segmented__item${id === fieldPreset ? ' segmented__item--on' : ''}`}
@@ -143,6 +158,11 @@ export function Menu() {
             ))}
           </div>
           <p className="footnote footnote--tight">{t(`terrain.${fieldPreset}.hint`)}</p>
+          {nextTerrain && (
+            <p className="footnote footnote--tight footnote--locked">
+              {t('menu.nextTerrainUnlock', { name: t(`terrain.${nextTerrain[0]}.label`), level: nextTerrain[1] })}
+            </p>
+          )}
 
           <div className="segmented" role="group" aria-label={t('menu.windAria')}>
             <button
@@ -192,6 +212,11 @@ export function Menu() {
             {t('baton.statPower')} {stars(BATONS[batonId].power)} · {t('baton.statPrecision')}{' '}
             {stars(BATONS[batonId].precision)} · {t('baton.statControl')} {stars(BATONS[batonId].control)}
           </p>
+          {nextBaton && (
+            <p className="footnote footnote--tight footnote--locked">
+              {t('menu.nextBatonUnlock', { name: t(`baton.${nextBaton[0]}.label`), level: nextBaton[1] })}
+            </p>
+          )}
 
           <div className="segmented" role="group" aria-label={t('menu.effectAria')}>
             {availableEffects.map((id) => (

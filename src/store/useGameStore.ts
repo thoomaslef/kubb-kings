@@ -6,10 +6,10 @@ import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPrese
 import type { BatonId } from '../game/batons';
 import type { KubbSkin } from '../game/theme';
 import type { ThrowEffectId } from '../game/throwEffects';
-import { SHOP_ITEMS } from '../game/shop';
+import { SHOP_ITEMS, isShopItemLevelUnlocked } from '../game/shop';
 import type { AchievementId } from '../game/achievements';
 import { buildBracket, recordWinner, type TournamentState } from '../game/tournament';
-import { computeXpAward, type MatchXpStats, type ProgressionState, type XpAward } from '../game/progression';
+import { computeXpAward, levelFromXp, type MatchXpStats, type ProgressionState, type XpAward } from '../game/progression';
 import { loadProgression, saveProgression } from '../game/progressionPersistence';
 import { computeCoinsAward } from '../game/currency';
 import { loadCurrency, saveCurrency } from '../game/currencyPersistence';
@@ -220,8 +220,9 @@ interface GameState {
   /** Effet de lancer choisi au menu — voir `trailEffect` ci-dessus. */
   setTrailEffect: (id: ThrowEffectId) => void;
   /**
-   * Achete un article de la boutique si possede assez de pieces et pas deja
-   * possede ; no-op sinon (bouton achat desactive cote UI dans ces cas).
+   * Achete un article de la boutique si possede assez de pieces, pas deja
+   * possede, ET niveau suffisant (ShopItem.minLevel) ; no-op sinon (bouton
+   * achat desactive cote UI dans ces cas).
    */
   purchaseItem: (itemId: string) => void;
   /**
@@ -313,7 +314,10 @@ export const useGameStore = create<GameState>((set) => ({
   purchaseItem: (itemId) =>
     set((state) => {
       const item = SHOP_ITEMS.find((it) => it.id === itemId);
-      if (!item || state.ownedItems.includes(itemId) || state.coins < item.price) return state;
+      const level = levelFromXp(state.progression.totalXp).level;
+      if (!item || state.ownedItems.includes(itemId) || state.coins < item.price || !isShopItemLevelUnlocked(item, level)) {
+        return state;
+      }
       const coins = state.coins - item.price;
       const ownedItems = [...state.ownedItems, itemId];
       saveCurrency({ coins });

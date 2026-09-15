@@ -235,14 +235,17 @@ change jamais — seuls des rochers statiques s&apos;ajoutent, definis en decala
 (dx, dy) depuis le centre (sauf "Colline", "Glace" et "Sable", differentes —
 voir plus bas).
 
-| Preset         | Effet                                                          |
-| -------------- | ------------------------------------------------------------------ |
-| **Classique**  | Aucun (terrain d&apos;origine)                                      |
-| **Chicane**    | Deux rochers en S, hors de l&apos;axe : recompense le repositionnement le long de la ligne de lancer |
-| **Sentinelle** | Deux rochers sur l&apos;axe, de part et d&apos;autre du roi : un tir droit depuis le centre de la ligne les percute avant sa cible |
-| **Colline**    | Un monticule au centre (zone de friction accrue, pas un rocher) : le traverser use plus de vitesse, il faut y mettre plus de puissance pour ressortir avec assez de force — cf. plus bas |
-| **Glace**      | Terrain entier a friction reduite et rebonds plus francs : le baton glisse plus loin et rebondit plus fort sur les bandes — cf. plus bas |
-| **Sable**      | Terrain entier a friction accrue et rebonds plus mous, la boule y patine bien plus que le baton — cf. plus bas |
+| Preset         | Effet                                                          | Niveau requis |
+| -------------- | ------------------------------------------------------------------ | :-----------: |
+| **Classique**  | Aucun (terrain d&apos;origine)                                      | 1 (des le debut) |
+| **Chicane**    | Deux rochers en S, hors de l&apos;axe : recompense le repositionnement le long de la ligne de lancer | 2 |
+| **Sentinelle** | Deux rochers sur l&apos;axe, de part et d&apos;autre du roi : un tir droit depuis le centre de la ligne les percute avant sa cible | 4 |
+| **Colline**    | Un monticule au centre (zone de friction accrue, pas un rocher) : le traverser use plus de vitesse, il faut y mettre plus de puissance pour ressortir avec assez de force — cf. plus bas | 6 |
+| **Glace**      | Terrain entier a friction reduite et rebonds plus francs : le baton glisse plus loin et rebondit plus fort sur les bandes — cf. plus bas | 8 |
+| **Sable**      | Terrain entier a friction accrue et rebonds plus mous, la boule y patine bien plus que le baton — cf. plus bas | 10 |
+
+(Niveaux requis : cf. section "Deverrouillage par niveau" plus bas — une restriction de
+menu joueur uniquement, sans effet sur `decideThrow`/`decideApproachThrow`.)
 
 Un rocher ne tombe jamais et ne fait tomber personne : il fait rebondir le baton comme
 une bande (`src/game/entities/Obstacle.ts`, corps Matter statique).
@@ -340,12 +343,14 @@ style plutot que par la puissance brute : chaque baton est un compromis, pas un 
 progres. Choisi librement au menu ([`src/game/batons.ts`](src/game/batons.ts)), 3 stats
 affichees en etoiles (1 a 5, 3 = le baton de base) :
 
-| Baton        | Puissance | Precision | Controle |
-| ------------ | :-------: | :-------: | :------: |
-| **De base**  | ★★★☆☆     | ★★★☆☆     | ★★★☆☆    |
-| **Nordique** | ★★★★☆     | ★★☆☆☆     | ★★★☆☆    |
-| **Sniper**   | ★★☆☆☆     | ★★★★★     | ★★★☆☆    |
-| **Lourd**    | ★★★★★     | ★★☆☆☆     | ★★★☆☆    |
+| Baton        | Puissance | Precision | Controle | Niveau requis |
+| ------------ | :-------: | :-------: | :------: | :-----------: |
+| **De base**  | ★★★☆☆     | ★★★☆☆     | ★★★☆☆    | 1 (des le debut) |
+| **Nordique** | ★★★★☆     | ★★☆☆☆     | ★★★☆☆    | 3             |
+| **Sniper**   | ★★☆☆☆     | ★★★★★     | ★★★☆☆    | 5             |
+| **Lourd**    | ★★★★★     | ★★☆☆☆     | ★★★☆☆    | 7             |
+
+(Stabilise et Boule, les 2 batons de boutique, sont dans le tableau Boutique plus bas.)
 
 - **Puissance** module la vitesse max du baton (+/-6% par etoile au-dessus/en-dessous de
   la baseline).
@@ -465,13 +470,19 @@ asset externe, cf. `BootScene`) et un terrain neuf demanderait en plus une verif
 IA complete (placement d&apos;obstacles) — rois et terrains restent donc hors catalogue
 pour l&apos;instant.
 
-| Article                     | Categorie      | Prix |
-| ------------------------------ | ---------------- | :--: |
-| Ardoise (skin de kubb)        | Skin             | 300  |
-| Feu (trainee de lancer)       | Effet de lancer  | 150  |
-| Glace (trainee de lancer)     | Effet de lancer  | 150  |
-| Stabilise (baton)            | Baton            | 500  |
-| Boule (baton)                 | Baton            | 400  |
+| Article                     | Categorie      | Prix | Niveau requis |
+| ------------------------------ | ---------------- | :--: | :-----------: |
+| Glace (trainee de lancer)     | Effet de lancer  | 150  | 3             |
+| Feu (trainee de lancer)       | Effet de lancer  | 150  | 5             |
+| Ardoise (skin de kubb)        | Skin             | 300  | 7             |
+| Boule (baton)                 | Baton            | 400  | 9             |
+| Stabilise (baton)            | Baton            | 500  | 10            |
+
+Les deux conditions sont necessaires pour acheter (`ShopItem.minLevel`,
+`useGameStore::purchaseItem`) : avoir assez de pieces ET avoir atteint ce niveau. Le
+bouton d&apos;achat reste desactive tant que l&apos;une des deux manque, avec un message
+distinct pour chaque cas (&laquo;&nbsp;Pieces insuffisantes&nbsp;&raquo; vs &laquo;&nbsp;Niveau
+X requis&nbsp;&raquo;) — cf. section suivante.
 
 Le baton **Stabilise** (Controle ★★★★★, Puissance/Precision au baseline ★★★) ne casse
 pas la regle deja posee pour les 4 batons gratuits (`batons.ts`) : un choix de style, pas
@@ -496,6 +507,57 @@ l&apos;IA, gain de pieces reel en fin de match ; pour la Boule specifiquement : 
 Matter reellement circulaire au lancer, rendu visuel distinct du baton, et un abattage de
 kubb reel via cette collision) — aucune simulation IA necessaire, ce systeme
 n&apos;influence jamais `decideThrow` ni `decideApproachThrow`.
+
+---
+
+## Deverrouillage par niveau
+
+Jusqu&apos;ici, l&apos;XP/niveau (Phase 2 ci-dessus) ne servait qu&apos;a un titre
+cosmetique au menu : tout le reste du contenu etait soit disponible d&apos;office, soit
+achetable en boutique des la premiere partie — le niveau n&apos;ouvrait jamais rien. Ce
+systeme change ca : au-dela du baton **De base** et du terrain **Classique** (toujours
+disponibles des le niveau 1), les 3 autres batons gratuits, les 5 autres terrains et les
+5 articles de boutique exigent maintenant d&apos;avoir atteint un niveau minimum —
+etale sur les 10 premiers niveaux pour donner des objectifs tot en partie :
+
+| Niveau | Deblocage(s)                                    |
+| :----: | ------------------------------------------------- |
+| 1      | De base (baton), Classique (terrain)              |
+| 2      | Chicane (terrain)                                  |
+| 3      | Nordique (baton), Glace (trainee, boutique)        |
+| 4      | Sentinelle (terrain)                               |
+| 5      | Sniper (baton), Feu (trainee, boutique)            |
+| 6      | Colline (terrain)                                  |
+| 7      | Lourd (baton), Ardoise (skin, boutique)            |
+| 8      | Glace (terrain)                                    |
+| 9      | Boule (baton, boutique)                            |
+| 10     | Sable (terrain), Stabilise (baton, boutique)       |
+
+**Deux tables independantes, un seul concept.** Pour les batons/terrains "gratuits"
+(`BATON_MIN_LEVEL` dans `batons.ts`, `FIELD_PRESET_MIN_LEVEL` dans `rules.ts`) le niveau
+est la SEULE condition — pas de pieces impliquees. Pour la boutique
+(`ShopItem.minLevel`, `shop.ts`), le niveau s&apos;ajoute au prix : les deux sont
+necessaires pour acheter (`useGameStore::purchaseItem`), et un article deja achete le
+reste ensuite quel que soit le niveau (pas de "deniveau" possible). Menu.tsx filtre les
+selecteurs aux seuls choix debloques (meme mecanisme que le filtrage boutique deja en
+place pour skins/effets/batons — les terrains n&apos;etaient eux, jusqu&apos;ici, jamais
+filtres du tout) et affiche sous chaque selecteur concerne un indice discret sur le
+prochain deblocage a venir (&laquo;&nbsp;🔒 Prochain baton : Sniper — niveau 5&nbsp;&raquo;),
+pour rendre la progression visible sans devoiler tout le contenu d&apos;un coup.
+
+**Purement un systeme cote menu/joueur.** Le niveau ne conditionne jamais ce que l&apos;IA
+peut jouer (elle reste toujours sur le baton de base et n&apos;a aucune notion de
+progression) ni les reglages de securite de `decideThrow`/`decideApproachThrow` — aucune
+simulation IA n&apos;etait necessaire, seulement une verification en navigateur reel :
+au niveau 1, le menu n&apos;affiche que De base et Classique (avec les bons indices de
+prochain deblocage) ; un balayage complet des niveaux 1 a 11 confirme que le nombre
+d&apos;options affichees (batons comme terrains) grandit exactement palier par palier ;
+la boutique affiche &laquo;&nbsp;Niveau X requis&nbsp;&raquo; (bouton d&apos;achat
+desactive) meme avec largement assez de pieces tant que le niveau manque, achat reel
+reussi une fois le niveau atteint, et &laquo;&nbsp;Pieces insuffisantes&nbsp;&raquo;
+(jamais un message de niveau) une fois le niveau atteint mais sans le solde ; une partie
+complete jouee au niveau 1 se deroule normalement, XP gagnee comprise — zero erreur
+console, en francais comme en anglais.
 
 ---
 

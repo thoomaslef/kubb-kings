@@ -174,6 +174,23 @@ const SAND_FRICTION_MULTIPLIER = 1.6;
 const SAND_FRICTION_MULTIPLIER_BALL = 2.8;
 const SAND_RESTITUTION_MULTIPLIER = 0.35;
 
+/**
+ * Niveau du joueur (progression.ts::levelFromXp) requis pour choisir ce
+ * terrain au menu — absent de cette table = niveau 1, disponible des la
+ * premiere partie ('classique' seul dans ce cas). Purement une restriction
+ * de menu joueur : le terrain est un reglage de partie choisi avant le
+ * match, jamais une decision de l'IA — ce reglage n'a donc aucun effet sur
+ * decideThrow/decideApproachThrow au-dela de FieldPreset lui-meme (deja pris
+ * en compte via AiBoard.hasHill/frictionMultiplier, cf. ai.ts).
+ */
+export const FIELD_PRESET_MIN_LEVEL: Partial<Record<FieldPresetId, number>> = {
+  chicane: 2,
+  sentinelle: 4,
+  colline: 6,
+  glace: 8,
+  sable: 10
+};
+
 // Libelles et indices : src/i18n/dictionaries.ts (terrain.<id>.label / .hint).
 export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
   classique: {
