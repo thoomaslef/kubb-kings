@@ -326,16 +326,9 @@ function windCompensatedAngle(
   return angle;
 }
 
-/**
- * Rayons de collision vus par un baton en vol.
- *
- * Pour juger un impact on prend la demi-largeur du baton. Pour juger un DANGER
- * on prend sa demi-longueur : il tourne sur lui-meme, donc il peut accrocher
- * le roi bien plus loin que son axe ne le laisse croire.
- */
+/** Rayons de collision vus par un baton en vol (demi-largeur, l'empan de contact reel). */
 const KUBB_HIT_RADIUS = HITBOX.kubb / 2 + HITBOX.batonWidth / 2;
 const KING_HIT_RADIUS = HITBOX.kingRadius + HITBOX.batonWidth / 2;
-const KING_DANGER_RADIUS = HITBOX.kingRadius + HITBOX.batonLength / 2;
 const BLOCK_HIT_RADIUS = OBSTACLE_RADIUS + HITBOX.batonWidth / 2;
 
 interface Obstacle {
@@ -357,34 +350,42 @@ function rayHit(origin: Point, dx: number, dy: number, o: Obstacle): number | nu
 }
 
 /**
- * Echantillons pour le controle de securite roi COURBE sous le vent (voir
- * curvedKingDanger plus bas). Impair pour retomber exactement sur le tir
- * nominal en son centre, comme APPROACH_SAFETY_STEPS (decideApproachThrow,
- * plus bas) — meme raisonnement : aimError et deviation n'entrent dans la
- * simulation que par leur somme, donc un balayage LINEAIRE de cette somme
- * couvre exactement les memes extremes qu'une grille complete.
+ * Echantillons pour le controle de securite roi (voir curvedKingDanger plus
+ * bas — utilise TOUJOURS, avec ou sans vent, cf. son propre docblock).
+ * Impair pour retomber exactement sur le tir nominal en son centre, comme
+ * APPROACH_SAFETY_STEPS (decideApproachThrow, plus bas) — meme raisonnement :
+ * aimError et deviation n'entrent dans la simulation que par leur somme,
+ * donc un balayage LINEAIRE de cette somme couvre exactement les memes
+ * extremes qu'une grille complete.
  */
 const KING_WIND_SAFETY_STEPS = 151;
 /**
- * Marge de securite ajoutee a KING_HIT_RADIUS pour ce seul controle courbe
- * (jamais pour le rendu ni la detection de contact reelle) : absorbe le
- * residu de discretisation de KING_WIND_SAFETY_STEPS. Valeur issue d'un
- * balayage en simulation (scripts/scratchpad, trajectoire courbee reelle) :
- * zero suicide mesure avec cette marge, aux 2 forces de vent et aux 8
- * directions.
+ * Marge de securite ajoutee a KING_HIT_RADIUS pour ce seul controle (jamais
+ * pour le rendu ni la detection de contact reelle) : absorbe le residu de
+ * discretisation de KING_WIND_SAFETY_STEPS. Valeur issue d'un balayage en
+ * simulation (scripts/scratchpad, trajectoire courbee reelle) : zero suicide
+ * mesure avec cette marge, aux 2 forces de vent et aux 8 directions.
  */
 const KING_WIND_SAFETY_MARGIN = 60;
 
 /**
  * Le tir (origine, angle, puissance) risque-t-il de froler le roi en
- * chemin, une fois le vent pris en compte ? Contrairement au controle en
- * ligne droite utilise pour les kubbs/rochers (firstObstacle), celui-ci
- * simule la VRAIE trajectoire COURBEE (simulateWindFlight) sur tout le cone
- * d'incertitude : sous un vent fort, une correction d'angle valable a la
+ * chemin ? Simule la VRAIE trajectoire (simulateWindFlight — courbee sous le
+ * vent, ou simple ligne decelerant par friction si `windAccel` vaut
+ * NO_WIND_ACCEL) sur tout le cone d'incertitude, TOUJOURS, que le vent
+ * souffle ou non : sous un vent fort, une correction d'angle valable a la
  * distance de la cible peut laisser le baton passer bien plus pres du roi
  * qu'un modele en ligne droite ne le laisserait croire, si le roi se trouve
  * a mi-chemin d'une cible plus lointaine (ce que le seul angle central
- * corrige par windCompensatedAngle ne garantit pas).
+ * corrige par windCompensatedAngle ne garantit pas) — et meme SANS vent, un
+ * simple test geometrique en ligne droite (firstObstacle, comme pour les
+ * kubbs/rochers/cactus) se laisse masquer par le premier obstacle croise sur
+ * le chemin : un rocher/cactus juste avant le roi le rendait invisible a ce
+ * controle, alors qu'un baton qui les heurte rebondit — il ne s'arrete pas
+ * net, et peut tres bien continuer vers le roi ensuite (bug reel trouve par
+ * la simulation lors de l'ajout des cactus sur "Sable", cf. README). Cette
+ * fonction ignore volontairement rochers/cactus/kubbs : rien ne peut donc
+ * jamais masquer un danger roi.
  *
  * Pas de pre-filtre en ligne droite ici (tente puis abandonne : sous un vent
  * fort, un tir faible peut derriver de plusieurs centaines de pixels sur
@@ -481,19 +482,17 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
 
   const windAccel = board.wind ? windAcceleration(board.wind) : null;
 
-  // Le roi est un obstacle dans les deux cas : soit c'est la cible, soit c'est
-  // le piege. Seul son rayon change.
+  // Le roi n'entre dans cette liste QUE quand c'est la cible visee (le piege
+  // est gere a part, juste plus bas, sur TOUTE trajectoire qu'elle soit
+  // courbee par le vent ou non). Le mettre ici pour le cas "piege" melangeait
+  // sa detection avec celle des rochers/cactus : un rayon qui frole le roi
+  // mais croise un obstacle AVANT lui se voyait alors compte "sans danger"
+  // (firstObstacle ne renvoie que le PREMIER obstacle croise) — alors qu'un
+  // baton qui heurte un rocher/cactus rebondit, il ne s'arrete pas net, et
+  // peut tres bien continuer vers le roi ensuite. Cf. curvedKingDanger.
   const obstacles: Obstacle[] = board.targets.map((p) => ({ p, radius: KUBB_HIT_RADIUS, kind: 'kubb' as const }));
-  if (board.kingStanding) {
-    if (aimingAtKing) {
-      obstacles.push({ p: king, radius: KING_HIT_RADIUS, kind: 'king' as const });
-    } else if (!windAccel) {
-      // Sans vent, le controle en ligne droite ci-dessous suffit : aucune
-      // courbure a rater. Avec vent, curvedKingDanger (plus bas, sur la VRAIE
-      // trajectoire courbee) s'en charge a la place — un simple rayon
-      // majore d'une marge ne suffit plus (voir sa documentation).
-      obstacles.push({ p: king, radius: KING_DANGER_RADIUS, kind: 'king' as const });
-    }
+  if (board.kingStanding && aimingAtKing) {
+    obstacles.push({ p: king, radius: KING_HIT_RADIUS, kind: 'king' as const });
   }
   for (const p of board.obstacles ?? []) {
     obstacles.push({ p, radius: BLOCK_HIT_RADIUS, kind: 'block' as const });
@@ -526,16 +525,29 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
         : naiveAngle;
       if (Math.abs(wrapAngle(angle - forward)) > maxDelta) continue;
 
-      if (windAccel && board.kingStanding && !aimingAtKing) {
-        const danger = curvedKingDanger(origin, angle, power, profile, windAccel, king, !!board.hasHill, frictionMultiplier);
+      // Verifie TOUJOURS la vraie trajectoire (courbee sous le vent, droite
+      // sinon — simulateWindFlight avec NO_WIND_ACCEL degenere exactement en
+      // ligne droite decelerant par friction) : independant de tout obstacle
+      // rocher/cactus/kubb sur le chemin, donc jamais masque par eux (cf.
+      // commentaire plus haut).
+      if (board.kingStanding && !aimingAtKing) {
+        const danger = curvedKingDanger(
+          origin,
+          angle,
+          power,
+          profile,
+          windAccel ?? NO_WIND_ACCEL,
+          king,
+          !!board.hasHill,
+          frictionMultiplier
+        );
         if (danger) continue;
       }
 
       let knockdowns = 0;
       let shots = 0;
-      let touchesKing = false;
 
-      for (let a = 0; a < AIM_SAMPLES && !touchesKing; a += 1) {
+      for (let a = 0; a < AIM_SAMPLES; a += 1) {
         const aimError = ((2 * a) / (AIM_SAMPLES - 1) - 1) * profile.aimErrorDeg;
 
         for (let d = 0; d < DEVIATION_SAMPLES; d += 1) {
@@ -546,12 +558,9 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
           const hit = firstObstacle(origin, sampleAngle, obstacles);
           if (!hit) continue;
 
-          if (hit.obstacle.kind === 'king' && !aimingAtKing) {
-            touchesKing = true;
-            break;
-          }
-          // Rocher percute avant la cible : tir gache, mais sans consequence
-          // (contrairement au roi, il ne fait pas perdre la partie).
+          // Rocher/cactus percute avant la cible : tir gache, mais sans
+          // consequence (contrairement au roi, il ne fait pas perdre la
+          // partie — et sa propre securite est verifiee a part, ci-dessus).
           if (hit.obstacle.kind === 'block') continue;
           // Un baton en fin de course rebondit sans rien renverser. La
           // traversee de la colline (le cas echeant) se recalcule pour ce
@@ -564,8 +573,6 @@ export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.
           if (speedAfter(power, hit.distance, sampleHillCrossing, frictionMultiplier) >= KNOCKDOWN_IMPACT_SPEED) knockdowns += 1;
         }
       }
-
-      if (touchesKing) continue;
 
       // Proportion des tirs du cone qui renversent effectivement quelque chose.
       const reliability = knockdowns / shots;

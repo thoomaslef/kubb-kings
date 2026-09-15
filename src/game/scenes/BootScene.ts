@@ -26,6 +26,7 @@ export class BootScene extends Phaser.Scene {
     this.buildKingTextures();
     this.buildThrowerTextures();
     this.buildObstacleTexture();
+    this.buildCactusTexture();
     this.buildShadowTexture();
     this.buildParticleTextures();
 
@@ -486,6 +487,48 @@ export class BootScene extends Phaser.Scene {
       g.lineStyle(1, PALETTE.rockDark, 0.4);
       g.lineBetween(c - 6, c - 2, c + 2, c + 6);
       g.lineBetween(c + 4, c - 8, c + 8, c - 1);
+    });
+  }
+
+  /**
+   * Cactus (obstacles du terrain "Sable"), a la place des rochers habituels
+   * — meme corps Matter (rayon, rebond), juste une autre texture. Un saguaro
+   * simplifie (tronc + 2 bras) tient dans le meme gabarit circulaire que le
+   * rocher, avec la meme facette claire en haut a gauche (coherente avec les
+   * ombres portees, theme.ts) et quelques epines claires pour la lisibilite.
+   */
+  private buildCactusTexture() {
+    const size = OBSTACLE_RADIUS * 2 + 6;
+    const c = size / 2;
+
+    this.texture('cactus', size, size, (g) => {
+      const trunkWidth = 13;
+      const trunkTop = c - OBSTACLE_RADIUS + 2;
+      const trunkHeight = OBSTACLE_RADIUS * 2 - 4;
+
+      g.fillStyle(PALETTE.cactusDark, 1);
+      g.fillRoundedRect(c - trunkWidth / 2 + 1, trunkTop + 1, trunkWidth, trunkHeight, trunkWidth / 2);
+
+      g.fillStyle(PALETTE.cactus, 1);
+      g.fillRoundedRect(c - trunkWidth / 2, trunkTop, trunkWidth, trunkHeight, trunkWidth / 2);
+
+      // Deux bras, un de chaque cote, comme un saguaro.
+      const armWidth = 8;
+      g.fillStyle(PALETTE.cactus, 1);
+      g.fillRoundedRect(c - trunkWidth / 2 - armWidth + 2, c - 6, armWidth, 16, armWidth / 2);
+      g.fillRoundedRect(c + trunkWidth / 2 - 2, c - 12, armWidth, 16, armWidth / 2);
+
+      // Facette claire : meme coin que les autres pieces (haut-gauche).
+      g.fillStyle(PALETTE.cactusLight, 0.55);
+      g.fillRoundedRect(c - trunkWidth / 2, trunkTop, trunkWidth / 2, trunkHeight * 0.6, trunkWidth / 4);
+
+      // Epines : quelques points clairs le long du tronc.
+      g.fillStyle(PALETTE.cactusSpine, 0.8);
+      for (let i = 0; i < 5; i += 1) {
+        const y = trunkTop + 4 + i * (trunkHeight - 8) * 0.25;
+        g.fillCircle(c - trunkWidth / 2 + 1, y, 1);
+        g.fillCircle(c + trunkWidth / 2 - 1, y, 1);
+      }
     });
   }
 

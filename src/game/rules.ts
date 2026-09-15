@@ -107,7 +107,11 @@ export const HITBOX = {
  * pour la partie entiere — frictionMultiplier/restitutionMultiplier,
  * multiplicatifs sur BATON_BODY.frictionAir/restitution. "Sable" penalise en
  * plus la boule bien plus que le baton (frictionMultiplierBall) : une bille
- * s'enfonce dans le sable, un baton glisse dessus.
+ * s'enfonce dans le sable, un baton glisse dessus. "Sable" combine en plus 4
+ * cactus (memes rochers qu'ailleurs, juste une autre texture — cf.
+ * Obstacle.ts) avec cette friction/ce rebond modifies : premier preset a
+ * cumuler les deux mecanismes, d'ou une verification IA dediee (voir
+ * README, section "Terrains a obstacles").
  */
 export type FieldPresetId = 'classique' | 'chicane' | 'sentinelle' | 'colline' | 'glace' | 'sable';
 
@@ -243,7 +247,16 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
   },
   sable: {
     id: 'sable',
-    obstacles: [],
+    // 4 cactus, symetriques sur les deux axes a la fois (memes decalages que
+    // "Chicane", dupliques dans les 4 cadrans) : contrairement a Chicane
+    // (en S, hors axe) ou Sentinelle (sur l'axe), aucune ligne de lancer
+    // n'est structurellement privilegiee.
+    obstacles: [
+      { dx: 85, dy: 130 },
+      { dx: -85, dy: 130 },
+      { dx: 85, dy: -130 },
+      { dx: -85, dy: -130 }
+    ],
     hasHill: false,
     frictionMultiplier: SAND_FRICTION_MULTIPLIER,
     frictionMultiplierBall: SAND_FRICTION_MULTIPLIER_BALL,

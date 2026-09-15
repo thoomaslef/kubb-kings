@@ -60,7 +60,7 @@ const fr: Record<string, string> = {
   'terrain.glace.label': 'Glace',
   'terrain.glace.hint': 'Terrain glissant : le tir va bien plus loin, et rebondit plus fort sur les bandes',
   'terrain.sable.label': 'Sable',
-  'terrain.sable.hint': 'Terrain qui freine, surtout la boule : rebonds plus mous sur les bandes',
+  'terrain.sable.hint': 'Terrain qui freine, surtout la boule, avec 4 cactus symetriques : rebonds plus mous sur les bandes',
 
   // ---- skin (theme.ts)
   'skin.bois.label': 'Bois',
@@ -380,7 +380,7 @@ const en: Record<string, string> = {
   'terrain.glace.label': 'Ice',
   'terrain.glace.hint': 'Slippery ground: throws go much farther, and bounce harder off the walls',
   'terrain.sable.label': 'Sand',
-  'terrain.sable.hint': 'Ground that slows you down, especially the ball: softer bounces off the walls',
+  'terrain.sable.hint': 'Ground that slows you down, especially the ball, with 4 symmetric cacti: softer bounces off the walls',
 
   // ---- skin
   'skin.bois.label': 'Wood',

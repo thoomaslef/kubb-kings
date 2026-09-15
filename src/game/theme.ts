@@ -56,7 +56,12 @@ export const PALETTE = {
   /** Sable (terrain "Sable") : remplace la pelouse sur tout le terrain. */
   sand: 0xd9c48a,
   sandLight: 0xecdcac,
-  sandDark: 0xb89f5f
+  sandDark: 0xb89f5f,
+  /** Cactus (obstacles du terrain "Sable"), a la place des rochers habituels. */
+  cactus: 0x4b7a4a,
+  cactusLight: 0x6ea068,
+  cactusDark: 0x2f5330,
+  cactusSpine: 0xe8dcaa
 } as const;
 
 /**

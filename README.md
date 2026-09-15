@@ -242,7 +242,7 @@ voir plus bas).
 | **Sentinelle** | Deux rochers sur l&apos;axe, de part et d&apos;autre du roi : un tir droit depuis le centre de la ligne les percute avant sa cible | 6 |
 | **Colline**    | Un monticule au centre (zone de friction accrue, pas un rocher) : le traverser use plus de vitesse, il faut y mettre plus de puissance pour ressortir avec assez de force — cf. plus bas | 9 |
 | **Glace**      | Terrain entier a friction reduite et rebonds plus francs : le baton glisse plus loin et rebondit plus fort sur les bandes — cf. plus bas | 13 |
-| **Sable**      | Terrain entier a friction accrue et rebonds plus mous, la boule y patine bien plus que le baton — cf. plus bas | 15 |
+| **Sable**      | Terrain entier a friction accrue et rebonds plus mous, la boule y patine bien plus que le baton, plus 4 cactus symetriques — cf. plus bas | 15 |
 
 (Niveaux requis : cf. section "Deverrouillage par niveau" plus bas — une restriction de
 menu joueur uniquement, sans effet sur `decideThrow`/`decideApproachThrow`.)
@@ -313,6 +313,32 @@ boule patine plus que le baton dans le sable (11,17 contre 15,22), et le ratio d
 mesure juste avant/apres un rebond sur une bande confirme des rebonds plus francs sur
 glace (0,985) et plus mous sur sable (0,953) qu&apos;en classique (0,970) — et 6 parties
 completes en Solo (Facile/Moyen/Difficile x Glace/Sable) sans erreur console.
+
+**Sable** a ensuite recu 4 cactus (`Obstacle.ts`, meme corps Matter que les rochers des
+autres presets — juste une autre texture, `BootScene::buildCactusTexture`), symetriques
+sur les DEUX axes a la fois (memes decalages que "Chicane", dupliques dans les 4
+cadrans — contrairement a Chicane ou Sentinelle, aucune ligne de lancer n&apos;y est
+structurellement privilegiee). Premier preset a cumuler deux mecanismes deja verifies
+independamment (obstacles + friction/rebond sur tout le terrain), d&apos;ou une
+verification IA dediee plutot que de supposer que la composition des deux reste sure —
+verification qui a trouve un second vrai bug de securite, distinct de celui de Glace :
+`decideThrow`, sans vent, ne testait le risque roi qu&apos;au moyen du meme controle en
+ligne droite (`firstObstacle`) que celui utilise pour les kubbs et les rochers/cactus —
+qui ne renvoie que le PREMIER obstacle croise sur le rayon. Un cactus se trouvant juste
+avant le roi sur un rayon legerement devie masquait donc totalement le roi a ce
+controle, alors qu&apos;un baton qui heurte un cactus rebondit — il ne s&apos;arrete pas
+net, et peut tres bien continuer vers le roi ensuite. Corrige en unifiant les deux cas
+(avec ou sans vent) sur `curvedKingDanger`, qui simule la VRAIE trajectoire
+independamment de tout rocher/cactus/kubb sur le chemin (rien ne peut donc plus la
+masquer) — un changement qui touche tous les terrains, pas seulement Sable, d&apos;ou une
+reverification complete : 9180 matchs sur les 6 terrains (17 vents x 3 niveaux, N=30)
+puis 15&nbsp;300 matchs supplementaires cibles sur les 3 terrains a obstacles
+(Chicane/Sentinelle/Sable, N=100) — zero suicide partout, 24&nbsp;480 matchs au total.
+Puis en navigateur reel (vraie physique Matter) : exactement 4 cactus generes, un dans
+chaque cadran a egale distance du centre (symetrie confirmee par calcul), un baton vise
+droit sur un cactus rebondit reellement dessus (inversion de vitesse mesuree), 6 parties
+completes sur Sable (Facile/Moyen/Difficile x vent on/off) et 5 parties sur les autres
+terrains (Difficile, vent) — toutes sans erreur console.
 
 ---
 

@@ -1340,11 +1340,12 @@ export class MatchScene extends Phaser.Scene {
     this.throwerSprites = { blue: make('blue'), red: make('red') };
   }
 
-  /** Rochers du terrain choisi. Vide sur le preset "classique". */
+  /** Rochers (ou cactus sur "Sable") du terrain choisi. Vide sur le preset "classique". */
   private createObstacles() {
     const preset = FIELD_PRESETS[this.fieldPreset];
+    const textureKey = preset.groundTexture === 'sand' ? 'cactus' : 'obstacle';
     this.obstacles = preset.obstacles.map(
-      ({ dx, dy }) => new Obstacle(this, FIELD_CENTER_X + dx, FIELD_CENTER_Y + dy)
+      ({ dx, dy }) => new Obstacle(this, FIELD_CENTER_X + dx, FIELD_CENTER_Y + dy, textureKey)
     );
   }
 
