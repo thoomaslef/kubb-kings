@@ -98,6 +98,7 @@ const fr: Record<string, string> = {
   'shop.category.skin': 'Skins de kubbs',
   'shop.category.trail': 'Effets de lancer',
   'shop.category.baton': 'Batons',
+  'shop.category.terrain': 'Terrains',
   'shop.owned': 'Possede',
   'shop.buy': 'Acheter — {price} 🪙',
   'shop.cantAfford': 'Pieces insuffisantes',
@@ -161,6 +162,7 @@ const fr: Record<string, string> = {
   'progression.stat.shopItems': 'Articles de boutique possedes : {n}/{total}',
   'progression.roadmapTitle': 'Paliers de deblocage',
   'progression.reached': 'Debloque',
+  'progression.availableInShop': '🛒 En vente a la boutique',
   'progression.newTitle': 'Nouveau titre : {name}',
   'progression.back': 'Retour',
 
@@ -418,6 +420,7 @@ const en: Record<string, string> = {
   'shop.category.skin': 'Kubb skins',
   'shop.category.trail': 'Throw effects',
   'shop.category.baton': 'Batons',
+  'shop.category.terrain': 'Fields',
   'shop.owned': 'Owned',
   'shop.buy': 'Buy — {price} 🪙',
   'shop.cantAfford': 'Not enough coins',
@@ -481,6 +484,7 @@ const en: Record<string, string> = {
   'progression.stat.shopItems': 'Shop items owned: {n}/{total}',
   'progression.roadmapTitle': 'Unlock roadmap',
   'progression.reached': 'Unlocked',
+  'progression.availableInShop': '🛒 Available in the shop',
   'progression.newTitle': 'New title: {name}',
   'progression.back': 'Back',
 

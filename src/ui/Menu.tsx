@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { AI_PROFILES, type Difficulty } from '../game/ai';
-import { FIELD_PRESETS, FIELD_PRESET_MIN_LEVEL, type FieldPresetId } from '../game/rules';
-import { BATONS, BATON_IDS, BATON_MIN_LEVEL, type BatonId } from '../game/batons';
+import { FIELD_PRESETS, type FieldPresetId } from '../game/rules';
+import { BATONS, BATON_IDS } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { KUBB_SKINS } from '../game/theme';
 import { THROW_EFFECT_IDS } from '../game/throwEffects';
-import { isShopRefOwned } from '../game/shop';
+import { isShopRefOwned, SHOP_ITEMS, type ShopCategory } from '../game/shop';
 import { LADDER, getBestStage } from '../game/roguelite';
 import { useT } from '../i18n/useT';
 import type { Lang } from '../i18n/translate';
@@ -49,21 +49,17 @@ export function Menu() {
   const level = levelInfo.level;
 
   const availableSkins = KUBB_SKINS.filter((skin) => isShopRefOwned('skin', skin, ownedItems));
-  const availableBatons = BATON_IDS.filter(
-    (id) => isShopRefOwned('baton', id, ownedItems) && level >= (BATON_MIN_LEVEL[id] ?? 1)
-  );
+  const availableBatons = BATON_IDS.filter((id) => isShopRefOwned('baton', id, ownedItems));
   const availableEffects = THROW_EFFECT_IDS.filter((id) => isShopRefOwned('trail', id, ownedItems));
-  const availablePresets = PRESETS.filter((id) => level >= (FIELD_PRESET_MIN_LEVEL[id] ?? 1));
+  const availablePresets = PRESETS.filter((id) => isShopRefOwned('terrain', id, ownedItems));
 
-  // Prochain deblocage "gratuit" (hors boutique) a venir, pour motiver la
-  // progression : le batons/terrain verrouille par niveau le plus proche,
-  // s'il en reste un. undefined une fois tout debloque.
-  const nextBaton = Object.entries(BATON_MIN_LEVEL)
-    .filter(([, minLevel]) => (minLevel as number) > level)
-    .sort((a, b) => (a[1] as number) - (b[1] as number))[0] as [BatonId, number] | undefined;
-  const nextTerrain = Object.entries(FIELD_PRESET_MIN_LEVEL)
-    .filter(([, minLevel]) => (minLevel as number) > level)
-    .sort((a, b) => (a[1] as number) - (b[1] as number))[0] as [FieldPresetId, number] | undefined;
+  // Prochain article de boutique a venir dans cette categorie, pour motiver
+  // la progression (le niveau ouvre juste le DROIT d'acheter, cf. shop.ts) —
+  // undefined une fois tout debloque dans cette categorie.
+  const nextInCategory = (category: ShopCategory) =>
+    SHOP_ITEMS.filter((it) => it.category === category && it.minLevel > level).sort((a, b) => a.minLevel - b.minLevel)[0];
+  const nextBaton = nextInCategory('baton');
+  const nextTerrain = nextInCategory('terrain');
 
   // Lue une seule fois au montage : elle ne peut changer que pendant une run,
   // ecran que ce composant n'affiche jamais.
@@ -165,7 +161,7 @@ export function Menu() {
           <p className="footnote footnote--tight">{t(`terrain.${fieldPreset}.hint`)}</p>
           {nextTerrain && (
             <p className="footnote footnote--tight footnote--locked">
-              {t('menu.nextTerrainUnlock', { name: t(`terrain.${nextTerrain[0]}.label`), level: nextTerrain[1] })}
+              {t('menu.nextTerrainUnlock', { name: t(`terrain.${nextTerrain.refId}.label`), level: nextTerrain.minLevel })}
             </p>
           )}
 
@@ -219,7 +215,7 @@ export function Menu() {
           </p>
           {nextBaton && (
             <p className="footnote footnote--tight footnote--locked">
-              {t('menu.nextBatonUnlock', { name: t(`baton.${nextBaton[0]}.label`), level: nextBaton[1] })}
+              {t('menu.nextBatonUnlock', { name: t(`baton.${nextBaton.refId}.label`), level: nextBaton.minLevel })}
             </p>
           )}
 

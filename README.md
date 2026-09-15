@@ -244,8 +244,9 @@ voir plus bas).
 | **Glace**      | Terrain entier a friction reduite et rebonds plus francs : le baton glisse plus loin et rebondit plus fort sur les bandes — cf. plus bas | 13 |
 | **Sable**      | Terrain entier a friction accrue et rebonds plus mous, la boule y patine bien plus que le baton, plus 4 cactus symetriques — cf. plus bas | 15 |
 
-(Niveaux requis : cf. section "Deverrouillage par niveau" plus bas — une restriction de
-menu joueur uniquement, sans effet sur `decideThrow`/`decideApproachThrow`.)
+Seul "Classique" reste disponible d&apos;office : les 5 autres sont desormais des
+articles de boutique (`src/game/shop.ts`, categorie `'terrain'`) — niveau ET pieces
+necessaires pour les acheter, cf. section "Boutique" plus bas.
 
 Un rocher ne tombe jamais et ne fait tomber personne : il fait rebondir le baton comme
 une bande (`src/game/entities/Obstacle.ts`, corps Matter statique).
@@ -348,15 +349,17 @@ Trois habillages, choisis au menu, generes dans
 [`src/game/scenes/BootScene.ts`](src/game/scenes/BootScene.ts) (`drawKubbStanding` /
 `drawKubbFallen`) : une texture par (equipe x skin), toujours par code, sans asset externe.
 
-| Skin        | Look                                                              |
-| ----------- | ------------------------------------------------------------------ |
-| **Bois**    | Look d&apos;origine : fil du bois, biseau au sol                    |
-| **Marbre**  | Base claire veinee, cadre et veines teintes par la couleur d&apos;equipe |
-| **Metal**   | Corps acier avec reflet, cadre et bande de couleur d&apos;equipe    |
+| Skin        | Look                                                              | Niveau requis |
+| ----------- | ------------------------------------------------------------------ | :-----------: |
+| **Bois**    | Look d&apos;origine : fil du bois, biseau au sol                    | 1 (des le debut) |
+| **Marbre**  | Base claire veinee, cadre et veines teintes par la couleur d&apos;equipe | 18 |
+| **Metal**   | Corps acier avec reflet, cadre et bande de couleur d&apos;equipe    | 19 |
 
-Purement cosmetique : la hitbox (`HITBOX.kubb` dans `rules.ts`) et les corps Matter ne
-changent jamais, et `ai.ts` n&apos;a aucune notion de skin — aucune verification par
-simulation n&apos;est necessaire pour cette fonctionnalite. Stocke dans le store
+Seul "Bois" reste disponible d&apos;office : Marbre, Metal et Ardoise (boutique, cf.
+plus bas) exigent tous niveau ET pieces. Purement cosmetique dans tous les cas : la
+hitbox (`HITBOX.kubb` dans `rules.ts`) et les corps Matter ne changent jamais, et
+`ai.ts` n&apos;a aucune notion de skin — aucune verification par simulation
+n&apos;est necessaire pour cette fonctionnalite. Stocke dans le store
 (`kubbSkin` / `setKubbSkin`), thread depuis `MatchScene` jusqu&apos;a chaque
 `Kubb` via `Team`.
 
@@ -376,7 +379,9 @@ affichees en etoiles (1 a 5, 3 = le baton de base) :
 | **Sniper**   | ★★☆☆☆     | ★★★★★     | ★★★☆☆    | 7             |
 | **Lourd**    | ★★★★★     | ★★☆☆☆     | ★★★☆☆    | 11            |
 
-(Stabilise et Boule, les 2 batons de boutique, sont dans le tableau Boutique plus bas.)
+Seul "De base" reste disponible d&apos;office : les 4 autres (Nordique/Sniper/Lourd, et
+Stabilise/Boule ci-dessous) sont tous des articles de boutique (`src/game/shop.ts`,
+categorie `'baton'`) — niveau ET pieces necessaires, cf. section "Boutique" plus bas.
 
 - **Puissance** module la vitesse max du baton (+/-6% par etoile au-dessus/en-dessous de
   la baseline).
@@ -490,28 +495,53 @@ lancer choisis au menu, qui repartent a leurs valeurs par defaut a chaque rechar
 | Par kubb adverse abattu       | +10    |
 | Victoire                     | +50    |
 
-**Catalogue**, volontairement restreint pour cette premiere passe : chaque nouvel
-article visuel (skin, roi&hellip;) demande un dessin procedural neuf (toujours zero
-asset externe, cf. `BootScene`) et un terrain neuf demanderait en plus une verification
-IA complete (placement d&apos;obstacles) — rois et terrains restent donc hors catalogue
-pour l&apos;instant.
+**Catalogue.** Passe d&apos;un petit catalogue cosmetique (skins/effets/2 batons) a la
+regle generale du jeu : seuls le terrain "Classique", le baton "De base" et le skin
+"Bois" restent disponibles d&apos;office (le strict minimum pour jouer une premiere
+partie) — TOUT le reste, y compris les terrains et les batons qui etaient auparavant
+"gratuits une fois le niveau atteint", passe desormais par ce catalogue. 15 articles,
+un seul par niveau (memes niveaux qu&apos;avant pour ceux qui existaient deja) :
 
-| Article                     | Categorie      | Prix | Niveau requis |
-| ------------------------------ | ---------------- | :--: | :-----------: |
-| Glace (trainee de lancer)     | Effet de lancer  | 150  | 4             |
-| Feu (trainee de lancer)       | Effet de lancer  | 150  | 8             |
-| Ardoise (skin de kubb)        | Skin             | 300  | 12            |
-| Boule (baton)                 | Baton            | 400  | 14            |
-| Stabilise (baton)            | Baton            | 500  | 17            |
+| Article                       | Categorie        | Prix | Niveau requis |
+| -------------------------------- | ------------------ | :--: | :-----------: |
+| Chicane (terrain)              | Terrain            | 150  | 2             |
+| Nordique (baton)               | Baton              | 100  | 3             |
+| Glace (trainee de lancer)      | Effet de lancer    | 150  | 4             |
+| Sentinelle (terrain)            | Terrain            | 200  | 6             |
+| Sniper (baton)                  | Baton              | 150  | 7             |
+| Feu (trainee de lancer)         | Effet de lancer    | 150  | 8             |
+| Colline (terrain)               | Terrain            | 300  | 9             |
+| Lourd (baton)                   | Baton              | 200  | 11            |
+| Ardoise (skin de kubb)          | Skin               | 300  | 12            |
+| Glace (terrain)                 | Terrain            | 400  | 13            |
+| Boule (baton)                   | Baton              | 400  | 14            |
+| Sable (terrain)                 | Terrain            | 450  | 15            |
+| Stabilise (baton)               | Baton              | 500  | 17            |
+| Marbre (skin de kubb)           | Skin               | 150  | 18            |
+| Metal (skin de kubb)            | Skin               | 200  | 19            |
 
 Les deux conditions sont necessaires pour acheter (`ShopItem.minLevel`,
 `useGameStore::purchaseItem`) : avoir assez de pieces ET avoir atteint ce niveau. Le
 bouton d&apos;achat reste desactive tant que l&apos;une des deux manque, avec un message
 distinct pour chaque cas (&laquo;&nbsp;Pieces insuffisantes&nbsp;&raquo; vs &laquo;&nbsp;Niveau
-X requis&nbsp;&raquo;) — cf. section suivante.
+X requis&nbsp;&raquo;). L&apos;ecran Progression (cf. section suivante) distingue lui
+aussi trois etats par article : verrouille par niveau, debloque mais pas encore achete
+(&laquo;&nbsp;🛒 En vente a la boutique&nbsp;&raquo;), et possede.
+
+**Un terrain de boutique n&apos;a besoin d&apos;aucune verification IA supplementaire.**
+Le terrain est un reglage de partie choisi au menu avant le match (comme la difficulte
+ou la meteo), jamais une decision de l&apos;IA elle-meme — seul son contenu (obstacles,
+friction, cf. `rules.ts::FIELD_PRESETS`, deja verifie independamment pour chaque preset,
+cf. section "Terrains a obstacles") compte pour `decideThrow`, jamais la facon dont le
+joueur y a accede. Verifie en navigateur reel : au niveau 1 sur une sauvegarde neuve, les
+selecteurs terrain/baton/skin ne proposent que Classique/De base/Bois ; a haut niveau
+avec largement assez de pieces, les 15 articles sont tous achetables (aucun bouton
+desactive) et aucun n&apos;apparait dans les selecteurs avant d&apos;etre reellement
+achete ; un achat (Chicane, puis Nordique) le fait immediatement apparaitre dans le bon
+selecteur et le rend reellement selectionnable pour un match — zero erreur console.
 
 Le baton **Stabilise** (Controle ★★★★★, Puissance/Precision au baseline ★★★) ne casse
-pas la regle deja posee pour les 4 batons gratuits (`batons.ts`) : un choix de style, pas
+pas la regle deja posee pour les autres batons (`batons.ts`) : un choix de style, pas
 un strict progres — il ameliore uniquement la resistance au vent, un axe qu&apos;aucun
 autre baton ne touche.
 
@@ -540,80 +570,90 @@ n&apos;influence jamais `decideThrow` ni `decideApproachThrow`.
 
 Jusqu&apos;ici, l&apos;XP/niveau (Phase 2 ci-dessus) ne servait qu&apos;a un titre
 cosmetique au menu : tout le reste du contenu etait soit disponible d&apos;office, soit
-achetable en boutique des la premiere partie — le niveau n&apos;ouvrait jamais rien. Ce
-systeme change ca : au-dela du baton **De base** et du terrain **Classique** (le point de
-depart, disponibles des le niveau 1 — il faut bien pouvoir jouer la toute premiere
-partie), les 3 autres batons gratuits, les 5 autres terrains et les 5 articles de
-boutique exigent maintenant d&apos;avoir atteint un niveau minimum — **un seul deblocage
-par niveau au maximum**, en evitant expres les paliers de titre (5/10/16&hellip;, cf.
-plus bas) pour ne jamais cumuler deux choses en meme temps sur un ecran :
+achetable en boutique des la premiere partie — le niveau n&apos;ouvrait jamais rien.
+Cette premiere passe avait introduit DEUX filieres separees (des batons/terrains
+"gratuits une fois le niveau atteint", et des articles de boutique niveau+pieces) —
+depuis unifiees en une seule regle, plus simple et plus stricte : **seuls le terrain
+Classique, le baton De base et le skin Bois restent disponibles d&apos;office**
+(le strict minimum pour jouer une premiere partie). Tout le reste — 14 articles au
+total, terrains inclus — passe desormais par la boutique (`shop.ts`, `SHOP_ITEMS`),
+niveau ET pieces necessaires pour chacun. **Un seul deblocage par niveau au maximum**,
+en evitant expres les paliers de titre (5/10/16&hellip;, cf. plus bas) pour ne jamais
+cumuler deux choses en meme temps sur un ecran :
 
-| Niveau | Deblocage                                       |
+| Niveau | Article de boutique                              |
 | :----: | ------------------------------------------------- |
-| 1      | De base (baton), Classique (terrain) — point de depart |
-| 2      | Chicane (terrain)                                  |
-| 3      | Nordique (baton)                                   |
-| 4      | Glace (trainee, boutique)                          |
-| 6      | Sentinelle (terrain)                               |
-| 7      | Sniper (baton)                                     |
-| 8      | Feu (trainee, boutique)                            |
-| 9      | Colline (terrain)                                  |
-| 11     | Lourd (baton)                                      |
-| 12     | Ardoise (skin, boutique)                           |
-| 13     | Glace (terrain)                                    |
-| 14     | Boule (baton, boutique)                            |
-| 15     | Sable (terrain)                                    |
-| 17     | Stabilise (baton, boutique)                        |
+| 2      | Chicane (terrain, 150)                             |
+| 3      | Nordique (baton, 100)                              |
+| 4      | Glace (trainee, 150)                               |
+| 6      | Sentinelle (terrain, 200)                          |
+| 7      | Sniper (baton, 150)                                |
+| 8      | Feu (trainee, 150)                                 |
+| 9      | Colline (terrain, 300)                             |
+| 11     | Lourd (baton, 200)                                 |
+| 12     | Ardoise (skin, 300)                                |
+| 13     | Glace (terrain, 400)                               |
+| 14     | Boule (baton, 400)                                 |
+| 15     | Sable (terrain, 450)                               |
+| 17     | Stabilise (baton, 500)                             |
+| 18     | Marbre (skin, 150)                                 |
+| 19     | Metal (skin, 200)                                  |
 
-**Deux tables independantes, un seul concept.** Pour les batons/terrains "gratuits"
-(`BATON_MIN_LEVEL` dans `batons.ts`, `FIELD_PRESET_MIN_LEVEL` dans `rules.ts`) le niveau
-est la SEULE condition — pas de pieces impliquees. Pour la boutique
-(`ShopItem.minLevel`, `shop.ts`), le niveau s&apos;ajoute au prix : les deux sont
-necessaires pour acheter (`useGameStore::purchaseItem`), et un article deja achete le
-reste ensuite quel que soit le niveau (pas de "deniveau" possible). Menu.tsx filtre les
-selecteurs aux seuls choix debloques (meme mecanisme que le filtrage boutique deja en
-place pour skins/effets/batons — les terrains n&apos;etaient eux, jusqu&apos;ici, jamais
-filtres du tout) et affiche sous chaque selecteur concerne un indice discret sur le
-prochain deblocage a venir (&laquo;&nbsp;🔒 Prochain baton : Sniper — niveau 7&nbsp;&raquo;),
-pour rendre la progression visible sans devoiler tout le contenu d&apos;un coup.
+**Un seul mecanisme pour tout.** `Menu.tsx` filtre chaque selecteur (terrain, baton,
+skin, effet de lancer) aux seuls choix possedes (`isShopRefOwned`, `shop.ts`) — les
+terrains n&apos;etaient eux, avant cette passe, jamais filtres du tout — et affiche sous
+les selecteurs terrain/baton un indice discret sur le prochain article a venir dans
+cette categorie (&laquo;&nbsp;🔒 Prochain baton : Sniper — niveau 7&nbsp;&raquo;), pour
+rendre la progression visible sans devoiler tout le contenu d&apos;un coup. Le niveau
+n&apos;ouvre que le DROIT d&apos;acheter (`ShopItem.minLevel`) : atteindre le niveau
+d&apos;un article ne le donne pas, il faut encore le payer (`useGameStore::purchaseItem`),
+et un article deja achete le reste ensuite quel que soit le niveau (pas de
+"deniveau" possible).
 
 **Purement un systeme cote menu/joueur.** Le niveau ne conditionne jamais ce que l&apos;IA
 peut jouer (elle reste toujours sur le baton de base et n&apos;a aucune notion de
-progression) ni les reglages de securite de `decideThrow`/`decideApproachThrow` — aucune
-simulation IA n&apos;etait necessaire, seulement une verification en navigateur reel :
-au niveau 1, le menu n&apos;affiche que De base et Classique (avec les bons indices de
-prochain deblocage) ; un balayage complet des niveaux 1 a 11 confirme que le nombre
-d&apos;options affichees (batons comme terrains) grandit exactement palier par palier ;
-la boutique affiche &laquo;&nbsp;Niveau X requis&nbsp;&raquo; (bouton d&apos;achat
-desactive) meme avec largement assez de pieces tant que le niveau manque, achat reel
-reussi une fois le niveau atteint, et &laquo;&nbsp;Pieces insuffisantes&nbsp;&raquo;
-(jamais un message de niveau) une fois le niveau atteint mais sans le solde ; une partie
-complete jouee au niveau 1 se deroule normalement, XP gagnee comprise — zero erreur
-console, en francais comme en anglais.
+progression) ni les reglages de securite de `decideThrow`/`decideApproachThrow` — un
+terrain de boutique n&apos;a d&apos;ailleurs besoin d&apos;aucune verification IA
+supplementaire (c&apos;est un reglage de partie choisi avant le match, comme la
+difficulte ; seul son contenu, deja verifie independamment pour chaque preset, compte
+pour l&apos;IA). Verifie en navigateur reel : sur une sauvegarde neuve (niveau 1), les
+trois selecteurs ne proposent que Classique/De base/Bois ; a haut niveau (25) avec
+largement assez de pieces (99&nbsp;999), les 15 articles apparaissent tous dans la
+boutique avec leur bouton d&apos;achat actif, mais AUCUN n&apos;apparait dans les
+selecteurs de menu avant d&apos;etre reellement achete ; un achat (Chicane, puis
+Nordique) le fait immediatement apparaitre dans le bon selecteur et le rend reellement
+selectionnable pour un match reel, sans erreur console ; un balayage complet des
+niveaux confirme que le nombre d&apos;options affichees grandit exactement palier par
+palier ; la boutique affiche &laquo;&nbsp;Niveau X requis&nbsp;&raquo; (bouton
+desactive) tant que le niveau manque malgre le solde, et
+&laquo;&nbsp;Pieces insuffisantes&nbsp;&raquo; (jamais un message de niveau) une fois le
+niveau atteint mais sans le solde — en francais comme en anglais.
 
 **Ecran "Progression"** (`Progression.tsx`) : le badge de niveau compact du menu devient
 un bouton qui ouvre le detail complet — barre XP avec l&apos;XP exacte restant avant le
-niveau suivant, une feuille de route chronologique de TOUS les paliers (chaque
-baton/terrain/article de boutique cote son niveau requis, fusionne avec les titres
-cosmetiques de `progression.ts`, "Debloque" ou "Niveau X requis" selon le niveau
-courant), et un bloc statistiques (parties jouees, victoires cumulees, serie de
+niveau suivant, une feuille de route chronologique de TOUS les paliers (batie
+directement depuis `SHOP_ITEMS`, fusionnee avec les titres cosmetiques de
+`progression.ts`), et un bloc statistiques (parties jouees, victoires cumulees, serie de
 victoires en cours, meilleure manche Defi, succes/articles de boutique possedes,
-pieces). **Un seul deblocage par ligne** : le baton De base et le terrain Classique (le
-point de depart, pas un deblocage a proprement parler) n&apos;apparaissent pas dans la
-feuille de route, et les 13 niveaux requis ont ete choisis pour ne jamais tomber sur un
-palier de titre (5/10/16/24/32) — chaque ligne du tableau ci-dessus affiche donc
-toujours exactement un seul element, jamais deux cumules. **Victoires cumulees**
-(`ProgressionState.totalWins`) est un nouveau champ persiste, ajoute pour cet ecran —
-retro-compatible explicitement verifie : une sauvegarde anterieure sans ce champ ne
-reinitialise PAS le niveau/XP existant (seul `totalWins` retombe a 0), contrairement au
-comportement strict deja en place pour les 3 autres champs. Verifie en navigateur reel :
-chargement d&apos;une sauvegarde pre-existante au format anterieur (niveau 6 restaure,
-pas remis a zero), ouverture/fermeture de l&apos;ecran, les 19 paliers (1 a 32) balayes un
-par un — chacun affiche exactement une ligne de deblocage, jamais plus, atteint vs
-verrouille corrects pour un niveau donne — victoire/defaite reelles via le store qui
-incrementent/laissent intactes les bonnes statistiques, persistance apres rechargement —
-en francais comme en anglais, zero erreur console. Purement un
-ecran de lecture cote joueur, aucun effet sur l&apos;IA.
+pieces). **Trois etats par article**, pas juste deux : niveau non atteint
+(&laquo;&nbsp;🔒 Niveau X requis&nbsp;&raquo;), niveau atteint mais pas encore achete
+(&laquo;&nbsp;🛒 En vente a la boutique&nbsp;&raquo; — nouveau, consequence directe du
+"tout doit s&apos;acheter" : avant, atteindre le niveau suffisait), et possede
+(&laquo;&nbsp;Debloque&nbsp;&raquo;). **Un seul deblocage par ligne** : le baton De base,
+le terrain Classique et le skin Bois (le point de depart, pas un deblocage a proprement
+parler) n&apos;apparaissent pas dans la feuille de route, et les 15 niveaux requis ont
+ete choisis pour ne jamais tomber sur un palier de titre (5/10/16/24/32) ni entre eux —
+chaque ligne affiche donc toujours exactement un seul article, jamais deux cumules.
+**Victoires cumulees** (`ProgressionState.totalWins`) est un champ persiste ajoute pour
+cet ecran — retro-compatible explicitement verifie : une sauvegarde anterieure sans ce
+champ ne reinitialise PAS le niveau/XP existant (seul `totalWins` retombe a 0),
+contrairement au comportement strict deja en place pour les 3 autres champs. Verifie en
+navigateur reel : chargement d&apos;une sauvegarde pre-existante au format anterieur
+(niveau restaure, pas remis a zero), ouverture/fermeture de l&apos;ecran, les 3 etats
+verifies individuellement (un article achete affiche "Debloque", un article dont le
+niveau est atteint mais pas achete affiche "En vente a la boutique", jamais confondus),
+persistance apres rechargement — en francais comme en anglais, zero erreur console.
+Purement un ecran de lecture cote joueur, aucun effet sur l&apos;IA.
 
 ---
 

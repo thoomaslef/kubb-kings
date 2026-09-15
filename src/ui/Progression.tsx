@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { levelFromXp, LEVEL_TITLES } from '../game/progression';
-import { BATON_MIN_LEVEL } from '../game/batons';
-import { FIELD_PRESET_MIN_LEVEL } from '../game/rules';
 import { SHOP_ITEMS, type ShopItem } from '../game/shop';
 import { ACHIEVEMENTS } from '../game/achievements';
 import { LADDER, getBestStage } from '../game/roguelite';
@@ -14,19 +12,12 @@ function shopLabelKey(item: ShopItem): string {
   return `${ns}.${item.refId}.label`;
 }
 
-interface RoadmapEntry {
-  level: number;
-  /** Deja traduit : le nom de l'equipement + sa categorie entre parentheses. */
-  text: string;
-}
-
 /**
  * Ecran "Progression" : le detail derriere le badge compact du menu — chaque
- * palier de niveau (batons.ts::BATON_MIN_LEVEL, rules.ts::FIELD_PRESET_MIN_LEVEL,
- * shop.ts::SHOP_ITEMS, et les titres cosmetiques de progression.ts) fusionne
- * en une seule feuille de route chronologique, plus quelques statistiques
- * deja disponibles ailleurs (menu, boutique, succes, Defi) mais jamais
- * reunies au meme endroit.
+ * palier de niveau (shop.ts::SHOP_ITEMS, et les titres cosmetiques de
+ * progression.ts) fusionne en une seule feuille de route chronologique, plus
+ * quelques statistiques deja disponibles ailleurs (menu, boutique, succes,
+ * Defi) mais jamais reunies au meme endroit.
  */
 export function Progression() {
   const t = useT();
@@ -41,28 +32,9 @@ export function Progression() {
   // pendant une run Defi, ecran que ce composant n'affiche jamais.
   const [bestStage] = useState(getBestStage);
 
-  const batonLabel = t('menu.batonAria');
-  const terrainLabel = t('menu.terrainAria');
-
-  // Le baton De base et le terrain Classique sont le point de depart, pas un
-  // deblocage obtenu en montant de niveau (il faut bien pouvoir jouer la
-  // toute premiere partie) — la feuille de route ne liste donc que ce qui se
-  // debloque APRES le niveau 1, un seul element par niveau au maximum.
-  const entries: RoadmapEntry[] = [];
-  for (const [id, minLevel] of Object.entries(BATON_MIN_LEVEL)) {
-    entries.push({ level: minLevel as number, text: `${t(`baton.${id}.label`)} (${batonLabel})` });
-  }
-  for (const [id, minLevel] of Object.entries(FIELD_PRESET_MIN_LEVEL)) {
-    entries.push({ level: minLevel as number, text: `${t(`terrain.${id}.label`)} (${terrainLabel})` });
-  }
-  for (const item of SHOP_ITEMS) {
-    const category = t(`shop.category.${item.category}`);
-    entries.push({ level: item.minLevel, text: `${t(shopLabelKey(item))} (${category})` });
-  }
-
   // Regroupe par niveau, en incluant les paliers de titre meme quand ils
-  // n'ont aucun equipement associe (16/24/32) — une seule feuille de route.
-  const levelSet = new Set<number>(entries.map((e) => e.level));
+  // n'ont aucun article associe (16/24/32) — une seule feuille de route.
+  const levelSet = new Set<number>(SHOP_ITEMS.map((it) => it.minLevel));
   for (const tier of LEVEL_TITLES) levelSet.add(tier.minLevel);
   const levels = [...levelSet].sort((a, b) => a - b);
 
@@ -112,16 +84,22 @@ export function Progression() {
         <h3 className="shop-section__title">{t('progression.roadmapTitle')}</h3>
         <div className="shop-list">
           {levels.map((level) => {
-            const reached = levelInfo.level >= level;
-            const items = entries.filter((e) => e.level === level);
+            const levelReached = levelInfo.level >= level;
+            const items = SHOP_ITEMS.filter((it) => it.minLevel === level);
             const tier = LEVEL_TITLES.find((tt) => tt.minLevel === level);
+            // Le niveau n'ouvre que le DROIT d'acheter (cf. shop.ts) : un
+            // article dont le niveau est atteint mais qui n'a pas encore ete
+            // achete n'est donc pas "possede" pour autant — sauf pour un
+            // palier de titre pur (aucun article, rien a acheter).
+            const owned = items.length === 0 ? true : items.every((it) => ownedItems.includes(it.id));
+            const complete = levelReached && owned;
             return (
-              <div key={level} className={`shop-item${reached ? ' shop-item--owned' : ''}`}>
+              <div key={level} className={`shop-item${complete ? ' shop-item--owned' : ''}`}>
                 <div className="shop-item__body">
                   <span className="shop-item__label">{t('progression.level', { n: level })}</span>
-                  {items.map((entry) => (
-                    <span key={entry.text} className="shop-item__hint">
-                      {entry.text}
+                  {items.map((item) => (
+                    <span key={item.id} className="shop-item__hint">
+                      {t(shopLabelKey(item))} ({t(`shop.category.${item.category}`)})
                     </span>
                   ))}
                   {tier && (
@@ -131,10 +109,12 @@ export function Progression() {
                   )}
                 </div>
                 <div className="shop-item__footer">
-                  {reached ? (
+                  {!levelReached ? (
+                    <span className="shop-item__locked">{t('shop.requiresLevel', { level })}</span>
+                  ) : owned ? (
                     <span className="shop-item__owned">{t('progression.reached')}</span>
                   ) : (
-                    <span className="shop-item__locked">{t('shop.requiresLevel', { level })}</span>
+                    <span className="shop-item__locked">{t('progression.availableInShop')}</span>
                   )}
                 </div>
               </div>

@@ -22,31 +22,16 @@
  */
 
 /**
- * 'stabilise' et 'boule' sont des batons de boutique (src/game/shop.ts) :
- * verrouilles tant qu'ils n'ont pas ete achetes (et que ShopItem.minLevel
- * n'est pas atteint, cf. shop.ts). Les 4 autres ne passent jamais par la
- * boutique, mais 3 d'entre eux exigent quand meme d'avoir atteint un niveau
- * (BATON_MIN_LEVEL ci-dessous) — seul 'base' est disponible des le niveau 1.
+ * Tous les batons hors "base" sont des articles de boutique (src/game/shop.ts,
+ * SHOP_ITEMS) : verrouilles tant qu'ils n'ont pas ete achetes (et que
+ * ShopItem.minLevel n'est pas atteint). Seul "base" est disponible d'office.
  */
 export type BatonId = 'base' | 'nordique' | 'sniper' | 'lourd' | 'stabilise' | 'boule';
 
 export const BATON_IDS: readonly BatonId[] = ['base', 'nordique', 'sniper', 'lourd', 'stabilise', 'boule'];
 
-/** Batons disponibles d'office, sans passer par la boutique (mais pas forcement des le niveau 1 — cf. BATON_MIN_LEVEL). */
-export const FREE_BATON_IDS: readonly BatonId[] = ['base', 'nordique', 'sniper', 'lourd'];
-
-/**
- * Niveau du joueur (progression.ts::levelFromXp) requis pour choisir ce
- * baton "gratuit" au menu — absent de cette table = niveau 1, disponible des
- * la premiere partie ('base' seul dans ce cas). Purement une restriction de
- * menu joueur : l'IA n'a aucune notion de niveau, elle reste toujours sur le
- * baton de base quel que soit ce reglage.
- */
-export const BATON_MIN_LEVEL: Partial<Record<BatonId, number>> = {
-  nordique: 3,
-  sniper: 7,
-  lourd: 11
-};
+/** Seul baton disponible d'office, sans passer par la boutique. */
+export const FREE_BATON_IDS: readonly BatonId[] = ['base'];
 
 export interface BatonStats {
   /** Etoiles 1-5 (3 = baseline), purement pour le calcul des multiplicateurs et l'affichage menu. */

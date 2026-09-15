@@ -3,27 +3,26 @@
  * de la progression). Purement cosmetique/joueur — pareil que les batons
  * (src/game/batons.ts), aucun de ces choix n'atteint jamais l'IA.
  *
- * Volontairement un petit catalogue de depart : chaque nouvel article visuel
- * (skin, roi...) demande un dessin procedural neuf (aucun asset externe
- * charge dans ce jeu, cf. BootScene) — un terrain neuf demanderait en plus
- * une verification IA complete (placement d'obstacles). Skins de kubbs,
- * effets de lancer et batons restent les categories les moins couteuses a
- * etendre ; rois et terrains ne sont pas encore au catalogue.
- *
- * Chaque article exige aussi un niveau minimum (`minLevel`, cf. progression.ts)
- * en plus de son prix — les deux conditions sont necessaires pour acheter
- * (useGameStore::purchaseItem). Meme logique de deblocage progressif que les
- * batons "gratuits" (batons.ts::BATON_MIN_LEVEL) et les terrains
- * (rules.ts::FIELD_PRESET_MIN_LEVEL), pour que l'XP/niveau serve enfin a
- * quelque chose au-dela du titre cosmetique du menu.
+ * Seuls le terrain "Classique", le baton "De base" et le skin "Bois"
+ * restent disponibles d'office (le strict minimum pour jouer une premiere
+ * partie) — tout le reste (terrains, batons, skins, effets de lancer) passe
+ * desormais par ce catalogue : chaque article exige a la fois d'avoir assez
+ * de pieces ET d'avoir atteint un niveau minimum (`minLevel`, cf.
+ * progression.ts) — les deux conditions sont necessaires pour acheter
+ * (useGameStore::purchaseItem). Un terrain de boutique n'a besoin d'aucune
+ * verification IA supplementaire : c'est un reglage de partie choisi au
+ * menu avant le match (comme la difficulte ou la meteo), jamais une
+ * decision de l'IA elle-meme — seul son contenu (obstacles, friction,
+ * cf. rules.ts::FIELD_PRESETS) compte pour `decideThrow`, pas la facon dont
+ * le joueur y a accede.
  */
 
-export type ShopCategory = 'skin' | 'trail' | 'baton';
+export type ShopCategory = 'skin' | 'trail' | 'baton' | 'terrain';
 
 export interface ShopItem {
   id: string;
   category: ShopCategory;
-  /** Cle vers KubbSkin, ThrowEffectId ou BatonId selon la categorie. */
+  /** Cle vers KubbSkin, ThrowEffectId, BatonId ou FieldPresetId selon la categorie. */
   refId: string;
   price: number;
   /**
@@ -36,22 +35,36 @@ export interface ShopItem {
   minLevel: number;
 }
 
+// Niveaux choisis pour ne jamais tomber sur un palier de titre (progression.ts
+// LEVEL_TITLES : 1/5/10/16/24/32) ni sur un autre article — l'ecran
+// Progression (Progression.tsx) affiche donc toujours exactement un seul
+// deblocage par niveau.
 export const SHOP_ITEMS: readonly ShopItem[] = [
+  { id: 'terrain-chicane', category: 'terrain', refId: 'chicane', price: 150, minLevel: 2 },
+  { id: 'baton-nordique', category: 'baton', refId: 'nordique', price: 100, minLevel: 3 },
   { id: 'trail-glace', category: 'trail', refId: 'glace', price: 150, minLevel: 4 },
+  { id: 'terrain-sentinelle', category: 'terrain', refId: 'sentinelle', price: 200, minLevel: 6 },
+  { id: 'baton-sniper', category: 'baton', refId: 'sniper', price: 150, minLevel: 7 },
   { id: 'trail-feu', category: 'trail', refId: 'feu', price: 150, minLevel: 8 },
+  { id: 'terrain-colline', category: 'terrain', refId: 'colline', price: 300, minLevel: 9 },
+  { id: 'baton-lourd', category: 'baton', refId: 'lourd', price: 200, minLevel: 11 },
   { id: 'skin-ardoise', category: 'skin', refId: 'ardoise', price: 300, minLevel: 12 },
+  { id: 'terrain-glace', category: 'terrain', refId: 'glace', price: 400, minLevel: 13 },
   { id: 'baton-boule', category: 'baton', refId: 'boule', price: 400, minLevel: 14 },
-  { id: 'baton-stabilise', category: 'baton', refId: 'stabilise', price: 500, minLevel: 17 }
+  { id: 'terrain-sable', category: 'terrain', refId: 'sable', price: 450, minLevel: 15 },
+  { id: 'baton-stabilise', category: 'baton', refId: 'stabilise', price: 500, minLevel: 17 },
+  { id: 'skin-marbre', category: 'skin', refId: 'marbre', price: 150, minLevel: 18 },
+  { id: 'skin-metal', category: 'skin', refId: 'metal', price: 200, minLevel: 19 }
 ];
 
 /**
- * Vrai si ce refId (un KubbSkin, ThrowEffectId ou BatonId) est utilisable au
- * menu : soit il ne correspond a aucun article de boutique (disponible
- * d'office), soit son article a ete achete. Utilise pour filtrer les
- * selecteurs du menu aux seuls choix debloques. Ne verifie PAS le niveau
- * (cf. isShopItemPurchasable) : un article achete reste utilisable quel que
- * soit le niveau, et un article "gratuit" verrouille par niveau (batons.ts,
- * rules.ts) n'a jamais d'entree ici de toute facon.
+ * Vrai si ce refId (un KubbSkin, ThrowEffectId, BatonId ou FieldPresetId)
+ * est utilisable au menu : soit il ne correspond a aucun article de
+ * boutique (le "de base" gratuit de chaque categorie — 'classique', 'base',
+ * 'bois', 'none' — n'a jamais d'entree ici), soit son article a ete achete.
+ * Utilise pour filtrer les selecteurs du menu aux seuls choix debloques. Ne
+ * verifie PAS le niveau (cf. isShopItemLevelUnlocked) : un article achete
+ * reste utilisable quel que soit le niveau ensuite.
  */
 export function isShopRefOwned(category: ShopCategory, refId: string, ownedItems: readonly string[]): boolean {
   const item = SHOP_ITEMS.find((it) => it.category === category && it.refId === refId);

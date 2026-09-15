@@ -4,7 +4,7 @@ import { BATONS, type BatonId } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { useT } from '../i18n/useT';
 
-const CATEGORIES: ShopCategory[] = ['skin', 'trail', 'baton'];
+const CATEGORIES: ShopCategory[] = ['terrain', 'baton', 'skin', 'trail'];
 
 /** "★★★☆☆" pour n etoiles sur 5. */
 function stars(n: number): string {
