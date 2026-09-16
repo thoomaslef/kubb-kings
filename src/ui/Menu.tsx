@@ -116,6 +116,7 @@ export function Menu() {
             {t('menu.solo')}
           </button>
 
+          <p className="segmented-label">{t('menu.aiLevelAria')}</p>
           <div className="segmented" role="group" aria-label={t('menu.aiLevelAria')}>
             {LEVELS.map((level) => (
               <button
@@ -151,6 +152,7 @@ export function Menu() {
             </p>
           )}
 
+          <p className="segmented-label">{t('menu.terrainAria')}</p>
           <div className="segmented" role="group" aria-label={t('menu.terrainAria')}>
             {availablePresets.map((id) => (
               <button
@@ -170,6 +172,7 @@ export function Menu() {
             </p>
           )}
 
+          <p className="segmented-label">{t('menu.windAria')}</p>
           <div className="segmented" role="group" aria-label={t('menu.windAria')}>
             <button
               className={`segmented__item${!windEnabled ? ' segmented__item--on' : ''}`}
@@ -188,6 +191,7 @@ export function Menu() {
           </div>
           <p className="footnote footnote--tight">{t(windEnabled ? 'menu.windOnHint' : 'menu.windOffHint')}</p>
 
+          <p className="segmented-label">{t('menu.fieldKubbsAria')}</p>
           <div className="segmented" role="group" aria-label={t('menu.fieldKubbsAria')}>
             <button
               className={`segmented__item${!fieldKubbsEnabled ? ' segmented__item--on' : ''}`}
@@ -208,6 +212,7 @@ export function Menu() {
             {t(fieldKubbsEnabled ? 'menu.fieldKubbsOnHint' : 'menu.fieldKubbsOffHint')}
           </p>
 
+          <p className="segmented-label">{t('menu.skinAria')}</p>
           <div className="segmented" role="group" aria-label={t('menu.skinAria')}>
             {availableSkins.map((skin) => (
               <button
@@ -222,6 +227,7 @@ export function Menu() {
           </div>
           <p className="footnote footnote--tight">{t(`skin.${kubbSkin}.hint`)}</p>
 
+          <p className="segmented-label">{t('menu.kingSkinAria')}</p>
           <div className="segmented" role="group" aria-label={t('menu.kingSkinAria')}>
             {availableKingSkins.map((skin) => (
               <button
@@ -236,6 +242,7 @@ export function Menu() {
           </div>
           <p className="footnote footnote--tight">{t(`king.${kingSkin}.hint`)}</p>
 
+          <p className="segmented-label">{t('menu.batonAria')}</p>
           <div className="segmented" role="group" aria-label={t('menu.batonAria')}>
             {availableBatons.map((id) => (
               <button
@@ -258,6 +265,7 @@ export function Menu() {
             </p>
           )}
 
+          <p className="segmented-label">{t('menu.effectAria')}</p>
           <div className="segmented" role="group" aria-label={t('menu.effectAria')}>
             {availableEffects.map((id) => (
               <button
@@ -279,6 +287,7 @@ export function Menu() {
             {t('menu.achievements')}
           </button>
 
+          <p className="segmented-label">{t('menu.langAria')}</p>
           <div className="segmented" role="group" aria-label={t('menu.langAria')}>
             {LANGS.map((code) => (
               <button

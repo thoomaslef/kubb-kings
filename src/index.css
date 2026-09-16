@@ -276,6 +276,22 @@ body {
 
 /* ---------- Selecteur de niveau ---------- */
 
+/* Titre visible au-dessus d'un groupe de choix (segmented) : sans lui, une
+   pile de pastilles sans contexte (terrain ? meteo ? regle ?) ne se
+   distingue qu'a l'aria-label, invisible a l'ecran. */
+.segmented-label {
+  margin: 18px 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.segmented-label:first-child {
+  margin-top: 0;
+}
+
 .segmented {
   display: flex;
   gap: 4px;
