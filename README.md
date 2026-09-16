@@ -1028,6 +1028,17 @@ peuvent etre retirees sans changer l&apos;issue d&apos;une partie :
 
 Le son se coupe depuis le HUD ; la preference est conservee d&apos;une partie a l&apos;autre.
 
+**Musique d&apos;ambiance generative** ([`src/game/audio.ts`](src/game/audio.ts),
+`startMusic`/`stopMusic`) : meme contrainte que les SFX — entierement synthetisee, aucun
+fichier charge, zero asset externe. Une nappe de fond en quintes ouvertes (pas de tierce :
+reste modale, façon bourdon/vielle), qui change d&apos;accord toutes les ~8,5s, sous des
+notes egrainees au hasard dans une gamme pentatonique (façon kalimba) — jamais deux fois
+la meme boucle exacte. Demarree sur le tout premier geste du joueur (`src/ui/App.tsx`,
+meme contrainte de geste que le reste de l&apos;audio, independante de l&apos;ecran
+affiche), suit le meme bouton son unique du HUD (aucun reglage separe) et reste volontairement
+discrete (bus de gain dedie, `musicGain`) pour ne jamais couvrir les SFX qui portent
+l&apos;information de jeu.
+
 ---
 
 ## Solidite technique

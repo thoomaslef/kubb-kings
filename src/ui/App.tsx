@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useGameStore } from '../store/useGameStore';
+import { startMusic } from '../game/audio';
 import { GameCanvas } from './GameCanvas';
 import { Menu } from './Menu';
 import { Rules } from './Rules';
@@ -31,6 +32,16 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  // Musique d'ambiance : demarree sur le tout premier geste du joueur, ou
+  // qu'il ait lieu (menu, ecran de regles...) — meme contrainte de geste que
+  // le reste de l'audio (cf. src/game/audio.ts). Independante de `screen` :
+  // ne se relance jamais, elle tourne en fond tant que l'onglet est ouvert.
+  useEffect(() => {
+    const onFirstGesture = () => startMusic();
+    window.addEventListener('pointerdown', onFirstGesture, { once: true });
+    return () => window.removeEventListener('pointerdown', onFirstGesture);
+  }, []);
 
   return (
     <div className="app">

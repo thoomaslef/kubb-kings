@@ -214,3 +214,142 @@ export function playBuzzer() {
   tone({ freq: 220, type: 'sawtooth', duration: 0.85, gain: 0.16 });
   tone({ freq: 224, type: 'sawtooth', duration: 0.85, gain: 0.14 });
 }
+
+// ------------------------------------------------------------ musique de fond
+
+/**
+ * Musique d'ambiance generative : memes contraintes que les SFX ci-dessus
+ * (synthetisee, aucun fichier charge). Une nappe de fond en quintes ouvertes
+ * (pas de tierce : reste modale, ne heurte jamais les notes jouees par-dessus
+ * — façon bourdon/vielle) sous des notes egrainees au hasard dans une gamme
+ * pentatonique (façon kalimba) : jamais deux fois exactement la meme boucle.
+ *
+ * Suit le meme mute global (isMuted/setMuted, bouton unique du HUD) : pas de
+ * reglage de volume separe pour ne pas multiplier les commutateurs pour un
+ * habillage sonore secondaire. Son propre bus de gain (`musicGain`, sous
+ * `master`) existe seulement pour rester nettement plus discrete que les
+ * SFX qui portent l'information de jeu (knock/bounce/buzzer) — jamais les
+ * couvrir.
+ */
+
+let musicGain: GainNode | null = null;
+let musicRunning = false;
+let padTimer: ReturnType<typeof setTimeout> | null = null;
+let pluckTimer: ReturnType<typeof setTimeout> | null = null;
+let padIndex = 0;
+
+/** Quintes ouvertes (fondamentale des accords de la nappe) : La2, Fa2, Do3, Sol2. */
+const PAD_ROOTS = [110, 87.31, 130.81, 98.0];
+/** La mineur pentatonique sur ~1,5 octave, pour les notes egrainees. */
+const PLUCK_SCALE = [220, 261.63, 293.66, 329.63, 392.0, 440, 523.25, 587.33, 659.25];
+
+/** Contexte + bus musique, crees paresseusement comme `audio()`. Null si coupe ou navigateur incompatible. */
+function musicBus(): { c: AudioContext; bus: GainNode } | null {
+  const c = audio();
+  if (!c || !master) return null;
+  if (!musicGain) {
+    musicGain = c.createGain();
+    musicGain.gain.value = 0.3;
+    musicGain.connect(master);
+  }
+  return { c, bus: musicGain };
+}
+
+/** Une quinte tenue (fondamentale + quinte + octave), fondu entrant/sortant : une "respiration" de la nappe. */
+function playPadChord(root: number, duration: number) {
+  const ready = musicBus();
+  if (!ready) return;
+  const { c, bus } = ready;
+  const t = c.currentTime;
+  const attack = 1.4;
+  const release = 1.8;
+
+  // Poids decroissant du fondamental vers l'octave, comme des harmoniques naturelles.
+  for (const [ratio, peak] of [
+    [1, 0.32],
+    [1.5, 0.2],
+    [2, 0.14]
+  ] as const) {
+    const osc = c.createOscillator();
+    const env = c.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = root * ratio;
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.exponentialRampToValueAtTime(peak, t + attack);
+    env.gain.setValueAtTime(peak, t + duration - release);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+    osc.connect(env).connect(bus);
+    osc.start(t);
+    osc.stop(t + duration + 0.05);
+  }
+}
+
+/** Une note isolee de la gamme pentatonique, choisie au hasard, a l'enveloppe percussive douce (façon kalimba). */
+function playPluckNote() {
+  const ready = musicBus();
+  if (!ready) return;
+  const { c, bus } = ready;
+  const freq = PLUCK_SCALE[Math.floor(Math.random() * PLUCK_SCALE.length)];
+  const t = c.currentTime;
+  const duration = 1.1 + Math.random() * 0.6;
+  const osc = c.createOscillator();
+  const env = c.createGain();
+  osc.type = 'triangle';
+  osc.frequency.value = freq;
+  env.gain.setValueAtTime(0.0001, t);
+  env.gain.exponentialRampToValueAtTime(0.26 + Math.random() * 0.12, t + 0.012);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+  osc.connect(env).connect(bus);
+  osc.start(t);
+  osc.stop(t + duration + 0.05);
+}
+
+/**
+ * Reprogramme la prochaine "respiration" de la nappe apres chaque accord,
+ * en boucle tant que `musicRunning`. Leger chevauchement (-400ms) pour ne
+ * jamais laisser de trou de silence entre deux accords.
+ */
+function scheduleNextPad() {
+  if (!musicRunning) return;
+  const duration = 8.5;
+  playPadChord(PAD_ROOTS[padIndex % PAD_ROOTS.length], duration);
+  padIndex += 1;
+  padTimer = setTimeout(scheduleNextPad, duration * 1000 - 400);
+}
+
+/**
+ * Reprogramme la prochaine note egrainee a un delai aleatoire ; un silence
+ * de temps en temps (1 fois sur 4) pour que la texture respire au lieu de
+ * sonner comme un metronome.
+ */
+function scheduleNextPluck() {
+  if (!musicRunning) return;
+  if (Math.random() > 0.25) playPluckNote();
+  pluckTimer = setTimeout(scheduleNextPluck, 1400 + Math.random() * 2600);
+}
+
+/**
+ * Demarre la musique d'ambiance : a appeler une seule fois, sur le tout
+ * premier geste du joueur (meme contrainte de demarrage que le reste de
+ * l'audio, cf. docblock en tete de fichier). No-op si deja demarree.
+ *
+ * Si le son est coupe au moment de l'appel, la boucle de programmation
+ * tourne quand meme (cout negligeable, aucun noeud audio cree tant que
+ * `musicBus` renvoie null via `audio()`) : la musique reprend d'elle-meme
+ * des que le joueur reactive le son, sans qu'il faille relancer `startMusic`.
+ */
+export function startMusic() {
+  if (musicRunning) return;
+  musicRunning = true;
+  scheduleNextPad();
+  scheduleNextPluck();
+}
+
+/** Coupe la boucle de programmation (jamais appele en jeu normal — utile pour les tests). */
+export function stopMusic() {
+  musicRunning = false;
+  if (padTimer) clearTimeout(padTimer);
+  if (pluckTimer) clearTimeout(pluckTimer);
+  padTimer = null;
+  pluckTimer = null;
+}
