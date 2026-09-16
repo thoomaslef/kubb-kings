@@ -5,7 +5,7 @@ import { AI_PROFILES, type Difficulty } from '../game/ai';
 import { FIELD_PRESETS, type FieldPresetId } from '../game/rules';
 import { BATONS, BATON_IDS } from '../game/batons';
 import { levelFromXp } from '../game/progression';
-import { KUBB_SKINS } from '../game/theme';
+import { KUBB_SKINS, KING_SKINS } from '../game/theme';
 import { THROW_EFFECT_IDS } from '../game/throwEffects';
 import { isShopRefOwned, SHOP_ITEMS, type ShopCategory } from '../game/shop';
 import { LADDER, getBestStage } from '../game/roguelite';
@@ -31,6 +31,8 @@ export function Menu() {
   const setFieldPreset = useGameStore((s) => s.setFieldPreset);
   const kubbSkin = useGameStore((s) => s.kubbSkin);
   const setKubbSkin = useGameStore((s) => s.setKubbSkin);
+  const kingSkin = useGameStore((s) => s.kingSkin);
+  const setKingSkin = useGameStore((s) => s.setKingSkin);
   const batonId = useGameStore((s) => s.batonId);
   const setBatonId = useGameStore((s) => s.setBatonId);
   const windEnabled = useGameStore((s) => s.windEnabled);
@@ -49,6 +51,7 @@ export function Menu() {
   const level = levelInfo.level;
 
   const availableSkins = KUBB_SKINS.filter((skin) => isShopRefOwned('skin', skin, ownedItems));
+  const availableKingSkins = KING_SKINS.filter((skin) => isShopRefOwned('king', skin, ownedItems));
   const availableBatons = BATON_IDS.filter((id) => isShopRefOwned('baton', id, ownedItems));
   const availableEffects = THROW_EFFECT_IDS.filter((id) => isShopRefOwned('trail', id, ownedItems));
   const availablePresets = PRESETS.filter((id) => isShopRefOwned('terrain', id, ownedItems));
@@ -196,6 +199,20 @@ export function Menu() {
             ))}
           </div>
           <p className="footnote footnote--tight">{t(`skin.${kubbSkin}.hint`)}</p>
+
+          <div className="segmented" role="group" aria-label={t('menu.kingSkinAria')}>
+            {availableKingSkins.map((skin) => (
+              <button
+                key={skin}
+                className={`segmented__item${skin === kingSkin ? ' segmented__item--on' : ''}`}
+                aria-pressed={skin === kingSkin}
+                onClick={() => setKingSkin(skin)}
+              >
+                {t(`king.${skin}.label`)}
+              </button>
+            ))}
+          </div>
+          <p className="footnote footnote--tight">{t(`king.${kingSkin}.hint`)}</p>
 
           <div className="segmented" role="group" aria-label={t('menu.batonAria')}>
             {availableBatons.map((id) => (

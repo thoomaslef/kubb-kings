@@ -3,10 +3,11 @@
  * de la progression). Purement cosmetique/joueur — pareil que les batons
  * (src/game/batons.ts), aucun de ces choix n'atteint jamais l'IA.
  *
- * Seuls le terrain "Classique", le baton "De base" et le skin "Bois"
- * restent disponibles d'office (le strict minimum pour jouer une premiere
- * partie) — tout le reste (terrains, batons, skins, effets de lancer) passe
- * desormais par ce catalogue : chaque article exige a la fois d'avoir assez
+ * Seuls le terrain "Classique", le baton "De base", le skin de kubb "Bois"
+ * et le skin de roi "Or" restent disponibles d'office (le strict minimum
+ * pour jouer une premiere partie) — tout le reste (terrains, batons, skins
+ * de kubb, skins de roi, effets de lancer) passe desormais par ce
+ * catalogue : chaque article exige a la fois d'avoir assez
  * de pieces ET d'avoir atteint un niveau minimum (`minLevel`, cf.
  * progression.ts) — les deux conditions sont necessaires pour acheter
  * (useGameStore::purchaseItem). Un terrain de boutique n'a besoin d'aucune
@@ -17,12 +18,12 @@
  * le joueur y a accede.
  */
 
-export type ShopCategory = 'skin' | 'trail' | 'baton' | 'terrain';
+export type ShopCategory = 'skin' | 'trail' | 'baton' | 'terrain' | 'king';
 
 export interface ShopItem {
   id: string;
   category: ShopCategory;
-  /** Cle vers KubbSkin, ThrowEffectId, BatonId ou FieldPresetId selon la categorie. */
+  /** Cle vers KubbSkin, ThrowEffectId, BatonId, FieldPresetId ou KingSkin selon la categorie. */
   refId: string;
   price: number;
   /**
@@ -54,14 +55,17 @@ export const SHOP_ITEMS: readonly ShopItem[] = [
   { id: 'terrain-sable', category: 'terrain', refId: 'sable', price: 450, minLevel: 15 },
   { id: 'baton-stabilise', category: 'baton', refId: 'stabilise', price: 500, minLevel: 17 },
   { id: 'skin-marbre', category: 'skin', refId: 'marbre', price: 150, minLevel: 18 },
-  { id: 'skin-metal', category: 'skin', refId: 'metal', price: 200, minLevel: 19 }
+  { id: 'skin-metal', category: 'skin', refId: 'metal', price: 200, minLevel: 19 },
+  { id: 'king-argent', category: 'king', refId: 'argent', price: 250, minLevel: 21 },
+  { id: 'king-obsidienne', category: 'king', refId: 'obsidienne', price: 350, minLevel: 22 }
 ];
 
 /**
- * Vrai si ce refId (un KubbSkin, ThrowEffectId, BatonId ou FieldPresetId)
- * est utilisable au menu : soit il ne correspond a aucun article de
- * boutique (le "de base" gratuit de chaque categorie — 'classique', 'base',
- * 'bois', 'none' — n'a jamais d'entree ici), soit son article a ete achete.
+ * Vrai si ce refId (un KubbSkin, ThrowEffectId, BatonId, FieldPresetId ou
+ * KingSkin) est utilisable au menu : soit il ne correspond a aucun article
+ * de boutique (le "de base" gratuit de chaque categorie — 'classique',
+ * 'base', 'bois', 'or', 'none' — n'a jamais d'entree ici), soit son article
+ * a ete achete.
  * Utilise pour filtrer les selecteurs du menu aux seuls choix debloques. Ne
  * verifie PAS le niveau (cf. isShopItemLevelUnlocked) : un article achete
  * reste utilisable quel que soit le niveau ensuite.

@@ -61,7 +61,16 @@ export const PALETTE = {
   cactus: 0x4b7a4a,
   cactusLight: 0x6ea068,
   cactusDark: 0x2f5330,
-  cactusSpine: 0xe8dcaa
+  cactusSpine: 0xe8dcaa,
+  /** Skin de roi "Argent" (boutique) : couronne polie, froide plutot que doree. */
+  silver: 0xcdd4da,
+  silverLight: 0xf2f6f8,
+  silverDark: 0x6e767d,
+  /** Skin de roi "Obsidienne" (boutique) : verre volcanique sombre, joyaux rouges. */
+  obsidian: 0x241a2e,
+  obsidianLight: 0x4a3a5c,
+  obsidianDark: 0x0f0a14,
+  obsidianGem: 0xd6304a
 } as const;
 
 /**
@@ -80,6 +89,21 @@ export const KUBB_SKINS: KubbSkin[] = ['bois', 'marbre', 'metal', 'ardoise'];
 export const FREE_KUBB_SKINS: readonly KubbSkin[] = ['bois'];
 
 // Libelles et indices : src/i18n/dictionaries.ts (skin.<id>.label / .hint).
+
+/**
+ * Habillage cosmetique du roi, choisi au menu — meme principe que KubbSkin :
+ * aucune incidence sur HITBOX.kingRadius ni sur l'IA, uniquement une
+ * texture differente. Seul "or" (le look d'origine) reste disponible
+ * d'office ; les autres sont des articles de boutique (src/game/shop.ts).
+ */
+export type KingSkin = 'or' | 'argent' | 'obsidienne';
+
+export const KING_SKINS: KingSkin[] = ['or', 'argent', 'obsidienne'];
+
+/** Seul habillage disponible d'office, sans passer par la boutique. */
+export const FREE_KING_SKINS: readonly KingSkin[] = ['or'];
+
+// Libelles et indices : src/i18n/dictionaries.ts (king.<id>.label / .hint).
 
 /**
  * Ombres portees. Une source de lumiere unique, en haut a gauche : toutes les

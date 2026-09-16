@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { KING_BODY } from '../physics/matterConfig';
 import { HITBOX } from '../rules';
-import { SHADOW } from '../theme';
+import { SHADOW, type KingSkin } from '../theme';
 
 /**
  * Le roi, unique, au centre du terrain (regle classique du Kubb).
@@ -10,16 +10,18 @@ import { SHADOW } from '../theme';
 export class King {
   readonly sprite: Phaser.Physics.Matter.Image;
   private readonly shadow: Phaser.GameObjects.Image;
+  private readonly skin: KingSkin;
   private downed = false;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  constructor(scene: Phaser.Scene, x: number, y: number, skin: KingSkin = 'or') {
+    this.skin = skin;
     this.shadow = scene.add
       .image(x + SHADOW.offsetX, y + SHADOW.offsetY, 'shadow')
       .setDepth(2)
       .setAlpha(SHADOW.alpha)
       .setScale(SHADOW.scale.king);
 
-    this.sprite = scene.matter.add.image(x, y, 'king', undefined, {
+    this.sprite = scene.matter.add.image(x, y, `king-${skin}`, undefined, {
       ...KING_BODY,
       shape: { type: 'circle', radius: HITBOX.kingRadius }
     });
@@ -45,7 +47,7 @@ export class King {
     this.sprite.destroy();
 
     // Le roi bascule lentement : c'est le geste qui clot la partie.
-    const fallen = scene.add.image(x, y, 'king-down').setDepth(1).setScale(0.55, 1.1).setAngle(-12);
+    const fallen = scene.add.image(x, y, `king-down-${this.skin}`).setDepth(1).setScale(0.55, 1.1).setAngle(-12);
 
     scene.tweens.add({
       targets: fallen,

@@ -203,7 +203,7 @@ export class MatchScene extends Phaser.Scene {
     this.aiTimer = null;
     this.aiTween = null;
 
-    const { mode, difficulty, fieldPreset, kubbSkin, batonId, windEnabled, run } = gameStore.getState();
+    const { mode, difficulty, fieldPreset, kubbSkin, kingSkin, batonId, windEnabled, run } = gameStore.getState();
     this.batonStats = BATONS[batonId];
     this.wind = windEnabled
       ? {
@@ -243,7 +243,7 @@ export class MatchScene extends Phaser.Scene {
     this.createObstacles();
 
     this.teams = { blue: new Team(this, 'blue', kubbSkin), red: new Team(this, 'red', kubbSkin) };
-    this.king = new King(this, FIELD_CENTER_X, FIELD_CENTER_Y);
+    this.king = new King(this, FIELD_CENTER_X, FIELD_CENTER_Y, kingSkin);
 
     this.aimGfx = this.add.graphics().setDepth(5);
     this.juice = new Juice(this);

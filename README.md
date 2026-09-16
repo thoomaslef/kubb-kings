@@ -365,6 +365,38 @@ n&apos;est necessaire pour cette fonctionnalite. Stocke dans le store
 
 ---
 
+## Skins de roi
+
+Meme principe que les skins de kubbs, applique a la piece centrale : trois
+habillages, choisis au menu, generes dans `BootScene.ts`
+(`buildKingTextures`, parametree par `KingSkin` au lieu d&apos;une methode par
+piece — un seul roi, pas d&apos;equipe a teinter).
+
+| Skin            | Look                                                          | Niveau requis |
+| ---------------- | ---------------------------------------------------------------- | :-----------: |
+| **Or**           | Look d&apos;origine : couronne doree, joyaux blancs               | 1 (des le debut) |
+| **Argent**       | Couronne polie et froide, joyaux blanc-bleute                     | 21 |
+| **Obsidienne**   | Verre volcanique sombre, joyaux rouges — le plus tardif du jeu     | 22 |
+
+Seul "Or" reste disponible d&apos;office : les deux autres sont des articles de
+boutique (`src/game/shop.ts`, categorie `'king'`), niveau ET pieces necessaires comme
+tout le reste du catalogue (cf. section "Boutique" plus bas). Purement cosmetique : la
+hitbox (`HITBOX.kingRadius` dans `rules.ts`) et le corps Matter (`KING_BODY`) ne
+changent jamais, et `ai.ts` n&apos;a aucune notion de skin — aucune verification par
+simulation n&apos;est necessaire pour cette fonctionnalite (le roi est un point de
+regle partage par les deux equipes, jamais une decision de l&apos;IA). Stocke dans le
+store (`kingSkin` / `setKingSkin`), passe directement au constructeur de `King`
+(`MatchScene`), qui l&apos;utilise pour ses deux textures (`king-<skin>` debout,
+`king-down-<skin>` couche — la couronne reste lisible meme eteinte, comme pour l&apos;or
+d&apos;origine). Verifie en navigateur reel : au niveau 1 seul "Or" est proposable ; a
+haut niveau avec assez de pieces, "Argent" apparait dans la boutique, achetable, puis
+immediatement selectionnable au menu et reellement selectionne dans le store ; un match
+reel demarre avec le roi rendu sur la texture achetee (`king-argent`), confirme
+directement via le sprite de la scene ; "Obsidienne" verifiee de la meme facon — zero
+erreur console.
+
+---
+
 ## Batons
 
 Contrairement aux skins, un vrai effet de jeu — la progression du joueur passe par le
@@ -496,11 +528,12 @@ lancer choisis au menu, qui repartent a leurs valeurs par defaut a chaque rechar
 | Victoire                     | +50    |
 
 **Catalogue.** Passe d&apos;un petit catalogue cosmetique (skins/effets/2 batons) a la
-regle generale du jeu : seuls le terrain "Classique", le baton "De base" et le skin
-"Bois" restent disponibles d&apos;office (le strict minimum pour jouer une premiere
-partie) — TOUT le reste, y compris les terrains et les batons qui etaient auparavant
-"gratuits une fois le niveau atteint", passe desormais par ce catalogue. 15 articles,
-un seul par niveau (memes niveaux qu&apos;avant pour ceux qui existaient deja) :
+regle generale du jeu : seuls le terrain "Classique", le baton "De base", le skin de
+kubb "Bois" et le skin de roi "Or" restent disponibles d&apos;office (le strict minimum
+pour jouer une premiere partie) — TOUT le reste, y compris les terrains et les batons
+qui etaient auparavant "gratuits une fois le niveau atteint", passe desormais par ce
+catalogue. 17 articles, un seul par niveau (memes niveaux qu&apos;avant pour ceux qui
+existaient deja) :
 
 | Article                       | Categorie        | Prix | Niveau requis |
 | -------------------------------- | ------------------ | :--: | :-----------: |
@@ -519,6 +552,8 @@ un seul par niveau (memes niveaux qu&apos;avant pour ceux qui existaient deja) :
 | Stabilise (baton)               | Baton              | 500  | 17            |
 | Marbre (skin de kubb)           | Skin               | 150  | 18            |
 | Metal (skin de kubb)            | Skin               | 200  | 19            |
+| Argent (skin de roi)            | Skin de roi        | 250  | 21            |
+| Obsidienne (skin de roi)        | Skin de roi        | 350  | 22            |
 
 Les deux conditions sont necessaires pour acheter (`ShopItem.minLevel`,
 `useGameStore::purchaseItem`) : avoir assez de pieces ET avoir atteint ce niveau. Le
@@ -535,7 +570,7 @@ friction, cf. `rules.ts::FIELD_PRESETS`, deja verifie independamment pour chaque
 cf. section "Terrains a obstacles") compte pour `decideThrow`, jamais la facon dont le
 joueur y a accede. Verifie en navigateur reel : au niveau 1 sur une sauvegarde neuve, les
 selecteurs terrain/baton/skin ne proposent que Classique/De base/Bois ; a haut niveau
-avec largement assez de pieces, les 15 articles sont tous achetables (aucun bouton
+avec largement assez de pieces, les 17 articles sont tous achetables (aucun bouton
 desactive) et aucun n&apos;apparait dans les selecteurs avant d&apos;etre reellement
 achete ; un achat (Chicane, puis Nordique) le fait immediatement apparaitre dans le bon
 selecteur et le rend reellement selectionnable pour un match — zero erreur console.
@@ -574,12 +609,12 @@ achetable en boutique des la premiere partie — le niveau n&apos;ouvrait jamais
 Cette premiere passe avait introduit DEUX filieres separees (des batons/terrains
 "gratuits une fois le niveau atteint", et des articles de boutique niveau+pieces) —
 depuis unifiees en une seule regle, plus simple et plus stricte : **seuls le terrain
-Classique, le baton De base et le skin Bois restent disponibles d&apos;office**
-(le strict minimum pour jouer une premiere partie). Tout le reste — 14 articles au
-total, terrains inclus — passe desormais par la boutique (`shop.ts`, `SHOP_ITEMS`),
-niveau ET pieces necessaires pour chacun. **Un seul deblocage par niveau au maximum**,
-en evitant expres les paliers de titre (5/10/16&hellip;, cf. plus bas) pour ne jamais
-cumuler deux choses en meme temps sur un ecran :
+Classique, le baton De base, le skin de kubb Bois et le skin de roi Or restent
+disponibles d&apos;office** (le strict minimum pour jouer une premiere partie). Tout le
+reste — 17 articles au total, terrains et skins de roi inclus — passe desormais par la
+boutique (`shop.ts`, `SHOP_ITEMS`), niveau ET pieces necessaires pour chacun. **Un seul
+deblocage par niveau au maximum**, en evitant expres les paliers de titre (5/10/16&hellip;,
+cf. plus bas) pour ne jamais cumuler deux choses en meme temps sur un ecran :
 
 | Niveau | Article de boutique                              |
 | :----: | ------------------------------------------------- |
@@ -598,10 +633,12 @@ cumuler deux choses en meme temps sur un ecran :
 | 17     | Stabilise (baton, 500)                             |
 | 18     | Marbre (skin, 150)                                 |
 | 19     | Metal (skin, 200)                                  |
+| 21     | Argent (skin de roi, 250)                          |
+| 22     | Obsidienne (skin de roi, 350)                      |
 
 **Un seul mecanisme pour tout.** `Menu.tsx` filtre chaque selecteur (terrain, baton,
-skin, effet de lancer) aux seuls choix possedes (`isShopRefOwned`, `shop.ts`) — les
-terrains n&apos;etaient eux, avant cette passe, jamais filtres du tout — et affiche sous
+skin de kubb, skin de roi, effet de lancer) aux seuls choix possedes (`isShopRefOwned`,
+`shop.ts`) — les terrains n&apos;etaient eux, avant cette passe, jamais filtres du tout — et affiche sous
 les selecteurs terrain/baton un indice discret sur le prochain article a venir dans
 cette categorie (&laquo;&nbsp;🔒 Prochain baton : Sniper — niveau 7&nbsp;&raquo;), pour
 rendre la progression visible sans devoiler tout le contenu d&apos;un coup. Le niveau
@@ -618,7 +655,7 @@ supplementaire (c&apos;est un reglage de partie choisi avant le match, comme la
 difficulte ; seul son contenu, deja verifie independamment pour chaque preset, compte
 pour l&apos;IA). Verifie en navigateur reel : sur une sauvegarde neuve (niveau 1), les
 trois selecteurs ne proposent que Classique/De base/Bois ; a haut niveau (25) avec
-largement assez de pieces (99&nbsp;999), les 15 articles apparaissent tous dans la
+largement assez de pieces (99&nbsp;999), les 17 articles apparaissent tous dans la
 boutique avec leur bouton d&apos;achat actif, mais AUCUN n&apos;apparait dans les
 selecteurs de menu avant d&apos;etre reellement achete ; un achat (Chicane, puis
 Nordique) le fait immediatement apparaitre dans le bon selecteur et le rend reellement
@@ -640,10 +677,11 @@ pieces). **Trois etats par article**, pas juste deux : niveau non atteint
 (&laquo;&nbsp;🛒 En vente a la boutique&nbsp;&raquo; — nouveau, consequence directe du
 "tout doit s&apos;acheter" : avant, atteindre le niveau suffisait), et possede
 (&laquo;&nbsp;Debloque&nbsp;&raquo;). **Un seul deblocage par ligne** : le baton De base,
-le terrain Classique et le skin Bois (le point de depart, pas un deblocage a proprement
-parler) n&apos;apparaissent pas dans la feuille de route, et les 15 niveaux requis ont
-ete choisis pour ne jamais tomber sur un palier de titre (5/10/16/24/32) ni entre eux —
-chaque ligne affiche donc toujours exactement un seul article, jamais deux cumules.
+le terrain Classique, le skin de kubb Bois et le skin de roi Or (le point de depart, pas
+un deblocage a proprement parler) n&apos;apparaissent pas dans la feuille de route, et
+les 17 niveaux requis ont ete choisis pour ne jamais tomber sur un palier de titre
+(5/10/16/24/32) ni entre eux — chaque ligne affiche donc toujours exactement un seul
+article, jamais deux cumules.
 **Victoires cumulees** (`ProgressionState.totalWins`) est un champ persiste ajoute pour
 cet ecran — retro-compatible explicitement verifie : une sauvegarde anterieure sans ce
 champ ne reinitialise PAS le niveau/XP existant (seul `totalWins` retombe a 0),

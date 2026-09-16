@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { TEAMS } from '../entities/Team';
-import { PALETTE, KUBB_SKINS, type KubbSkin } from '../theme';
+import { PALETTE, KUBB_SKINS, type KubbSkin, KING_SKINS, type KingSkin } from '../theme';
 import { HITBOX, OBSTACLE_RADIUS } from '../rules';
 
 /**
@@ -392,50 +392,58 @@ export class BootScene extends Phaser.Scene {
 
   // -------------------------------------------------------------------- roi
 
+  /** Teintes par skin de roi (KingSkin) : base, facette claire, contour/couronne, joyaux. */
+  private static readonly KING_SKIN_COLORS: Record<KingSkin, { base: number; light: number; dark: number; gem: number }> = {
+    or: { base: PALETTE.gold, light: PALETTE.goldLight, dark: PALETTE.goldDark, gem: 0xfffdf2 },
+    argent: { base: PALETTE.silver, light: PALETTE.silverLight, dark: PALETTE.silverDark, gem: 0xeaf6ff },
+    obsidienne: { base: PALETTE.obsidian, light: PALETTE.obsidianLight, dark: PALETTE.obsidianDark, gem: PALETTE.obsidianGem }
+  };
+
   private buildKingTextures() {
-    this.texture('king', 52, 52, (g) => {
-      g.fillStyle(PALETTE.goldDark, 1);
-      g.fillCircle(26, 26, 24);
-      g.fillStyle(PALETTE.gold, 1);
-      g.fillCircle(26, 25, 22);
-      g.fillStyle(PALETTE.goldLight, 0.55);
-      g.fillCircle(26, 22, 15);
+    KING_SKINS.forEach((skin) => {
+      const { base, light, dark, gem } = BootScene.KING_SKIN_COLORS[skin];
 
-      // Couronne a trois pointes, posee sur un bandeau.
-      g.fillStyle(PALETTE.goldDark, 1);
-      g.fillTriangle(11, 32, 17, 15, 23, 32);
-      g.fillTriangle(20, 32, 26, 11, 32, 32);
-      g.fillTriangle(29, 32, 35, 15, 41, 32);
-      g.fillRoundedRect(11, 30, 30, 8, 3);
+      this.texture(`king-${skin}`, 52, 52, (g) => {
+        g.fillStyle(dark, 1);
+        g.fillCircle(26, 26, 24);
+        g.fillStyle(base, 1);
+        g.fillCircle(26, 25, 22);
+        g.fillStyle(light, 0.55);
+        g.fillCircle(26, 22, 15);
 
-      // Joyaux au sommet des pointes.
-      g.fillStyle(0xfffdf2, 1);
-      g.fillCircle(17, 16, 2.2);
-      g.fillCircle(26, 12, 2.6);
-      g.fillCircle(35, 16, 2.2);
+        // Couronne a trois pointes, posee sur un bandeau.
+        g.fillStyle(dark, 1);
+        g.fillTriangle(11, 32, 17, 15, 23, 32);
+        g.fillTriangle(20, 32, 26, 11, 32, 32);
+        g.fillTriangle(29, 32, 35, 15, 41, 32);
+        g.fillRoundedRect(11, 30, 30, 8, 3);
 
-      g.lineStyle(2, PALETTE.goldDark, 0.9);
-      g.strokeCircle(26, 25, 22);
-    });
+        // Joyaux au sommet des pointes.
+        g.fillStyle(gem, 1);
+        g.fillCircle(17, 16, 2.2);
+        g.fillCircle(26, 12, 2.6);
+        g.fillCircle(35, 16, 2.2);
 
-    // Couche : l'or s'eteint, mais la couronne doit rester lisible — c'est
-    // encore le roi, pas un caillou.
-    this.texture('king-down', 56, 40, (g) => {
-      const dull = Phaser.Display.Color.ValueToColor(PALETTE.gold)
-        .clone()
-        .desaturate(26)
-        .darken(30).color;
+        g.lineStyle(2, dark, 0.9);
+        g.strokeCircle(26, 25, 22);
+      });
 
-      g.fillStyle(PALETTE.goldDark, 1);
-      g.fillEllipse(28, 22, 52, 32);
-      g.fillStyle(dull, 1);
-      g.fillEllipse(28, 20, 48, 28);
+      // Couche : la teinte s'eteint, mais la couronne doit rester lisible —
+      // c'est encore le roi, pas un caillou.
+      this.texture(`king-down-${skin}`, 56, 40, (g) => {
+        const dull = Phaser.Display.Color.ValueToColor(base).clone().desaturate(26).darken(30).color;
 
-      g.fillStyle(PALETTE.goldDark, 1);
-      g.fillTriangle(12, 30, 17, 9, 23, 30);
-      g.fillTriangle(24, 30, 30, 7, 36, 30);
-      g.fillTriangle(37, 30, 42, 9, 48, 30);
-      g.fillRoundedRect(12, 26, 36, 7, 3);
+        g.fillStyle(dark, 1);
+        g.fillEllipse(28, 22, 52, 32);
+        g.fillStyle(dull, 1);
+        g.fillEllipse(28, 20, 48, 28);
+
+        g.fillStyle(dark, 1);
+        g.fillTriangle(12, 30, 17, 9, 23, 30);
+        g.fillTriangle(24, 30, 30, 7, 36, 30);
+        g.fillTriangle(37, 30, 42, 9, 48, 30);
+        g.fillRoundedRect(12, 26, 36, 7, 3);
+      });
     });
   }
 

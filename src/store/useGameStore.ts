@@ -4,7 +4,7 @@ import type { Difficulty } from '../game/ai';
 import type { PerkId } from '../game/roguelite';
 import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId, type Wind } from '../game/rules';
 import type { BatonId } from '../game/batons';
-import type { KubbSkin } from '../game/theme';
+import type { KubbSkin, KingSkin } from '../game/theme';
 import type { ThrowEffectId } from '../game/throwEffects';
 import { SHOP_ITEMS, isShopItemLevelUnlocked } from '../game/shop';
 import type { AchievementId } from '../game/achievements';
@@ -122,6 +122,8 @@ interface GameState {
   fieldPreset: FieldPresetId;
   /** Habillage visuel des kubbs — purement cosmetique, sans effet sur l'IA. */
   kubbSkin: KubbSkin;
+  /** Habillage visuel du roi — meme principe que kubbSkin, purement cosmetique. */
+  kingSkin: KingSkin;
   /**
    * Baton du joueur (jamais de l'IA, toujours sur le baton de base) — un vrai
    * effet de jeu, pas cosmetique comme kubbSkin. Cf. src/game/batons.ts.
@@ -184,6 +186,7 @@ interface GameState {
   setDifficulty: (difficulty: Difficulty) => void;
   setFieldPreset: (preset: FieldPresetId) => void;
   setKubbSkin: (skin: KubbSkin) => void;
+  setKingSkin: (skin: KingSkin) => void;
   setBatonId: (id: BatonId) => void;
   setWindEnabled: (enabled: boolean) => void;
   /** (Re)demarre une run a la manche 1, sans bonus. */
@@ -247,6 +250,7 @@ export const useGameStore = create<GameState>((set) => ({
   difficulty: 'moyen',
   fieldPreset: 'classique',
   kubbSkin: 'bois',
+  kingSkin: 'or',
   batonId: 'base',
   windEnabled: false,
   run: null,
@@ -271,6 +275,7 @@ export const useGameStore = create<GameState>((set) => ({
   setDifficulty: (difficulty) => set({ difficulty }),
   setFieldPreset: (preset) => set({ fieldPreset: preset }),
   setKubbSkin: (skin) => set({ kubbSkin: skin }),
+  setKingSkin: (skin) => set({ kingSkin: skin }),
   setBatonId: (id) => set({ batonId: id }),
   setWindEnabled: (enabled) => set({ windEnabled: enabled }),
   startRun: () => set({ run: { stageIndex: 0, perks: [] } }),
