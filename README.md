@@ -417,10 +417,18 @@ affichees en etoiles (1 a 5, 3 = le baton de base) :
 | **Boule**         | ★★★☆☆     | ★★★★☆     | ★★☆☆☆    | Boule  | 14                |
 | **Boule de fer**  | ★★★★☆     | ★★★★☆     | ★☆☆☆☆    | Boule  | 20                |
 | **Disque**        | ★★★☆☆     | ★★★★☆     | ★★★★☆    | Disque | 23                |
+| **Plume**         | ★☆☆☆☆     | ★★★★★     | ★☆☆☆☆    | Baton  | 25                |
+| **Enclume**       | ★★★★★     | ★☆☆☆☆     | ★★★☆☆    | Baton  | 27                |
+| **Fouet**         | ★★★☆☆     | ★★☆☆☆     | ★★★★★    | Baton  | 29                |
 
-Seul "De base" reste disponible d&apos;office : les 7 autres sont tous des articles de
+Seul "De base" reste disponible d&apos;office : les 10 autres sont tous des articles de
 boutique (`src/game/shop.ts`, categorie `'baton'`) — niveau ET pieces necessaires, cf.
-section "Boutique" plus bas.
+section "Boutique" plus bas. Plume/Enclume/Fouet reprennent la forme "Baton" par defaut
+(memes corps physique et texture que De base/Nordique/Sniper/Lourd/Stabilise) : de purs
+compromis de stats, sans nouveau rendu — Plume est l&apos;inverse d&apos;Enclume (l&apos;un
+maximise la Precision en sacrifiant tout le reste, l&apos;autre maximise la Puissance en
+gardant un peu de Controle), et Fouet ouvre une 2e voie vers l&apos;immunite au vent a
+cote de Stabilise, en sacrifiant la Precision plutot que de tout garder au baseline.
 
 - **Puissance** module la vitesse max du baton (+/-6% par etoile au-dessus/en-dessous de
   la baseline).

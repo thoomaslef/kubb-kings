@@ -30,7 +30,18 @@
  * SHOP_ITEMS) : verrouilles tant qu'ils n'ont pas ete achetes (et que
  * ShopItem.minLevel n'est pas atteint). Seul "base" est disponible d'office.
  */
-export type BatonId = 'base' | 'nordique' | 'sniper' | 'lourd' | 'stabilise' | 'boule' | 'boulefer' | 'disque';
+export type BatonId =
+  | 'base'
+  | 'nordique'
+  | 'sniper'
+  | 'lourd'
+  | 'stabilise'
+  | 'boule'
+  | 'boulefer'
+  | 'disque'
+  | 'plume'
+  | 'enclume'
+  | 'fouet';
 
 export const BATON_IDS: readonly BatonId[] = [
   'base',
@@ -40,7 +51,10 @@ export const BATON_IDS: readonly BatonId[] = [
   'stabilise',
   'boule',
   'boulefer',
-  'disque'
+  'disque',
+  'plume',
+  'enclume',
+  'fouet'
 ];
 
 /** Seul baton disponible d'office, sans passer par la boutique. */
@@ -81,7 +95,18 @@ export const BATONS: Record<BatonId, BatonStats> = {
   // Disque : aerodynamique et previsible (Precision et Controle au-dessus
   // du baseline tous les deux), Puissance neutre — glisse particulierement
   // bien sur "Glace" (ICE_FRICTION_MULTIPLIER_DISQUE, rules.ts).
-  disque: { power: 3, precision: 4, control: 4, shape: 'disque', textureKey: 'disque' }
+  disque: { power: 3, precision: 4, control: 4, shape: 'disque', textureKey: 'disque' },
+  // Plume : l'inverse du Lourd — ultra precis a vue, mais si legere qu'elle
+  // n'a ni la vitesse ni la resistance au vent pour aller loin.
+  plume: { power: 1, precision: 5, control: 1, shape: 'baton', textureKey: 'baton' },
+  // Enclume : la version extreme du Lourd (Puissance au maximum), qui
+  // garde neanmoins un peu de tenue au vent (Controle au baseline) — un
+  // pur glass cannon de puissance, pas un double desavantage.
+  enclume: { power: 5, precision: 1, control: 3, shape: 'baton', textureKey: 'baton' },
+  // Fouet : 2e voie vers l'immunite au vent (Controle au maximum, comme le
+  // Stabilise), mais qui sacrifie la Precision plutot que de tout garder
+  // au baseline — un compromis plus tranche que le Stabilise.
+  fouet: { power: 3, precision: 2, control: 5, shape: 'baton', textureKey: 'baton' }
 };
 
 const STARS_BASELINE = 3;
