@@ -12,9 +12,13 @@
  *   pour PLUS d'etoiles) — donne un vrai enjeu strategique au vent.
  *
  * Un baton a aussi une forme (`shape`) : 'baton' (le rectangle allonge par
- * defaut) ou 'boule' (un corps Matter circulaire, cf. HITBOX.ballRadius dans
- * rules.ts et Baton.ts) — purement une question de corps physique/texture,
- * les memes multiplicateurs de stats s'appliquent quelle que soit la forme.
+ * defaut), 'boule' ou 'disque' (deux corps Matter circulaires, cf.
+ * HITBOX.ballRadius/discRadius dans rules.ts et Baton.ts) — purement une
+ * question de corps physique, les memes multiplicateurs de stats
+ * s'appliquent quelle que soit la forme. `textureKey` est separe de `shape` :
+ * deux batons peuvent partager le meme corps physique avec un rendu
+ * different (Boule et Boule de fer sont toutes deux des cercles de meme
+ * rayon, cf. BootScene).
  *
  * L'IA n'utilise jamais ces multiplicateurs ni cette forme (toujours le
  * baton de base) : ce choix ne touche donc a aucun des reglages de securite
@@ -26,9 +30,18 @@
  * SHOP_ITEMS) : verrouilles tant qu'ils n'ont pas ete achetes (et que
  * ShopItem.minLevel n'est pas atteint). Seul "base" est disponible d'office.
  */
-export type BatonId = 'base' | 'nordique' | 'sniper' | 'lourd' | 'stabilise' | 'boule';
+export type BatonId = 'base' | 'nordique' | 'sniper' | 'lourd' | 'stabilise' | 'boule' | 'boulefer' | 'disque';
 
-export const BATON_IDS: readonly BatonId[] = ['base', 'nordique', 'sniper', 'lourd', 'stabilise', 'boule'];
+export const BATON_IDS: readonly BatonId[] = [
+  'base',
+  'nordique',
+  'sniper',
+  'lourd',
+  'stabilise',
+  'boule',
+  'boulefer',
+  'disque'
+];
 
 /** Seul baton disponible d'office, sans passer par la boutique. */
 export const FREE_BATON_IDS: readonly BatonId[] = ['base'];
@@ -39,25 +52,36 @@ export interface BatonStats {
   precision: number;
   control: number;
   /**
-   * Forme du projectile : 'baton' (rectangle allonge, par defaut) ou
-   * 'boule' (corps Matter circulaire, cf. HITBOX.ballRadius dans rules.ts
-   * et Baton.ts). Purement une question de corps physique/texture — l'IA
-   * n'a aucune notion de forme, elle reste toujours sur le baton de base.
+   * Forme du projectile : 'baton' (rectangle allonge, par defaut), 'boule'
+   * ou 'disque' (deux corps Matter circulaires, cf. HITBOX.ballRadius /
+   * discRadius dans rules.ts et Baton.ts). Purement une question de corps
+   * physique — l'IA n'a aucune notion de forme, elle reste toujours sur le
+   * baton de base.
    */
-  shape: 'baton' | 'boule';
+  shape: 'baton' | 'boule' | 'disque';
+  /** Cle de texture (BootScene) — cf. docblock en tete de fichier. */
+  textureKey: string;
 }
 
 export const BATONS: Record<BatonId, BatonStats> = {
-  base: { power: 3, precision: 3, control: 3, shape: 'baton' },
-  nordique: { power: 4, precision: 2, control: 3, shape: 'baton' },
-  sniper: { power: 2, precision: 5, control: 3, shape: 'baton' },
-  lourd: { power: 5, precision: 2, control: 3, shape: 'baton' },
+  base: { power: 3, precision: 3, control: 3, shape: 'baton', textureKey: 'baton' },
+  nordique: { power: 4, precision: 2, control: 3, shape: 'baton', textureKey: 'baton' },
+  sniper: { power: 2, precision: 5, control: 3, shape: 'baton', textureKey: 'baton' },
+  lourd: { power: 5, precision: 2, control: 3, shape: 'baton', textureKey: 'baton' },
   // Seul baton a vraiment jouer sur le Controle (les 4 autres restent tous a
   // 3) : un compromis different, pas un strict progres — baseline ailleurs.
-  stabilise: { power: 3, precision: 3, control: 5, shape: 'baton' },
+  stabilise: { power: 3, precision: 3, control: 5, shape: 'baton', textureKey: 'baton' },
   // Boule : roule droit (Precision haute) mais plus dure a doser sous le
   // vent, sans l'allonge du baton (Controle bas) — Puissance au baseline.
-  boule: { power: 3, precision: 4, control: 2, shape: 'boule' }
+  boule: { power: 3, precision: 4, control: 2, shape: 'boule', textureKey: 'boule' },
+  // Boule de fer : variante lourde de la Boule (meme corps physique, roule
+  // tout aussi droit) — plus de Puissance, mais quasi aucune resistance au
+  // vent (trop lourde pour compenser en vol, contrairement au Stabilise).
+  boulefer: { power: 4, precision: 4, control: 1, shape: 'boule', textureKey: 'boulefer' },
+  // Disque : aerodynamique et previsible (Precision et Controle au-dessus
+  // du baseline tous les deux), Puissance neutre — glisse particulierement
+  // bien sur "Glace" (ICE_FRICTION_MULTIPLIER_DISQUE, rules.ts).
+  disque: { power: 3, precision: 4, control: 4, shape: 'disque', textureKey: 'disque' }
 };
 
 const STARS_BASELINE = 3;

@@ -22,6 +22,8 @@ export class BootScene extends Phaser.Scene {
     this.buildSandTexture();
     this.buildBatonTexture();
     this.buildBoulTexture();
+    this.buildBoulFerTexture();
+    this.buildDisqueTexture();
     this.buildKubbTextures();
     this.buildKingTextures();
     this.buildThrowerTextures();
@@ -203,6 +205,63 @@ export class BootScene extends Phaser.Scene {
       g.strokeCircle(cx, cy, r * 0.62);
       g.lineBetween(cx - r * 0.62, cy, cx + r * 0.62, cy);
       g.lineBetween(cx, cy - r * 0.62, cx, cy + r * 0.62);
+    });
+  }
+
+  /**
+   * Boule de fer (baton de boutique, shape:'boule' dans batons.ts) : meme
+   * corps physique et meme taille que la boule en bois (HITBOX.ballRadius),
+   * juste une texture metallique — cf. PALETTE.metal, deja utilisee par le
+   * skin de kubb "Metal". Rivets plutot que couture en croix : repere
+   * visuel different de la boule en bois, pour rester distinguable au vol.
+   */
+  private buildBoulFerTexture() {
+    const size = HITBOX.ballRadius * 2 + 4;
+    const r = HITBOX.ballRadius;
+    const cx = size / 2;
+    const cy = size / 2;
+    this.texture('boulefer', size, size, (g) => {
+      g.fillStyle(PALETTE.metalDark, 1);
+      g.fillCircle(cx, cy, r + 2);
+      g.fillStyle(PALETTE.metal, 1);
+      g.fillCircle(cx, cy, r);
+
+      g.fillStyle(PALETTE.metalLight, 0.6);
+      g.fillCircle(cx - r * 0.32, cy - r * 0.32, r * 0.4);
+
+      // Rivets : 4 petits points sombres, comme une boule de canon rivetee.
+      g.fillStyle(PALETTE.metalDark, 0.7);
+      [
+        [cx, cy - r * 0.6],
+        [cx, cy + r * 0.6],
+        [cx - r * 0.6, cy],
+        [cx + r * 0.6, cy]
+      ].forEach(([px, py]) => g.fillCircle(px, py, r * 0.1));
+    });
+  }
+
+  /**
+   * Disque (baton de boutique, shape:'disque' dans batons.ts) : un corps
+   * physique nouveau (HITBOX.discRadius, plus large que la boule), rendu
+   * comme un palet plat vu de dessus — anneau exterieur plus sombre pour
+   * suggerer l'epaisseur, plutot que le degrade spherique de la boule.
+   */
+  private buildDisqueTexture() {
+    const size = HITBOX.discRadius * 2 + 4;
+    const r = HITBOX.discRadius;
+    const cx = size / 2;
+    const cy = size / 2;
+    this.texture('disque', size, size, (g) => {
+      g.fillStyle(PALETTE.slateDark, 1);
+      g.fillCircle(cx, cy, r + 2);
+      g.fillStyle(PALETTE.slate, 1);
+      g.fillCircle(cx, cy, r);
+      g.fillStyle(PALETTE.slateLight, 1);
+      g.fillCircle(cx, cy, r * 0.72);
+
+      g.lineStyle(1.5, PALETTE.slateDark, 0.6);
+      g.strokeCircle(cx, cy, r * 0.72);
+      g.strokeCircle(cx, cy, r * 0.38);
     });
   }
 

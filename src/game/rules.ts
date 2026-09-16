@@ -99,7 +99,14 @@ export const HITBOX = {
    * (cf. KING_DANGER_RADIUS dans ai.ts, qui n'a jamais connaissance de la
    * boule — l'IA reste toujours sur le baton de base).
    */
-  ballRadius: 14
+  ballRadius: 14,
+  /**
+   * Rayon du "disque" (projectile de boutique, batons.ts shape:'disque') —
+   * un corps Matter circulaire, comme la boule, mais plus large (palet plat
+   * plutot que sphere) : meme raisonnement que ballRadius, jamais connu de
+   * l'IA (toujours le baton de base).
+   */
+  discRadius: 17
 } as const;
 
 /**
@@ -149,6 +156,14 @@ export interface FieldPreset {
    * projectiles (baton comme boule).
    */
   frictionMultiplierBall?: number;
+  /**
+   * Variante de frictionMultiplier pour le disque (batons.ts shape:'disque')
+   * uniquement — meme principe que frictionMultiplierBall. "Glace" est pour
+   * l'instant le seul preset a la definir (le disque y glisse encore mieux
+   * qu'un baton, cf. ICE_FRICTION_MULTIPLIER_DISQUE) ; absente ailleurs =
+   * le disque se comporte comme un baton normal sur ce terrain.
+   */
+  frictionMultiplierDisque?: number;
   /** Multiplicateur sur BATON_BODY.restitution (rebond aux bandes/rochers), pour tout le terrain (1 = normal). */
   restitutionMultiplier: number;
   /** Texture de sol (BootScene) dessinee sur tout le terrain — 'grass' par defaut. */
@@ -180,6 +195,13 @@ export const HILL_EXTRA_FRICTION = 0.012;
  */
 const ICE_FRICTION_MULTIPLIER = 0.5;
 const ICE_RESTITUTION_MULTIPLIER = 1.7;
+/**
+ * "Glace" : le disque (batons.ts shape:'disque') y glisse encore mieux
+ * qu'un baton normal — plat et large, il accroche moins la surface lisse
+ * qu'un baton allonge sur la tranche. Nettement sous ICE_FRICTION_MULTIPLIER
+ * (0.5) : c'est le terrain de predilection du disque.
+ */
+const ICE_FRICTION_MULTIPLIER_DISQUE = 0.32;
 
 /**
  * "Sable" : plus de friction sur tout le terrain, et bien plus pour la
@@ -242,6 +264,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     obstacles: [],
     hasHill: false,
     frictionMultiplier: ICE_FRICTION_MULTIPLIER,
+    frictionMultiplierDisque: ICE_FRICTION_MULTIPLIER_DISQUE,
     restitutionMultiplier: ICE_RESTITUTION_MULTIPLIER,
     groundTexture: 'ice'
   },

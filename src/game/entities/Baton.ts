@@ -6,9 +6,9 @@ import type { BatonStats } from '../batons';
 
 /**
  * Le projectile lance par le joueur actif : le baton par defaut (rectangle
- * allonge), ou la boule de boutique (cercle) — cf. `shape` dans batons.ts.
- * Corps Matter tres peu amorti dans les deux cas : il glisse sur le terrain
- * vu de dessus.
+ * allonge), ou un projectile de boutique a corps circulaire (boule, boule
+ * de fer, disque) — cf. `shape` dans batons.ts. Corps Matter tres peu
+ * amorti dans tous les cas : il glisse sur le terrain vu de dessus.
  */
 export class Baton {
   readonly sprite: Phaser.Physics.Matter.Image;
@@ -16,38 +16,47 @@ export class Baton {
   private readonly shadow: Phaser.GameObjects.Image;
   /** Vitesse observee a la frame precedente, utilisee pour mesurer la force d'impact. */
   private previousSpeed = 0;
-  /** Texture reellement utilisee (depend de la forme) — pour la trainee (Juice.trail). */
+  /** Texture reellement utilisee — pour la trainee (Juice.trail). */
   readonly textureKey: string;
 
   /**
-   * `restitutionMultiplier` (terrain, rules.ts::FieldPreset) : rebond aux
-   * bandes/rochers pour toute la partie — fixe au lancer (contrairement a
-   * frictionAir, qui varie par frame selon la position, cf.
-   * MatchScene::applyTerrainFriction), le terrain ne change pas en cours de vol.
+   * `textureKey` est separe de `shape` : deux projectiles peuvent partager
+   * le meme corps physique (Boule et Boule de fer, meme cercle) avec un
+   * rendu different — cf. batons.ts. `restitutionMultiplier` (terrain,
+   * rules.ts::FieldPreset) : rebond aux bandes/rochers pour toute la
+   * partie — fixe au lancer (contrairement a frictionAir, qui varie par
+   * frame selon la position, cf. MatchScene::applyTerrainFriction), le
+   * terrain ne change pas en cours de vol.
    */
   constructor(
     scene: Phaser.Scene,
     x: number,
     y: number,
     shape: BatonStats['shape'] = 'baton',
+    textureKey: string = 'baton',
     restitutionMultiplier = 1
   ) {
-    this.textureKey = shape === 'boule' ? 'boule' : 'baton';
+    this.textureKey = textureKey;
 
-    // La boule est ronde : ombre circulaire (pas d'allongement, contrairement
-    // au baton dont l'ombre suit son grand axe).
+    // Boule/disque sont ronds : ombre circulaire (pas d'allongement,
+    // contrairement au baton dont l'ombre suit son grand axe).
     this.shadow = scene.add
       .image(x + SHADOW.offsetX, y + SHADOW.offsetY, 'shadow')
       .setDepth(3)
       .setAlpha(SHADOW.alpha * 0.8)
-      .setScale(SHADOW.scale.baton, shape === 'boule' ? SHADOW.scale.baton : SHADOW.scale.baton * 1.5);
+      .setScale(SHADOW.scale.baton, shape === 'baton' ? SHADOW.scale.baton * 1.5 : SHADOW.scale.baton);
+
+    const bodyShape =
+      shape === 'boule'
+        ? { shape: { type: 'circle' as const, radius: HITBOX.ballRadius } }
+        : shape === 'disque'
+          ? { shape: { type: 'circle' as const, radius: HITBOX.discRadius } }
+          : { chamfer: { radius: 6 }, shape: { type: 'rectangle' as const, width: HITBOX.batonWidth, height: HITBOX.batonLength } };
 
     this.sprite = scene.matter.add.image(x, y, this.textureKey, undefined, {
       ...BATON_BODY,
       restitution: BATON_BODY.restitution * restitutionMultiplier,
-      ...(shape === 'boule'
-        ? { shape: { type: 'circle', radius: HITBOX.ballRadius } }
-        : { chamfer: { radius: 6 }, shape: { type: 'rectangle', width: HITBOX.batonWidth, height: HITBOX.batonLength } })
+      ...bodyShape
     });
     this.sprite.setDepth(6);
   }

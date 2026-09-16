@@ -407,16 +407,20 @@ style plutot que par la puissance brute : chaque baton est un compromis, pas un 
 progres. Choisi librement au menu ([`src/game/batons.ts`](src/game/batons.ts)), 3 stats
 affichees en etoiles (1 a 5, 3 = le baton de base) :
 
-| Baton        | Puissance | Precision | Controle | Niveau requis |
-| ------------ | :-------: | :-------: | :------: | :-----------: |
-| **De base**  | ★★★☆☆     | ★★★☆☆     | ★★★☆☆    | 1 (des le debut) |
-| **Nordique** | ★★★★☆     | ★★☆☆☆     | ★★★☆☆    | 3             |
-| **Sniper**   | ★★☆☆☆     | ★★★★★     | ★★★☆☆    | 7             |
-| **Lourd**    | ★★★★★     | ★★☆☆☆     | ★★★☆☆    | 11            |
+| Baton            | Puissance | Precision | Controle | Forme  | Niveau requis     |
+| ---------------- | :-------: | :-------: | :------: | :----: | :---------------: |
+| **De base**      | ★★★☆☆     | ★★★☆☆     | ★★★☆☆    | Baton  | 1 (des le debut)  |
+| **Nordique**      | ★★★★☆     | ★★☆☆☆     | ★★★☆☆    | Baton  | 3                 |
+| **Sniper**        | ★★☆☆☆     | ★★★★★     | ★★★☆☆    | Baton  | 7                 |
+| **Lourd**         | ★★★★★     | ★★☆☆☆     | ★★★☆☆    | Baton  | 11                |
+| **Stabilise**     | ★★★☆☆     | ★★★☆☆     | ★★★★★    | Baton  | 17                |
+| **Boule**         | ★★★☆☆     | ★★★★☆     | ★★☆☆☆    | Boule  | 14                |
+| **Boule de fer**  | ★★★★☆     | ★★★★☆     | ★☆☆☆☆    | Boule  | 20                |
+| **Disque**        | ★★★☆☆     | ★★★★☆     | ★★★★☆    | Disque | 23                |
 
-Seul "De base" reste disponible d&apos;office : les 4 autres (Nordique/Sniper/Lourd, et
-Stabilise/Boule ci-dessous) sont tous des articles de boutique (`src/game/shop.ts`,
-categorie `'baton'`) — niveau ET pieces necessaires, cf. section "Boutique" plus bas.
+Seul "De base" reste disponible d&apos;office : les 7 autres sont tous des articles de
+boutique (`src/game/shop.ts`, categorie `'baton'`) — niveau ET pieces necessaires, cf.
+section "Boutique" plus bas.
 
 - **Puissance** module la vitesse max du baton (+/-6% par etoile au-dessus/en-dessous de
   la baseline).
@@ -426,13 +430,27 @@ categorie `'baton'`) — niveau ET pieces necessaires, cf. section "Boutique" pl
   d&apos;effet pour PLUS d&apos;etoiles) — donne un vrai enjeu strategique au vent : un
   baton bien controle est un atout par jour de tempete.
 
+**Forme du projectile.** Au-dela des 3 stats, un baton a une forme (`BatonStats.shape`) :
+le rectangle allonge par defaut, ou un corps Matter circulaire — Boule, Boule de fer et
+Disque sont tous les trois des cercles, mais de deux rayons differents
+(`HITBOX.ballRadius`/`discRadius`, [`src/game/rules.ts`](src/game/rules.ts)) et avec des
+rendus distincts (`textureKey`, separe de `shape` : Boule et Boule de fer partagent
+exactement le meme corps physique, juste une texture bois/fer differente — cf.
+[`src/game/scenes/BootScene.ts`](src/game/scenes/BootScene.ts)). La forme influence aussi
+la friction terrain (`FieldPreset.frictionMultiplierBall`/`frictionMultiplierDisque`,
+absentes = comportement d&apos;un baton normal) : la Boule (et sa variante de fer)
+s&apos;enfoncent bien plus qu&apos;un baton dans le Sable, le Disque glisse particulierement
+bien sur la Glace.
+
 **Jamais l&apos;IA.** Seules les equipes tenues par un joueur humain beneficient de ces
 multiplicateurs (`MatchScene::activeBatonStats`) — l&apos;IA reste toujours sur le baton
 de base, quel que soit le choix au menu. Ce choix ne touche donc a aucun des reglages de
 securite de l&apos;IA (`decideThrow`/`decideApproachThrow`) : aucune simulation de
-suicide n&apos;etait necessaire pour cette fonctionnalite, seulement une verification en
-navigateur (stats correctement appliquees au joueur, jamais a l&apos;IA, meme quand un
-baton different est choisi ; lancer reel fonctionnel ; zero erreur).
+suicide n&apos;etait necessaire pour cette fonctionnalite (ni pour l&apos;ajout ulterieur
+de Boule de fer et Disque), seulement une verification en navigateur (stats correctement
+appliquees au joueur, jamais a l&apos;IA, meme quand un baton different est choisi ;
+achat en boutique puis lancer reel de Boule de fer et Disque, texture/corps physique
+corrects pour chacun ; zero erreur).
 
 ---
 

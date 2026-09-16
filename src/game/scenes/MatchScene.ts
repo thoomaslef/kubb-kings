@@ -423,14 +423,18 @@ export class MatchScene extends Phaser.Scene {
    * "Colline" (hasHill) ajoute HILL_EXTRA_FRICTION tant que le baton est
    * dans la zone (HILL_RADIUS, centree comme le roi). "Glace"/"Sable"
    * (frictionMultiplier) s'appliquent partout sur le terrain, et different
-   * selon la forme du projectile (frictionMultiplierBall pour la boule,
-   * qui s'enfonce dans le sable bien plus qu'un baton n'y glisse dessus).
+   * selon la forme du projectile (frictionMultiplierBall pour la boule, qui
+   * s'enfonce dans le sable bien plus qu'un baton n'y glisse dessus ;
+   * frictionMultiplierDisque pour le disque, qui glisse encore mieux qu'un
+   * baton sur la glace).
    */
   private applyTerrainFriction() {
     if (!this.baton) return;
     const preset = FIELD_PRESETS[this.fieldPreset];
     const shape = this.activeBatonStats().shape;
-    const multiplier = (shape === 'boule' ? preset.frictionMultiplierBall : undefined) ?? preset.frictionMultiplier;
+    const shapeOverride =
+      shape === 'boule' ? preset.frictionMultiplierBall : shape === 'disque' ? preset.frictionMultiplierDisque : undefined;
+    const multiplier = shapeOverride ?? preset.frictionMultiplier;
     const base = BATON_BODY.frictionAir * multiplier;
 
     const body = this.baton.sprite.body as MatterJS.BodyType;
@@ -448,7 +452,7 @@ export class MatchScene extends Phaser.Scene {
     this.updateFarthestTarget(origin);
     const stats = this.activeBatonStats();
     const preset = FIELD_PRESETS[this.fieldPreset];
-    this.baton = new Baton(this, origin.x, origin.y, stats.shape, preset.restitutionMultiplier);
+    this.baton = new Baton(this, origin.x, origin.y, stats.shape, stats.textureKey, preset.restitutionMultiplier);
     this.baton.launch(
       this.aimAngle,
       this.aimPower,

@@ -56,8 +56,10 @@ export const SHOP_ITEMS: readonly ShopItem[] = [
   { id: 'baton-stabilise', category: 'baton', refId: 'stabilise', price: 500, minLevel: 17 },
   { id: 'skin-marbre', category: 'skin', refId: 'marbre', price: 150, minLevel: 18 },
   { id: 'skin-metal', category: 'skin', refId: 'metal', price: 200, minLevel: 19 },
+  { id: 'baton-boulefer', category: 'baton', refId: 'boulefer', price: 550, minLevel: 20 },
   { id: 'king-argent', category: 'king', refId: 'argent', price: 250, minLevel: 21 },
-  { id: 'king-obsidienne', category: 'king', refId: 'obsidienne', price: 350, minLevel: 22 }
+  { id: 'king-obsidienne', category: 'king', refId: 'obsidienne', price: 350, minLevel: 22 },
+  { id: 'baton-disque', category: 'baton', refId: 'disque', price: 600, minLevel: 23 }
 ];
 
 /**
