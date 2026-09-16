@@ -161,6 +161,10 @@ export function HUD() {
           <>
             {hud.phase === 'ai-aiming' && <div className="hud__banner hud__banner--ai">{t('hud.aiAiming')}</div>}
 
+            {hud.phase === 'aiming' && hud.fieldKubbs[hud.activeTeam] > 0 && (
+              <div className="hud__banner">{t('hud.fieldKubbsPriority')}</div>
+            )}
+
             {hud.canTargetKing && hud.phase === 'aiming' && (
               <div className="hud__banner">{t(kingTipExpanded ? 'hud.kingTipExpanded' : 'hud.kingTipShort')}</div>
             )}

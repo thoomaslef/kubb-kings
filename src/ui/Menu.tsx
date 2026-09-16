@@ -37,6 +37,8 @@ export function Menu() {
   const setBatonId = useGameStore((s) => s.setBatonId);
   const windEnabled = useGameStore((s) => s.windEnabled);
   const setWindEnabled = useGameStore((s) => s.setWindEnabled);
+  const fieldKubbsEnabled = useGameStore((s) => s.fieldKubbsEnabled);
+  const setFieldKubbsEnabled = useGameStore((s) => s.setFieldKubbsEnabled);
   const lang = useGameStore((s) => s.lang);
   const setLang = useGameStore((s) => s.setLang);
   const setMode = useGameStore((s) => s.setMode);
@@ -185,6 +187,26 @@ export function Menu() {
             </button>
           </div>
           <p className="footnote footnote--tight">{t(windEnabled ? 'menu.windOnHint' : 'menu.windOffHint')}</p>
+
+          <div className="segmented" role="group" aria-label={t('menu.fieldKubbsAria')}>
+            <button
+              className={`segmented__item${!fieldKubbsEnabled ? ' segmented__item--on' : ''}`}
+              aria-pressed={!fieldKubbsEnabled}
+              onClick={() => setFieldKubbsEnabled(false)}
+            >
+              {t('menu.fieldKubbsOff')}
+            </button>
+            <button
+              className={`segmented__item${fieldKubbsEnabled ? ' segmented__item--on' : ''}`}
+              aria-pressed={fieldKubbsEnabled}
+              onClick={() => setFieldKubbsEnabled(true)}
+            >
+              {t('menu.fieldKubbsOn')}
+            </button>
+          </div>
+          <p className="footnote footnote--tight">
+            {t(fieldKubbsEnabled ? 'menu.fieldKubbsOnHint' : 'menu.fieldKubbsOffHint')}
+          </p>
 
           <div className="segmented" role="group" aria-label={t('menu.skinAria')}>
             {availableSkins.map((skin) => (

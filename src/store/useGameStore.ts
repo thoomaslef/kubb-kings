@@ -84,8 +84,14 @@ export interface HudState {
    * equipe tire une fois vers le roi), 'match' une fois la partie lancee.
    */
   stage: 'opening' | 'match';
-  /** Kubbs encore debout de chaque equipe (= cibles restantes pour l'adversaire). */
+  /** Kubbs encore en jeu de chaque equipe (baseline + field = cibles restantes pour l'adversaire). */
   kubbsStanding: Record<TeamId, number>;
+  /**
+   * Regle "Kubbs de champ" (menu) : kubbs de chaque equipe actuellement
+   * replantes dans le camp adverse, cibles prioritaires de leur propre
+   * equipe au tour suivant. Toujours a 0 partout si la regle est desactivee.
+   */
+  fieldKubbs: Record<TeamId, number>;
   throwsLeft: Record<TeamId, number>;
   timeLeftMs: number;
   /** true quand l'equipe active a le droit de viser le roi. */
@@ -104,6 +110,7 @@ const initialHud = (): HudState => ({
   phase: 'aiming',
   stage: 'opening',
   kubbsStanding: { blue: KUBBS_PER_TEAM, red: KUBBS_PER_TEAM },
+  fieldKubbs: { blue: 0, red: 0 },
   throwsLeft: { blue: MAX_THROWS_PER_TEAM, red: MAX_THROWS_PER_TEAM },
   timeLeftMs: MATCH_DURATION_MS,
   canTargetKing: false,
@@ -131,6 +138,13 @@ interface GameState {
   batonId: BatonId;
   /** Meteo : vent lateral en jeu, off par defaut. */
   windEnabled: boolean;
+  /**
+   * Regle "Kubbs de champ" (cf. rules.ts::FIELD_KUBB_INSET), off par
+   * defaut : un kubb de ligne abattu est replante dans le camp de son
+   * lanceur plutot que retire du jeu, et devient une cible prioritaire pour
+   * son equipe au tour suivant (MatchScene::legalTargets).
+   */
+  fieldKubbsEnabled: boolean;
   /** null hors mode 'defi' — pas de run en cours. */
   run: RunState | null;
   /** null hors tournoi local — pas de tournoi en cours. */
@@ -189,6 +203,7 @@ interface GameState {
   setKingSkin: (skin: KingSkin) => void;
   setBatonId: (id: BatonId) => void;
   setWindEnabled: (enabled: boolean) => void;
+  setFieldKubbsEnabled: (enabled: boolean) => void;
   /** (Re)demarre une run a la manche 1, sans bonus. */
   startRun: () => void;
   /** Passe a la manche suivante ; no-op hors run active. */
@@ -253,6 +268,7 @@ export const useGameStore = create<GameState>((set) => ({
   kingSkin: 'or',
   batonId: 'base',
   windEnabled: false,
+  fieldKubbsEnabled: false,
   run: null,
   tournament: null,
   tournamentPending: null,
@@ -278,6 +294,7 @@ export const useGameStore = create<GameState>((set) => ({
   setKingSkin: (skin) => set({ kingSkin: skin }),
   setBatonId: (id) => set({ batonId: id }),
   setWindEnabled: (enabled) => set({ windEnabled: enabled }),
+  setFieldKubbsEnabled: (enabled) => set({ fieldKubbsEnabled: enabled }),
   startRun: () => set({ run: { stageIndex: 0, perks: [] } }),
   advanceRun: () =>
     set((state) => (state.run ? { run: { ...state.run, stageIndex: state.run.stageIndex + 1 } } : state)),

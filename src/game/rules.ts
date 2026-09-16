@@ -59,6 +59,21 @@ export function availableThrowPositions(standing: readonly boolean[]): readonly 
   return available.length > 0 ? available : THROW_POSITIONS;
 }
 
+/**
+ * Regle "Kubbs de champ" (menu, off par defaut) : un kubb de ligne abattu
+ * n'est pas retire du jeu, il est aussitot replante dans le camp de son
+ * PROPRE lanceur — cote de son THROWER, pas de sa baseline — ou il devient
+ * une cible prioritaire (cf. MatchScene::legalTargets). Ecart depuis le
+ * centre du terrain (FIELD_CENTER_Y), du meme cote que TEAMS[team].direction :
+ * assez loin du centre pour ne jamais chevaucher la zone de friction
+ * "Colline" (HILL_RADIUS=130) ni les obstacles des autres presets (dy jusqu'a
+ * 130 autour du centre), assez pres de la ligne de fond adverse pour rester
+ * une cible nettement plus courte qu'un kubb de ligne (~640px de distance de
+ * lancer contre ~830px), sans jamais se confondre visuellement avec la
+ * rangee de ligne de fond elle-meme (BASELINE_INSET=60, THROWER_INSET=130).
+ */
+export const FIELD_KUBB_INSET = 260;
+
 /** Duree maximale d'une partie (4 min) pour tenir dans la fenetre 3-5 min. */
 export const MATCH_DURATION_MS = 4 * 60 * 1000;
 /** Nombre de lancers par equipe. Garde-fou si le timer n'est pas atteint. */

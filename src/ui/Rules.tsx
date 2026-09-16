@@ -25,6 +25,7 @@ export function Rules() {
           <li>{t('rules.item7')}</li>
           <li>{t('rules.item8', { n: MAX_THROWS_PER_TEAM })}</li>
           <li>{t('rules.item9')}</li>
+          <li>{t('rules.itemFieldKubbs')}</li>
         </ol>
 
         <div className="button-column">

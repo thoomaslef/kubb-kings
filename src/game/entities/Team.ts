@@ -31,8 +31,9 @@ export class Team {
     this.kubbs.forEach((kubb) => kubb.syncShadow());
   }
 
+  /** Kubbs encore en jeu (baseline ou field) : ce que l'adversaire doit encore abattre en tout. */
   get standingCount(): number {
-    return this.kubbs.reduce((total, kubb) => total + (kubb.isStanding ? 1 : 0), 0);
+    return this.kubbs.reduce((total, kubb) => total + (kubb.isInPlay ? 1 : 0), 0);
   }
 
   get downCount(): number {

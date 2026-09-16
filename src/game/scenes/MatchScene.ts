@@ -24,6 +24,7 @@ import {
   FIELD,
   FIELD_CENTER_X,
   FIELD_CENTER_Y,
+  FIELD_KUBB_INSET,
   FIELD_PRESETS,
   HILL_EXTRA_FRICTION,
   HILL_RADIUS,
@@ -157,6 +158,13 @@ export class MatchScene extends Phaser.Scene {
    * compenser. null si la meteo est desactivee.
    */
   private wind: Wind | null = null;
+  /**
+   * Regle "Kubbs de champ" (menu, off par defaut), tiree une seule fois a
+   * create() comme wind/fieldPreset : un kubb de ligne abattu est replante
+   * plutot que retire du jeu tant que cette regle est active. Cf.
+   * legalTargets/fieldKubbSlot.
+   */
+  private fieldKubbsEnabled = false;
 
   /** Position de lancer courante de chaque equipe, le long de sa ligne de lancer. */
   private throwX: Record<TeamId, number> = { blue: FIELD_CENTER_X, red: FIELD_CENTER_X };
@@ -203,8 +211,10 @@ export class MatchScene extends Phaser.Scene {
     this.aiTimer = null;
     this.aiTween = null;
 
-    const { mode, difficulty, fieldPreset, kubbSkin, kingSkin, batonId, windEnabled, run } = gameStore.getState();
+    const { mode, difficulty, fieldPreset, kubbSkin, kingSkin, batonId, windEnabled, fieldKubbsEnabled, run } =
+      gameStore.getState();
     this.batonStats = BATONS[batonId];
+    this.fieldKubbsEnabled = fieldKubbsEnabled;
     this.wind = windEnabled
       ? {
           direction: WIND_DIRECTIONS[Math.floor(Math.random() * WIND_DIRECTIONS.length)],
@@ -312,7 +322,7 @@ export class MatchScene extends Phaser.Scene {
    * ses kubbs encore debout — un kubb tombe n'est plus un poste valide.
    */
   private availablePositions(team: TeamId): readonly number[] {
-    return availableThrowPositions(this.teams[team].kubbs.map((k) => k.isStanding));
+    return availableThrowPositions(this.teams[team].kubbs.map((k) => k.isAtBaseline));
   }
 
   /**
@@ -685,7 +695,7 @@ export class MatchScene extends Phaser.Scene {
       this.farthestTarget = null;
       return;
     }
-    const standing = this.teams[OPPONENT.blue].kubbs.filter((k) => k.isStanding);
+    const standing = this.legalTargets('blue');
     this.farthestTarget = standing.reduce<Kubb | null>((best, k) => {
       if (!best) return k;
       const d = Phaser.Math.Distance.Between(origin.x, origin.y, k.sprite.x, k.sprite.y);
@@ -773,18 +783,15 @@ export class MatchScene extends Phaser.Scene {
     this.aiTimer = this.time.delayedCall(profile.thinkMs, () => {
       if (this.phase !== 'ai-aiming') return;
 
-      const opponent = this.teams[OPPONENT[AI_TEAM]];
       const shot = decideThrow(
         {
           throwerY: TEAMS[AI_TEAM].throwerY,
           direction: TEAMS[AI_TEAM].direction,
-          targets: opponent.kubbs
-            .filter((kubb) => kubb.isStanding)
-            .map((kubb) => ({ x: kubb.sprite.x, y: kubb.sprite.y })),
-          kingTargetable: opponent.standingCount === 0,
+          targets: this.legalTargets(AI_TEAM).map((kubb) => ({ x: kubb.sprite.x, y: kubb.sprite.y })),
+          kingTargetable: this.isKingTargetable(AI_TEAM),
           kingStanding: this.king.isStanding,
           obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
-          ownStanding: this.teams[AI_TEAM].kubbs.map((k) => k.isStanding),
+          ownStanding: this.teams[AI_TEAM].kubbs.map((k) => k.isAtBaseline),
           hasHill: FIELD_PRESETS[this.fieldPreset].hasHill,
           frictionMultiplier: FIELD_PRESETS[this.fieldPreset].frictionMultiplier,
           ...(this.wind ? { wind: this.wind } : {})
@@ -881,6 +888,50 @@ export class MatchScene extends Phaser.Scene {
 
   // ------------------------------------------------------------- collisions
 
+  /**
+   * Cibles legalement visables par `team` en ce moment (regle "Kubbs de
+   * champ", menu) : si l'equipe a encore des kubbs de champ a elle —
+   * replantes dans son propre camp suite a un abattage adverse, cf.
+   * fieldKubbSlot — ce sont EUX, et eux seuls, qui priment ; les kubbs de
+   * ligne adverses ne redeviennent des cibles legales qu'une fois tous
+   * ecartes. Regle desactivee (ou aucun kubb de champ pour l'instant) :
+   * simple liste des kubbs de ligne adverses encore debout, comportement
+   * identique a avant l'introduction de cette regle. Sert a la fois de
+   * liste de cibles pour l'IA (beginAiTurn) et de filtre de legalite pour
+   * onCollisionStart : les deux doivent toujours s'accorder.
+   */
+  private legalTargets(team: TeamId): Kubb[] {
+    const ownField = this.teams[team].kubbs.filter((k) => k.isFieldKubb);
+    if (ownField.length > 0) return ownField;
+    return this.teams[OPPONENT[team]].kubbs.filter((k) => k.isAtBaseline);
+  }
+
+  /**
+   * Le roi est-il une cible legale pour `team` en ce moment ? Il faut a la
+   * fois que l'adversaire n'ait plus aucun kubb en jeu (ligne ou champ, cf.
+   * Team::standingCount) ET que `team` elle-meme n'ait plus de kubb de
+   * champ a elle a abattre en priorite (regle "Kubbs de champ") — la
+   * viser trop tot coute la partie, exactement comme avant cette regle.
+   */
+  private isKingTargetable(team: TeamId): boolean {
+    return this.teams[OPPONENT[team]].standingCount === 0 && !this.teams[team].kubbs.some((k) => k.isFieldKubb);
+  }
+
+  /**
+   * Position ou replanter un kubb de ligne abattu (regle "Kubbs de champ") :
+   * dans le camp de SON PROPRE lanceur (FIELD_KUBB_INSET, cote de
+   * TEAMS[team].direction), a la meme abscisse que sa position de ligne
+   * d'origine — chaque equipe n'ayant jamais deux kubbs au meme index, ses
+   * kubbs de champ ne se chevauchent jamais entre eux.
+   */
+  private fieldKubbSlot(kubb: Kubb): { x: number; y: number } {
+    const index = this.teams[kubb.team].kubbs.indexOf(kubb);
+    return {
+      x: THROW_POSITIONS[index],
+      y: FIELD_CENTER_Y + TEAMS[kubb.team].direction * FIELD_KUBB_INSET
+    };
+  }
+
   private onCollisionStart(event: Phaser.Physics.Matter.Events.CollisionStartEvent) {
     if (this.phase !== 'flying' || !this.baton) return;
 
@@ -938,9 +989,16 @@ export class MatchScene extends Phaser.Scene {
       }
 
       const kubb = this.asKubb(pair.bodyA) ?? this.asKubb(pair.bodyB);
-      if (!kubb || !kubb.isStanding) continue;
-      // Une equipe ne peut pas abattre ses propres kubbs.
-      if (kubb.team === this.activeTeam) continue;
+      if (!kubb || !kubb.isInPlay) continue;
+      // Seule une cible legale (cf. legalTargets — un kubb de champ a soi en
+      // priorite, sinon un kubb de ligne adverse) declenche un effet ; tout
+      // le reste (ses propres kubbs de ligne, un kubb de ligne adverse
+      // encore protege par ses propres kubbs de champ non ecartes) rebondit
+      // sans effet, comme une bande.
+      if (!this.legalTargets(this.activeTeam).includes(kubb)) {
+        this.playBounce(speed);
+        continue;
+      }
       if (!hardEnough) {
         // Baton en fin de course : le kubb tient bon, mais le choc s'entend.
         this.playBounce(speed);
@@ -948,7 +1006,17 @@ export class MatchScene extends Phaser.Scene {
       }
 
       const { x, y } = kubb.sprite;
-      kubb.knockDown(this);
+      // Un kubb de champ legalement touche sort definitivement du jeu. Un
+      // kubb de ligne adverse aussi, SAUF si la regle "Kubbs de champ" est
+      // active : il est alors replante dans le camp de son lanceur plutot
+      // que retire (cf. fieldKubbSlot).
+      const planted = !kubb.isFieldKubb && this.fieldKubbsEnabled;
+      if (planted) {
+        const slot = this.fieldKubbSlot(kubb);
+        kubb.plantInField(this, slot.x, slot.y);
+      } else {
+        kubb.knockDown(this);
+      }
       this.knockedThisThrow = true;
       this.knockedThisThrowCount += 1;
       this.knockedThisThrowMaxForce = Math.max(this.knockedThisThrowMaxForce, force);
@@ -958,7 +1026,7 @@ export class MatchScene extends Phaser.Scene {
         y,
         translate(
           gameStore.getState().lang,
-          this.teams[kubb.team].standingCount === 0 ? 'match.knockedLast' : 'match.knockedDown'
+          planted ? 'match.kubbPlanted' : this.teams[kubb.team].standingCount === 0 ? 'match.knockedLast' : 'match.knockedDown'
         ),
         TEAMS[this.activeTeam].cssColor
       );
@@ -979,7 +1047,7 @@ export class MatchScene extends Phaser.Scene {
    * l'equipe n'a aucun kubb a terre.
    */
   private reviveLeftmostKubb(team: TeamId) {
-    const fallen = this.teams[team].kubbs.find((k) => !k.isStanding);
+    const fallen = this.teams[team].kubbs.find((k) => !k.isInPlay);
     if (!fallen) return;
 
     fallen.reviveUp(this);
@@ -1009,7 +1077,7 @@ export class MatchScene extends Phaser.Scene {
    * defaite immediate sinon (regle classique du Kubb).
    */
   private resolveKingHit() {
-    const legal = this.teams[OPPONENT[this.activeTeam]].standingCount === 0;
+    const legal = this.isKingTargetable(this.activeTeam);
     const { x, y } = this.king.sprite;
 
     this.king.knockDown(this);
@@ -1360,7 +1428,7 @@ export class MatchScene extends Phaser.Scene {
   }
 
   private syncHud() {
-    const canTargetKing = this.teams[OPPONENT[this.activeTeam]].standingCount === 0;
+    const canTargetKing = this.isKingTargetable(this.activeTeam);
     this.updateKingHalo(canTargetKing);
 
     gameStore.getState().patchHud({
@@ -1370,6 +1438,10 @@ export class MatchScene extends Phaser.Scene {
       kubbsStanding: {
         blue: this.teams.blue.standingCount,
         red: this.teams.red.standingCount
+      },
+      fieldKubbs: {
+        blue: this.teams.blue.kubbs.filter((k) => k.isFieldKubb).length,
+        red: this.teams.red.kubbs.filter((k) => k.isFieldKubb).length
       },
       throwsLeft: { ...this.throwsLeft },
       timeLeftMs: this.timeLeftMs,
