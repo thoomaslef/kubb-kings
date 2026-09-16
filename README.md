@@ -1078,6 +1078,30 @@ canonique. [`public/robots.txt`](public/robots.txt) et
 [`public/sitemap.xml`](public/sitemap.xml) excluent `/legal/` (deja `noindex`
 individuellement) du referencement.
 
+### Partage du resultat
+
+Bouton **Partager le resultat** sur l&apos;ecran de fin de match
+([`src/ui/ResultScreen.tsx`](src/ui/ResultScreen.tsx)) : genere une image (carte
+1080&times;1350, [`src/game/shareCard.ts`](src/game/shareCard.ts)) avec le titre du
+resultat, le score des deux camps et, en solo/Defi, le niveau/XP/pieces gagnes — dessinee
+sur un `<canvas>` hors-DOM, purement cosmetique (aucune regle ni IA impliquee).
+
+- **Web Share API en priorite** (`navigator.share` avec un fichier joint) quand le
+  navigateur le permet (mobile principalement) : ouvre directement le partage natif
+  (SMS, WhatsApp, etc.) avec l&apos;image en piece jointe.
+- **Repli en telechargement** (`<a download>`) sur les navigateurs sans partage de
+  fichiers (desktop pour la plupart) — le joueur recupere l&apos;image et la partage a la
+  main.
+- Emoji explicitement bannis du texte dessine sur le canvas (`result.coinsGainedPlain`,
+  variante sans le &#x1FA99; de `result.coinsGained`) : certains environnements sans police
+  emoji couleur dessinaient un glyphe manquant a la place — mieux vaut du texte simple,
+  garanti partout, qu&apos;un rendu casse sur une minorite d&apos;appareils.
+
+Verifie en navigateur : bouton present sur un resultat solo (avec pastille niveau/XP/pieces)
+et sur un resultat 1v1 local (sans pastille, detail plus long sur deux lignes) — repli
+telechargement declenche dans les deux cas (headless sans Web Share API), zero erreur
+console, image relue et inspectee visuellement.
+
 ---
 
 ## Informations legales

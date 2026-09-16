@@ -1,13 +1,16 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { TEAMS, OPPONENT } from '../game/entities/teamData';
 import { AI_TEAM } from '../game/ai';
 import { levelFromXp } from '../game/progression';
 import { LADDER, setBestStageIfHigher } from '../game/roguelite';
+import { downloadBlob, shareCardBlob } from '../game/shareCard';
 import { translate, type Lang } from '../i18n/translate';
 import { useT } from '../i18n/useT';
 import type { MatchResult } from '../store/useGameStore';
+
+type ShareStatus = 'idle' | 'sharing' | 'shared' | 'downloaded' | 'error';
 
 /** En solo (et en Defi, qui en est une variante) le joueur n'est pas "l'equipe Bleue" : c'est lui. */
 function headline(lang: Lang, result: MatchResult, soloLike: boolean) {
@@ -69,6 +72,8 @@ export function ResultScreen() {
     setBestStageIfHigher(stagesCleared);
   }, [isDefi, result, stagesCleared]);
 
+  const [shareStatus, setShareStatus] = useState<ShareStatus>('idle');
+
   if (!result) return null;
 
   const accent = result.winner === 'draw' ? '#f2c14e' : TEAMS[result.winner].cssColor;
@@ -79,6 +84,81 @@ export function ResultScreen() {
         ? tournamentPending.blueName
         : tournamentPending.redName
       : null;
+
+  const headlineText = isTournamentMatch
+    ? tournamentWinnerName
+      ? t('result.tournament.win', { name: tournamentWinnerName })
+      : t('result.tournament.draw')
+    : isDefi && wonMatch && !runComplete
+      ? t('result.defi.stageCleared', { n: stagesCleared })
+      : headline(lang, result, soloLike);
+
+  const detailText = isTournamentMatch
+    ? tournamentWinnerName
+      ? detail(lang, result)
+      : t('result.tournament.replayHint')
+    : isDefi
+      ? runComplete
+        ? t('result.defi.runComplete', { total: LADDER.length })
+        : wonMatch
+          ? detail(lang, result)
+          : t(stagesCleared === 1 ? 'result.defi.runOver.one' : 'result.defi.runOver.many', {
+              stage: stageIndex + 1,
+              cleared: stagesCleared
+            })
+      : detail(lang, result);
+
+  const blueLabel = isTournamentMatch ? tournamentPending.blueName : soloLike ? t('result.you') : t('team.blue.label');
+  const redLabel = isTournamentMatch ? tournamentPending.redName : soloLike ? t('result.ai') : t('team.red.label');
+
+  const levelLine = lastXpAward
+    ? [
+        t('progression.level', { n: levelInfo.level }),
+        t('progression.xpGained', { n: lastXpAward.total }),
+        ...(lastCoinsAward !== null ? [t('result.coinsGainedPlain', { n: lastCoinsAward })] : [])
+      ].join(' · ')
+    : null;
+
+  const handleShare = async () => {
+    setShareStatus('sharing');
+    let blob: Blob;
+    try {
+      blob = await shareCardBlob({
+        tagline: t('menu.subtitle'),
+        headline: headlineText,
+        detail: detailText,
+        blueLabel,
+        blueScore: result.knockedDown.blue,
+        redLabel,
+        redScore: result.knockedDown.red,
+        blueColor: TEAMS.blue.cssColor,
+        redColor: TEAMS.red.cssColor,
+        accent,
+        levelLine
+      });
+    } catch {
+      setShareStatus('error');
+      return;
+    }
+
+    const file = new File([blob], 'kubb-kings-resultat.png', { type: 'image/png' });
+    try {
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: t('result.shareTitle'), text: t('result.shareText') });
+        setShareStatus('shared');
+        return;
+      }
+    } catch (err) {
+      if ((err as DOMException)?.name === 'AbortError') {
+        setShareStatus('idle');
+        return;
+      }
+      // Le partage a echoue (ex : navigateur qui accepte canShare mais rejette
+      // ensuite) : on retombe sur le telechargement plutot que d'abandonner.
+    }
+    downloadBlob(file, 'kubb-kings-resultat.png');
+    setShareStatus('downloaded');
+  };
 
   const quitRun = () => {
     bridge.send('leave-match');
@@ -105,46 +185,32 @@ export function ResultScreen() {
     <div className="overlay overlay--solid">
       <div className="panel">
         <h2 className="panel__title" style={{ color: accent }}>
-          {isTournamentMatch
-            ? tournamentWinnerName
-              ? t('result.tournament.win', { name: tournamentWinnerName })
-              : t('result.tournament.draw')
-            : isDefi && wonMatch && !runComplete
-              ? t('result.defi.stageCleared', { n: stagesCleared })
-              : headline(lang, result, soloLike)}
+          {headlineText}
         </h2>
-        <p className="panel__text">
-          {isTournamentMatch
-            ? tournamentWinnerName
-              ? detail(lang, result)
-              : t('result.tournament.replayHint')
-            : isDefi
-              ? runComplete
-                ? t('result.defi.runComplete', { total: LADDER.length })
-                : wonMatch
-                  ? detail(lang, result)
-                  : t(stagesCleared === 1 ? 'result.defi.runOver.one' : 'result.defi.runOver.many', {
-                      stage: stageIndex + 1,
-                      cleared: stagesCleared
-                    })
-              : detail(lang, result)}
-        </p>
+        <p className="panel__text">{detailText}</p>
 
         <div className="score-row">
           <div className="score-cell" style={{ borderColor: TEAMS.blue.cssColor }}>
             <span className="score-cell__value">{result.knockedDown.blue}</span>
             <span className="score-cell__label">
-              {t('result.knockedLabel')} &mdash;{' '}
-              {isTournamentMatch ? tournamentPending.blueName : soloLike ? t('result.you') : t('team.blue.label')}
+              {t('result.knockedLabel')} &mdash; {blueLabel}
             </span>
           </div>
           <div className="score-cell" style={{ borderColor: TEAMS.red.cssColor }}>
             <span className="score-cell__value">{result.knockedDown.red}</span>
             <span className="score-cell__label">
-              {t('result.knockedLabel')} &mdash;{' '}
-              {isTournamentMatch ? tournamentPending.redName : soloLike ? t('result.ai') : t('team.red.label')}
+              {t('result.knockedLabel')} &mdash; {redLabel}
             </span>
           </div>
+        </div>
+
+        <div className="button-column" style={{ marginTop: 16 }}>
+          <button className="btn btn--ghost" onClick={handleShare} disabled={shareStatus === 'sharing'}>
+            {t('result.share')}
+          </button>
+          {shareStatus === 'shared' && <p className="footnote footnote--tight">{t('result.shareDone')}</p>}
+          {shareStatus === 'downloaded' && <p className="footnote footnote--tight">{t('result.shareDownloaded')}</p>}
+          {shareStatus === 'error' && <p className="footnote footnote--tight">{t('result.shareError')}</p>}
         </div>
 
         {lastXpAward && (

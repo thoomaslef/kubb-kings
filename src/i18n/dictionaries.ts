@@ -247,6 +247,16 @@ const fr: Record<string, string> = {
   'result.tournament.replay': 'Rejouer ce match',
   'result.tournament.forfeit': 'Abandonner le tournoi',
   'result.coinsGained': '+{n} 🪙',
+  'result.share': 'Partager le resultat',
+  'result.shareTitle': 'Mon resultat sur KUBB: Kings',
+  'result.shareText': 'Un petit defi de Kubb ?',
+  'result.shareDone': 'Partage !',
+  'result.shareDownloaded': 'Image enregistree',
+  'result.shareError': "Le partage n'a pas fonctionne",
+  // Variante sans emoji de result.coinsGained, pour l'image de partage
+  // (canvas) uniquement : certains environnements sans police emoji couleur
+  // installee dessinent un glyphe manquant plutot que de replier dessus.
+  'result.coinsGainedPlain': '+{n} pieces',
 
   // ---- Perk choice screen
   'perk.screen.title': 'Choisissez un bonus',
@@ -587,6 +597,13 @@ const en: Record<string, string> = {
   'result.tournament.replay': 'Replay this match',
   'result.tournament.forfeit': 'Forfeit the tournament',
   'result.coinsGained': '+{n} 🪙',
+  'result.share': 'Share result',
+  'result.shareTitle': 'My result on KUBB: Kings',
+  'result.shareText': 'Fancy a Kubb challenge?',
+  'result.shareDone': 'Shared!',
+  'result.shareDownloaded': 'Image saved',
+  'result.shareError': "Sharing didn't work",
+  'result.coinsGainedPlain': '+{n} coins',
 
   // ---- Perk choice screen
   'perk.screen.title': 'Choose a bonus',
