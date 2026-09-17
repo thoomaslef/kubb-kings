@@ -72,6 +72,10 @@ export const PALETTE = {
   mud: 0x5a4632,
   mudLight: 0x7a6448,
   mudDark: 0x372a1c,
+  /** Riviere (terrain "Riviere") : bande d'eau dessinee par-dessus l'herbe, cf. MatchScene::drawRiver. */
+  river: 0x3d7fa3,
+  riverLight: 0x6bb3d6,
+  riverDark: 0x255a78,
   /** Cactus (obstacles du terrain "Sable"), a la place des rochers habituels. */
   cactus: 0x4b7a4a,
   cactusLight: 0x6ea068,

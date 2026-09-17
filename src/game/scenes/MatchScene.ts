@@ -32,6 +32,8 @@ import {
   MATCH_DURATION_MS,
   MAX_AIM_DEVIATION_DEG,
   MAX_THROWS_PER_TEAM,
+  RIVER_FRICTION_MULTIPLIER,
+  RIVER_HALF_WIDTH,
   THROW,
   THROW_POSITIONS,
   WIND_DIRECTIONS,
@@ -421,12 +423,15 @@ export class MatchScene extends Phaser.Scene {
    * exactement la meme regle, pour que l'IA calcule la bonne puissance).
    *
    * "Colline" (hasHill) ajoute HILL_EXTRA_FRICTION tant que le baton est
-   * dans la zone (HILL_RADIUS, centree comme le roi). "Glace"/"Sable"
-   * (frictionMultiplier) s'appliquent partout sur le terrain, et different
-   * selon la forme du projectile (frictionMultiplierBall pour la boule, qui
-   * s'enfonce dans le sable bien plus qu'un baton n'y glisse dessus ;
-   * frictionMultiplierDisque pour le disque, qui glisse encore mieux qu'un
-   * baton sur la glace).
+   * dans la zone (HILL_RADIUS, centree comme le roi). "Riviere" (hasRiver)
+   * MULTIPLIE au contraire par RIVER_FRICTION_MULTIPLIER tant que le baton
+   * est dans la bande (RIVER_HALF_WIDTH, horizontale) : moins de perte de
+   * vitesse, jamais un gain (toujours >= 0, cf. rules.ts pour la raison).
+   * "Glace"/"Sable"/"Boue" (frictionMultiplier) s'appliquent partout sur le
+   * terrain, et different selon la forme du projectile
+   * (frictionMultiplierBall pour la boule, qui s'enfonce dans le sable bien
+   * plus qu'un baton n'y glisse dessus ; frictionMultiplierDisque pour le
+   * disque, qui glisse encore mieux qu'un baton sur la glace).
    */
   private applyTerrainFriction() {
     if (!this.baton) return;
@@ -438,13 +443,13 @@ export class MatchScene extends Phaser.Scene {
     const base = BATON_BODY.frictionAir * multiplier;
 
     const body = this.baton.sprite.body as MatterJS.BodyType;
-    if (!preset.hasHill) {
-      body.frictionAir = base;
-      return;
-    }
-    const inside =
+    const insideHill =
+      preset.hasHill &&
       Phaser.Math.Distance.Between(body.position.x, body.position.y, FIELD_CENTER_X, FIELD_CENTER_Y) <= HILL_RADIUS;
-    body.frictionAir = inside ? base + HILL_EXTRA_FRICTION : base;
+    const insideRiver =
+      preset.hasRiver && Math.abs(body.position.y - FIELD_CENTER_Y) <= RIVER_HALF_WIDTH;
+    const withHill = insideHill ? base + HILL_EXTRA_FRICTION : base;
+    body.frictionAir = insideRiver ? withHill * RIVER_FRICTION_MULTIPLIER : withHill;
   }
 
   private launch() {
@@ -797,6 +802,7 @@ export class MatchScene extends Phaser.Scene {
           obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
           ownStanding: this.teams[AI_TEAM].kubbs.map((k) => k.isAtBaseline),
           hasHill: FIELD_PRESETS[this.fieldPreset].hasHill,
+          hasRiver: FIELD_PRESETS[this.fieldPreset].hasRiver,
           frictionMultiplier: FIELD_PRESETS[this.fieldPreset].frictionMultiplier,
           ...(this.wind ? { wind: this.wind } : {})
         },
@@ -841,6 +847,7 @@ export class MatchScene extends Phaser.Scene {
           direction: TEAMS[AI_TEAM].direction,
           obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
           hasHill: FIELD_PRESETS[this.fieldPreset].hasHill,
+          hasRiver: FIELD_PRESETS[this.fieldPreset].hasRiver,
           frictionMultiplier: FIELD_PRESETS[this.fieldPreset].frictionMultiplier,
           ...(this.wind ? { wind: this.wind } : {})
         },
@@ -1296,6 +1303,9 @@ export class MatchScene extends Phaser.Scene {
     // Colline : dessinee avant tout le reste (traces de tonte, lignes...),
     // qui restent visibles par-dessus, comme un vrai relief sous le terrain.
     if (FIELD_PRESETS[this.fieldPreset].hasHill) this.drawHill(g);
+    // Riviere : dessinee comme la colline, avant le reste, pour que les
+    // traces de tonte/lignes restent visibles par-dessus.
+    if (FIELD_PRESETS[this.fieldPreset].hasRiver) this.drawRiver(g);
     // Nuit : la lune, dans un coin du ciel — purement decoratif.
     if (FIELD_PRESETS[this.fieldPreset].nightSky) this.drawMoon(g);
 
@@ -1347,6 +1357,36 @@ export class MatchScene extends Phaser.Scene {
     }
     g.lineStyle(2, PALETTE.hillDark, 0.4);
     g.strokeCircle(FIELD_CENTER_X, FIELD_CENTER_Y, HILL_RADIUS);
+  }
+
+  /**
+   * Rendu du terrain "Riviere" : une bande d'eau horizontale, sur toute la
+   * largeur du terrain, exactement a la meme largeur que la zone de
+   * friction reelle (RIVER_HALF_WIDTH dans rules.ts) — le joueur voit ainsi
+   * exactement ou elle commence et finit, comme drawHill pour "Colline".
+   */
+  private drawRiver(g: Phaser.GameObjects.Graphics) {
+    const top = FIELD_CENTER_Y - RIVER_HALF_WIDTH;
+    const height = RIVER_HALF_WIDTH * 2;
+
+    g.fillStyle(PALETTE.river, 0.75);
+    g.fillRect(FIELD.x, top, FIELD.width, height);
+
+    g.lineStyle(3, PALETTE.riverDark, 0.5);
+    g.lineBetween(FIELD.x, top, FIELD.x + FIELD.width, top);
+    g.lineBetween(FIELD.x, top + height, FIELD.x + FIELD.width, top + height);
+
+    // Reflets : quelques bandes ondulantes plus claires, pour suggerer le courant.
+    g.lineStyle(2, PALETTE.riverLight, 0.35);
+    for (let i = 0; i < 4; i += 1) {
+      const y = top + height * (0.2 + i * 0.2);
+      g.beginPath();
+      g.moveTo(FIELD.x, y);
+      for (let x = FIELD.x; x <= FIELD.x + FIELD.width; x += 20) {
+        g.lineTo(x, y + Math.sin(x * 0.05 + i) * 4);
+      }
+      g.strokePath();
+    }
   }
 
   /**

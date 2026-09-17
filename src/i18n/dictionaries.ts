@@ -76,6 +76,8 @@ const fr: Record<string, string> = {
   'terrain.verger.hint': 'Quatre rochers resserres pres du centre : le passage central se joue au plus pres',
   'terrain.boue.label': 'Boue',
   'terrain.boue.hint': 'Terrain tres lourd, sans obstacle : il faut doser bien plus fort partout',
+  'terrain.riviere.label': 'Riviere',
+  'terrain.riviere.hint': 'Une bande qui accelere : la traverser fait ressortir le baton plus vite',
 
   // ---- skin (theme.ts)
   'skin.bois.label': 'Bois',
@@ -439,6 +441,8 @@ const en: Record<string, string> = {
   'terrain.verger.hint': 'Four rocks clustered near the center: the middle lane is fought over up close',
   'terrain.boue.label': 'Mud',
   'terrain.boue.hint': 'Very heavy ground, no obstacles: you need much more power everywhere',
+  'terrain.riviere.label': 'River',
+  'terrain.riviere.hint': 'A band that speeds you up: crossing it sends the baton out faster',
 
   // ---- skin
   'skin.bois.label': 'Wood',

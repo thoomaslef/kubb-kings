@@ -232,11 +232,11 @@ comptent dans le total de 12 par equipe (`MatchScene.beginOpeningThrow` / `resol
 
 ## Terrains a obstacles
 
-Dix presets, choisis au menu, dans [`src/game/rules.ts`](src/game/rules.ts)
+Onze presets, choisis au menu, dans [`src/game/rules.ts`](src/game/rules.ts)
 (`FIELD_PRESETS`) : le terrain (`FIELD`, l&apos;espacement des kubbs, les hitboxes) ne
 change jamais — seuls des rochers statiques s&apos;ajoutent, definis en decalage
-(dx, dy) depuis le centre (sauf "Colline", "Glace", "Sable" et "Boue", differentes —
-voir plus bas ; "Nuit" n&apos;en ajoute aucun).
+(dx, dy) depuis le centre (sauf "Colline", "Glace", "Sable", "Boue" et "Riviere",
+differentes — voir plus bas ; "Nuit" n&apos;en ajoute aucun).
 
 | Preset         | Effet                                                          | Niveau requis |
 | -------------- | ------------------------------------------------------------------ | :-----------: |
@@ -250,8 +250,9 @@ voir plus bas ; "Nuit" n&apos;en ajoute aucun).
 | **Ruines**     | Trois rochers en triangle ASYMETRIQUE (ni sur l&apos;axe, ni symetrique) : les deux lignes de lancer ne se valent pas — cf. plus bas | 28 |
 | **Verger**     | Quatre rochers en carre resserre pres du centre (~92px, contre ~155px pour Sable) : le passage central se joue de bien plus pres — cf. plus bas | 30 |
 | **Boue**       | Terrain entier a friction encore plus accrue que Sable et rebonds encore plus mous, sans obstacle ni penalite specifique a un projectile — cf. plus bas | 31 |
+| **Riviere**    | Une bande horizontale qui REDUIT la friction (pas un rocher, pas une zone qui ralentit) : le baton en ressort plus vite qu&apos;un trajet normal — cf. plus bas | 33 |
 
-Seul "Classique" reste disponible d&apos;office : les 9 autres sont desormais des
+Seul "Classique" reste disponible d&apos;office : les 10 autres sont desormais des
 articles de boutique (`src/game/shop.ts`, categorie `'terrain'`) — niveau ET pieces
 necessaires pour les acheter, cf. section "Boutique" plus bas.
 
@@ -383,6 +384,46 @@ sweep standard (tous niveaux x tous etats de vent x 6 configurations de kubbs ad
 x kingTargetable vrai/faux, 612 tirs decides, 12&nbsp;240 trajectoires reelles) : zero
 suicide, zero tir invalide. Puis en navigateur reel : achat boutique, terrain visible
 au selecteur, lancer reel sans erreur console.
+
+**Riviere** generalise le mecanisme de "Colline" a une geometrie differente — une
+bande horizontale (`RIVER_HALF_WIDTH` = 70px de chaque cote de `FIELD_CENTER_Y`, sur
+toute la largeur du terrain) plutot qu&apos;un disque centre — et surtout a un effet
+inverse : au lieu d&apos;AJOUTER de la friction (Colline ralentit), elle la MULTIPLIE
+par `RIVER_FRICTION_MULTIPLIER` (0,15) tant que le baton s&apos;y trouve — il en
+ressort avec beaucoup moins de vitesse perdue qu&apos;un trajet normal. Volontairement
+MULTIPLICATIF et jamais negatif (jamais un vrai gain d&apos;energie, juste beaucoup
+moins de perte) : traverser la bande plusieurs fois (rebond sur une bande) ne peut
+jamais faire "accelerer indefiniment" le baton, contrairement a ce qu&apos;un ajout de
+friction negative aurait permis — ce choix ecarte structurellement tout risque
+d&apos;emballement de vitesse.
+
+Cote implementation, `ai.ts::hillCrossingOnRay`/`hillCrossingToTarget` (intersection
+d&apos;un rayon avec un CERCLE, geometrie quadratique) ont recu un pendant
+`riverCrossingOnRay`/`riverCrossingToTarget` plutot que d&apos;etre generalisees en
+place : geometrie de BANDE (intersection lineaire, plus simple), fonctions separees
+pour ne jamais risquer de regression sur "Colline", deja verifiee independamment.
+`simulateWindFlight` (donc `curvedKingDanger`, `windCompensatedAngle` et
+`decideApproachThrow`, tous bases dessus) applique le multiplicateur pas a pas des que
+le baton est dans la bande ; `decideThrow`, qui evite cette simulation complete pour
+des raisons de performance, calcule la longueur du trajet qui la traverse (geometrie
+exacte, comme pour Colline) et l&apos;utilise pour definir une "distance effective"
+(`distance - riverCrossing*(1-RIVER_FRICTION_MULTIPLIER)`) dans `powerForDistance`/
+`speedAfter` — mathematiquement equivalente a integrer un coefficient de friction
+different par morceau du trajet.
+
+Ce changement touche des fonctions partagees par TOUS les terrains (`simulateWindFlight`,
+`powerForDistance`, `speedAfter`, `curvedKingDanger`, `windCompensatedAngle` ont chacune
+recu un nouveau parametre `hasRiver`/`riverCrossing`, toujours par defaut sans effet) :
+verification en deux temps plutot que de supposer que les valeurs par defaut suffisent —
+(1) reverification COMPLETE des 10 presets existants (3978 tirs decides, 79&nbsp;560
+trajectoires reelles au total avec le sweep dedie Riviere ci-dessous inclus) : zero
+suicide, zero tir invalide, confirmant l&apos;absence de regression ; (2) sweep dedie
+sur Riviere seule (tous niveaux x tous etats de vent x 6 configurations de kubbs
+adverses x kingTargetable vrai/faux). Puis en navigateur reel (vraie physique Matter) :
+achat boutique, terrain visible au selecteur, bande d&apos;eau rendue exactement a la
+largeur de la zone reelle, et surtout la mesure qui compte — un tir a puissance egale
+ressort mesurablement plus vite apres avoir traverse la riviere qu&apos;en terrain
+classique, a distance parcourue egale (10,84 contre 9,29) — zero erreur console.
 
 ---
 

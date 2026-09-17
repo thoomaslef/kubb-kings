@@ -145,7 +145,8 @@ export type FieldPresetId =
   | 'nuit'
   | 'ruines'
   | 'verger'
-  | 'boue';
+  | 'boue'
+  | 'riviere';
 
 export interface FieldPreset {
   id: FieldPresetId;
@@ -153,6 +154,16 @@ export interface FieldPreset {
   obstacles: ReadonlyArray<{ dx: number; dy: number }>;
   /** true si ce preset a la zone de friction "colline" (toujours centree sur le terrain). */
   hasHill: boolean;
+  /**
+   * true si ce preset a la bande "riviere" (toujours horizontale, centree
+   * sur FIELD_CENTER_Y, cf. RIVER_HALF_WIDTH) : contrairement a "Colline",
+   * qui ralentit, elle reduit fortement la friction sur sa largeur — le
+   * baton en ressort avec plus de vitesse qu'un trajet normal n'en aurait
+   * laisse. Independante de hasHill (les deux sont additifs/multiplicatifs
+   * l'un sur l'autre, meme si aucun preset ne les combine pour l'instant —
+   * meme logique que hasHill/frictionMultiplier ci-dessous).
+   */
+  hasRiver: boolean;
   /**
    * true si ce preset dessine la lune et son halo (MatchScene::drawMoon) —
    * purement decoratif, comme hasHill/drawHill : aucun effet sur les regles,
@@ -203,6 +214,31 @@ export const HILL_RADIUS = 130;
 export const HILL_EXTRA_FRICTION = 0.012;
 
 /**
+ * Demi-largeur de la bande de friction de "Riviere", en pixels de design,
+ * centree sur FIELD_CENTER_Y et couvrant toute la largeur du terrain (bande
+ * horizontale, contrairement au disque centre de "Colline"). 140px de
+ * large au total — plus etroite que le diametre de Colline (260px), une
+ * traversee plus breve pour un effet plus "coup de fouet" que "zone a
+ * gerer".
+ */
+export const RIVER_HALF_WIDTH = 70;
+/**
+ * Multiplicateur (pas un ajout, contrairement a HILL_EXTRA_FRICTION) sur le
+ * frictionAir courant a l'interieur de la bande "Riviere" : le baton y perd
+ * BEAUCOUP moins de vitesse qu'ailleurs, il en ressort donc plus vite qu'un
+ * trajet normal n'en aurait laisse — l'effet "accelerateur" recherche.
+ * Volontairement MULTIPLICATIF et jamais negatif (jamais un vrai gain
+ * d'energie, juste beaucoup moins de perte) : un multiplicateur reste
+ * toujours >= 0, meme traverse plusieurs fois (rebond sur une bande), ce qui
+ * exclut structurellement tout risque d'emballement de vitesse — a la
+ * difference d'un ajout negatif de friction, qui pourrait pousser
+ * frictionAir sous zero et faire accelerer le baton indefiniment a chaque
+ * pas. Cf. ai.ts::simulateWindFlight/powerForDistance/speedAfter et
+ * MatchScene::applyTerrainFriction pour son application.
+ */
+export const RIVER_FRICTION_MULTIPLIER = 0.15;
+
+/**
  * "Glace" : moitie moins de friction sur tout le terrain (baton comme
  * boule) — un tir va bien plus loin a puissance egale, il faut donc doser
  * plus finement. Rebond plus vif sur les bandes/rochers (restitution x1.7,
@@ -249,6 +285,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     id: 'classique',
     obstacles: [],
     hasHill: false,
+    hasRiver: false,
     nightSky: false,
     frictionMultiplier: 1,
     restitutionMultiplier: 1,
@@ -261,6 +298,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
       { dx: -85, dy: -130 }
     ],
     hasHill: false,
+    hasRiver: false,
     nightSky: false,
     frictionMultiplier: 1,
     restitutionMultiplier: 1,
@@ -275,6 +313,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
       { dx: 0, dy: -70 }
     ],
     hasHill: false,
+    hasRiver: false,
     nightSky: false,
     frictionMultiplier: 1,
     restitutionMultiplier: 1,
@@ -284,6 +323,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     id: 'colline',
     obstacles: [],
     hasHill: true,
+    hasRiver: false,
     nightSky: false,
     frictionMultiplier: 1,
     restitutionMultiplier: 1,
@@ -293,6 +333,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     id: 'glace',
     obstacles: [],
     hasHill: false,
+    hasRiver: false,
     nightSky: false,
     frictionMultiplier: ICE_FRICTION_MULTIPLIER,
     frictionMultiplierDisque: ICE_FRICTION_MULTIPLIER_DISQUE,
@@ -312,6 +353,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
       { dx: -85, dy: -130 }
     ],
     hasHill: false,
+    hasRiver: false,
     nightSky: false,
     frictionMultiplier: SAND_FRICTION_MULTIPLIER,
     frictionMultiplierBall: SAND_FRICTION_MULTIPLIER_BALL,
@@ -325,6 +367,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     id: 'nuit',
     obstacles: [],
     hasHill: false,
+    hasRiver: false,
     nightSky: true,
     frictionMultiplier: 1,
     restitutionMultiplier: 1,
@@ -342,6 +385,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
       { dx: 30, dy: -220 }
     ],
     hasHill: false,
+    hasRiver: false,
     nightSky: false,
     frictionMultiplier: 1,
     restitutionMultiplier: 1,
@@ -359,6 +403,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
       { dx: -65, dy: -65 }
     ],
     hasHill: false,
+    hasRiver: false,
     nightSky: false,
     frictionMultiplier: 1,
     restitutionMultiplier: 1,
@@ -368,10 +413,26 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     id: 'boue',
     obstacles: [],
     hasHill: false,
+    hasRiver: false,
     nightSky: false,
     frictionMultiplier: MUD_FRICTION_MULTIPLIER,
     restitutionMultiplier: MUD_RESTITUTION_MULTIPLIER,
     groundTexture: 'mud'
+  },
+  // Bande horizontale (RIVER_HALF_WIDTH), centree comme "Colline" mais sur
+  // toute la largeur du terrain plutot qu'un disque : la traverser fait
+  // ressortir le baton plus vite qu'un trajet normal, au lieu de le
+  // ralentir. Aucun obstacle, aucune friction/restitution globale modifiee
+  // — seul RIVER_FRICTION_MULTIPLIER, localise a la bande, differe.
+  riviere: {
+    id: 'riviere',
+    obstacles: [],
+    hasHill: false,
+    hasRiver: true,
+    nightSky: false,
+    frictionMultiplier: 1,
+    restitutionMultiplier: 1,
+    groundTexture: 'grass'
   }
 };
 
