@@ -74,6 +74,8 @@ const fr: Record<string, string> = {
   'terrain.ruines.hint': 'Trois rochers en triangle asymetrique : les deux lignes de lancer ne se valent pas',
   'terrain.verger.label': 'Verger',
   'terrain.verger.hint': 'Quatre rochers resserres pres du centre : le passage central se joue au plus pres',
+  'terrain.boue.label': 'Boue',
+  'terrain.boue.hint': 'Terrain tres lourd, sans obstacle : il faut doser bien plus fort partout',
 
   // ---- skin (theme.ts)
   'skin.bois.label': 'Bois',
@@ -435,6 +437,8 @@ const en: Record<string, string> = {
   'terrain.ruines.hint': "Three rocks in an asymmetric triangle: the two throwing lines aren't equal",
   'terrain.verger.label': 'Orchard',
   'terrain.verger.hint': 'Four rocks clustered near the center: the middle lane is fought over up close',
+  'terrain.boue.label': 'Mud',
+  'terrain.boue.hint': 'Very heavy ground, no obstacles: you need much more power everywhere',
 
   // ---- skin
   'skin.bois.label': 'Wood',

@@ -232,10 +232,10 @@ comptent dans le total de 12 par equipe (`MatchScene.beginOpeningThrow` / `resol
 
 ## Terrains a obstacles
 
-Neuf presets, choisis au menu, dans [`src/game/rules.ts`](src/game/rules.ts)
+Dix presets, choisis au menu, dans [`src/game/rules.ts`](src/game/rules.ts)
 (`FIELD_PRESETS`) : le terrain (`FIELD`, l&apos;espacement des kubbs, les hitboxes) ne
 change jamais — seuls des rochers statiques s&apos;ajoutent, definis en decalage
-(dx, dy) depuis le centre (sauf "Colline", "Glace" et "Sable", differentes —
+(dx, dy) depuis le centre (sauf "Colline", "Glace", "Sable" et "Boue", differentes —
 voir plus bas ; "Nuit" n&apos;en ajoute aucun).
 
 | Preset         | Effet                                                          | Niveau requis |
@@ -249,8 +249,9 @@ voir plus bas ; "Nuit" n&apos;en ajoute aucun).
 | **Nuit**       | Aucun (identique a Classique) : juste l&apos;ambiance, palette sombre et lune — cf. plus bas | 26 |
 | **Ruines**     | Trois rochers en triangle ASYMETRIQUE (ni sur l&apos;axe, ni symetrique) : les deux lignes de lancer ne se valent pas — cf. plus bas | 28 |
 | **Verger**     | Quatre rochers en carre resserre pres du centre (~92px, contre ~155px pour Sable) : le passage central se joue de bien plus pres — cf. plus bas | 30 |
+| **Boue**       | Terrain entier a friction encore plus accrue que Sable et rebonds encore plus mous, sans obstacle ni penalite specifique a un projectile — cf. plus bas | 31 |
 
-Seul "Classique" reste disponible d&apos;office : les 8 autres sont desormais des
+Seul "Classique" reste disponible d&apos;office : les 9 autres sont desormais des
 articles de boutique (`src/game/shop.ts`, categorie `'terrain'`) — niveau ET pieces
 necessaires pour les acheter, cf. section "Boutique" plus bas.
 
@@ -371,6 +372,17 @@ Puis en navigateur reel (vraie physique Matter) : positions de rochers exactemen
 celles attendues pour les deux presets (3 en triangle pour Ruines, 4 en carre pour
 Verger, verifie par calcul et par capture d&apos;ecran), lancer reel sur chacun des 3
 nouveaux terrains — zero erreur console.
+
+**Boue** reprend exactement le mecanisme de Glace/Sable (`frictionMultiplier`/
+`restitutionMultiplier` scalaires sur tout le terrain, aucune nouvelle geometrie) avec
+des valeurs plus extremes (friction x2,2 contre x1,6 pour Sable, restitution x0,25
+contre x0,35) et volontairement AUCUNE variante par forme de projectile
+(`frictionMultiplierBall`/`frictionMultiplierDisque` absentes) : un pur terrain
+"lourd", uniforme, sans le choix tactique boule-vs-baton de Sable ni obstacle. Meme
+sweep standard (tous niveaux x tous etats de vent x 6 configurations de kubbs adverses
+x kingTargetable vrai/faux, 612 tirs decides, 12&nbsp;240 trajectoires reelles) : zero
+suicide, zero tir invalide. Puis en navigateur reel : achat boutique, terrain visible
+au selecteur, lancer reel sans erreur console.
 
 ---
 

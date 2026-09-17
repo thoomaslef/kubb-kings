@@ -65,7 +65,8 @@ export const SHOP_ITEMS: readonly ShopItem[] = [
   { id: 'baton-enclume', category: 'baton', refId: 'enclume', price: 700, minLevel: 27 },
   { id: 'terrain-ruines', category: 'terrain', refId: 'ruines', price: 500, minLevel: 28 },
   { id: 'baton-fouet', category: 'baton', refId: 'fouet', price: 750, minLevel: 29 },
-  { id: 'terrain-verger', category: 'terrain', refId: 'verger', price: 550, minLevel: 30 }
+  { id: 'terrain-verger', category: 'terrain', refId: 'verger', price: 550, minLevel: 30 },
+  { id: 'terrain-boue', category: 'terrain', refId: 'boue', price: 500, minLevel: 31 }
 ];
 
 /**

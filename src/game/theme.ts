@@ -68,6 +68,10 @@ export const PALETTE = {
   nightBlade: 0x2f4d3a,
   moon: 0xeef1f5,
   moonGlow: 0xb9c8de,
+  /** Boue (terrain "Boue") : remplace la pelouse sur tout le terrain. */
+  mud: 0x5a4632,
+  mudLight: 0x7a6448,
+  mudDark: 0x372a1c,
   /** Cactus (obstacles du terrain "Sable"), a la place des rochers habituels. */
   cactus: 0x4b7a4a,
   cactusLight: 0x6ea068,

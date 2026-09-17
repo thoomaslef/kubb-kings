@@ -21,6 +21,7 @@ export class BootScene extends Phaser.Scene {
     this.buildNightGrassTexture();
     this.buildIceTexture();
     this.buildSandTexture();
+    this.buildMudTexture();
     this.buildBatonTexture();
     this.buildBoulTexture();
     this.buildBoulFerTexture();
@@ -181,6 +182,34 @@ export class BootScene extends Phaser.Scene {
         const y = (i + 0.5) * (size / 5);
         g.lineStyle(2, PALETTE.sandDark, 0.18);
         g.lineBetween(0, y, size, y + (Math.random() * 10 - 5));
+      }
+    });
+  }
+
+  /**
+   * Tuile de boue, terrain "Boue" (remplace la pelouse sur tout le
+   * terrain) : grosses flaques sombres et quelques traces, plus lourd et
+   * moins regulier que le grain fin du sable.
+   */
+  private buildMudTexture() {
+    const size = 128;
+    this.texture('mud', size, size, (g) => {
+      g.fillStyle(PALETTE.mud, 1);
+      g.fillRect(0, 0, size, size);
+
+      for (let i = 0; i < 26; i += 1) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        g.fillStyle(Math.random() < 0.5 ? PALETTE.mudLight : PALETTE.mudDark, 0.35);
+        g.fillEllipse(x, y, 10 + Math.random() * 16, 6 + Math.random() * 10);
+      }
+
+      // Flaques : quelques taches sombres plus rondes, plus marquees.
+      for (let i = 0; i < 8; i += 1) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        g.fillStyle(PALETTE.mudDark, 0.4);
+        g.fillEllipse(x, y, 6 + Math.random() * 8, 4 + Math.random() * 6);
       }
     });
   }

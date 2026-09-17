@@ -135,7 +135,17 @@ export const HITBOX = {
  * cumuler les deux mecanismes, d'ou une verification IA dediee (voir
  * README, section "Terrains a obstacles").
  */
-export type FieldPresetId = 'classique' | 'chicane' | 'sentinelle' | 'colline' | 'glace' | 'sable' | 'nuit' | 'ruines' | 'verger';
+export type FieldPresetId =
+  | 'classique'
+  | 'chicane'
+  | 'sentinelle'
+  | 'colline'
+  | 'glace'
+  | 'sable'
+  | 'nuit'
+  | 'ruines'
+  | 'verger'
+  | 'boue';
 
 export interface FieldPreset {
   id: FieldPresetId;
@@ -173,7 +183,7 @@ export interface FieldPreset {
   /** Multiplicateur sur BATON_BODY.restitution (rebond aux bandes/rochers), pour tout le terrain (1 = normal). */
   restitutionMultiplier: number;
   /** Texture de sol (BootScene) dessinee sur tout le terrain — 'grass' par defaut. */
-  groundTexture: 'grass' | 'ice' | 'sand' | 'night';
+  groundTexture: 'grass' | 'ice' | 'sand' | 'night' | 'mud';
 }
 
 /** Rayon d'un rocher, en pixels de design — un peu plus large que le roi. */
@@ -220,6 +230,16 @@ const ICE_FRICTION_MULTIPLIER_DISQUE = 0.32;
 const SAND_FRICTION_MULTIPLIER = 1.6;
 const SAND_FRICTION_MULTIPLIER_BALL = 2.8;
 const SAND_RESTITUTION_MULTIPLIER = 0.35;
+
+/**
+ * "Boue" : encore plus de friction que Sable sur tout le terrain, mais
+ * uniforme — pas de penalite specifique a la boule ni au disque (aucun
+ * cactus non plus) : un pur terrain "lourd", il faut doser plus fort
+ * partout, sans le choix tactique boule-vs-baton que propose Sable.
+ * Rebond encore plus mou que Sable (la boue absorbe le choc).
+ */
+const MUD_FRICTION_MULTIPLIER = 2.2;
+const MUD_RESTITUTION_MULTIPLIER = 0.25;
 
 // Libelles et indices : src/i18n/dictionaries.ts (terrain.<id>.label / .hint).
 // Deblocage (niveau + achat) : src/game/shop.ts (SHOP_ITEMS, categorie
@@ -343,6 +363,15 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     frictionMultiplier: 1,
     restitutionMultiplier: 1,
     groundTexture: 'grass'
+  },
+  boue: {
+    id: 'boue',
+    obstacles: [],
+    hasHill: false,
+    nightSky: false,
+    frictionMultiplier: MUD_FRICTION_MULTIPLIER,
+    restitutionMultiplier: MUD_RESTITUTION_MULTIPLIER,
+    groundTexture: 'mud'
   }
 };
 
