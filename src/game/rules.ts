@@ -135,7 +135,7 @@ export const HITBOX = {
  * cumuler les deux mecanismes, d'ou une verification IA dediee (voir
  * README, section "Terrains a obstacles").
  */
-export type FieldPresetId = 'classique' | 'chicane' | 'sentinelle' | 'colline' | 'glace' | 'sable';
+export type FieldPresetId = 'classique' | 'chicane' | 'sentinelle' | 'colline' | 'glace' | 'sable' | 'nuit' | 'ruines' | 'verger';
 
 export interface FieldPreset {
   id: FieldPresetId;
@@ -143,6 +143,12 @@ export interface FieldPreset {
   obstacles: ReadonlyArray<{ dx: number; dy: number }>;
   /** true si ce preset a la zone de friction "colline" (toujours centree sur le terrain). */
   hasHill: boolean;
+  /**
+   * true si ce preset dessine la lune et son halo (MatchScene::drawMoon) —
+   * purement decoratif, comme hasHill/drawHill : aucun effet sur les regles,
+   * la friction ni l'IA. Seul "Nuit" le definit pour l'instant.
+   */
+  nightSky: boolean;
   /**
    * Multiplicateur sur BATON_BODY.frictionAir, pour tout le terrain (1 =
    * normal). S'applique en plus de HILL_EXTRA_FRICTION si hasHill est vrai
@@ -167,7 +173,7 @@ export interface FieldPreset {
   /** Multiplicateur sur BATON_BODY.restitution (rebond aux bandes/rochers), pour tout le terrain (1 = normal). */
   restitutionMultiplier: number;
   /** Texture de sol (BootScene) dessinee sur tout le terrain — 'grass' par defaut. */
-  groundTexture: 'grass' | 'ice' | 'sand';
+  groundTexture: 'grass' | 'ice' | 'sand' | 'night';
 }
 
 /** Rayon d'un rocher, en pixels de design — un peu plus large que le roi. */
@@ -223,6 +229,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     id: 'classique',
     obstacles: [],
     hasHill: false,
+    nightSky: false,
     frictionMultiplier: 1,
     restitutionMultiplier: 1,
     groundTexture: 'grass'
@@ -234,6 +241,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
       { dx: -85, dy: -130 }
     ],
     hasHill: false,
+    nightSky: false,
     frictionMultiplier: 1,
     restitutionMultiplier: 1,
     groundTexture: 'grass'
@@ -247,6 +255,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
       { dx: 0, dy: -70 }
     ],
     hasHill: false,
+    nightSky: false,
     frictionMultiplier: 1,
     restitutionMultiplier: 1,
     groundTexture: 'grass'
@@ -255,6 +264,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     id: 'colline',
     obstacles: [],
     hasHill: true,
+    nightSky: false,
     frictionMultiplier: 1,
     restitutionMultiplier: 1,
     groundTexture: 'grass'
@@ -263,6 +273,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     id: 'glace',
     obstacles: [],
     hasHill: false,
+    nightSky: false,
     frictionMultiplier: ICE_FRICTION_MULTIPLIER,
     frictionMultiplierDisque: ICE_FRICTION_MULTIPLIER_DISQUE,
     restitutionMultiplier: ICE_RESTITUTION_MULTIPLIER,
@@ -281,10 +292,57 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
       { dx: -85, dy: -130 }
     ],
     hasHill: false,
+    nightSky: false,
     frictionMultiplier: SAND_FRICTION_MULTIPLIER,
     frictionMultiplierBall: SAND_FRICTION_MULTIPLIER_BALL,
     restitutionMultiplier: SAND_RESTITUTION_MULTIPLIER,
     groundTexture: 'sand'
+  },
+  // Purement decoratif : aucun obstacle, aucune friction modifiee — a tous
+  // egards mecaniques identique a "Classique", seuls le sol et la lune
+  // changent (MatchScene::drawMoon). Aucune verification IA necessaire.
+  nuit: {
+    id: 'nuit',
+    obstacles: [],
+    hasHill: false,
+    nightSky: true,
+    frictionMultiplier: 1,
+    restitutionMultiplier: 1,
+    groundTexture: 'night'
+  },
+  // 3 rochers en triangle asymetrique : ni sur l'axe (Sentinelle), ni
+  // symetrique (Chicane, Sable) — aucune des deux lignes de lancer n'est
+  // equivalente a l'autre, contrairement a tous les presets a obstacles
+  // existants.
+  ruines: {
+    id: 'ruines',
+    obstacles: [
+      { dx: 120, dy: 180 },
+      { dx: -90, dy: -60 },
+      { dx: 30, dy: -220 }
+    ],
+    hasHill: false,
+    nightSky: false,
+    frictionMultiplier: 1,
+    restitutionMultiplier: 1,
+    groundTexture: 'grass'
+  },
+  // 4 rochers en carre resserre autour du centre (rayon ~92px), bien plus
+  // proche que les 4 cactus de Sable (~155px) — dans le meme ordre de
+  // grandeur que les rochers de Sentinelle (70px), deja verifies surs.
+  verger: {
+    id: 'verger',
+    obstacles: [
+      { dx: 65, dy: 65 },
+      { dx: -65, dy: 65 },
+      { dx: 65, dy: -65 },
+      { dx: -65, dy: -65 }
+    ],
+    hasHill: false,
+    nightSky: false,
+    frictionMultiplier: 1,
+    restitutionMultiplier: 1,
+    groundTexture: 'grass'
   }
 };
 

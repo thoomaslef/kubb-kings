@@ -18,6 +18,7 @@ export class BootScene extends Phaser.Scene {
 
   create() {
     this.buildGrassTexture();
+    this.buildNightGrassTexture();
     this.buildIceTexture();
     this.buildSandTexture();
     this.buildBatonTexture();
@@ -95,6 +96,33 @@ export class BootScene extends Phaser.Scene {
         const x = Math.random() * size;
         const y = Math.random() * size;
         g.lineStyle(1, PALETTE.blade, 0.3);
+        g.lineBetween(x, y, x + (Math.random() * 4 - 2), y + 3 + Math.random() * 3);
+      }
+    });
+  }
+
+  /**
+   * Tuile d'herbe nocturne, terrain "Nuit" (remplace la pelouse sur tout le
+   * terrain) : meme squelette que buildGrassTexture, teintes assombries —
+   * purement decoratif (aucun obstacle ni friction modifiee, cf. rules.ts).
+   */
+  private buildNightGrassTexture() {
+    const size = 128;
+    this.texture('night', size, size, (g) => {
+      g.fillStyle(PALETTE.nightGrass, 1);
+      g.fillRect(0, 0, size, size);
+
+      for (let i = 0; i < 320; i += 1) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        g.fillStyle(Math.random() < 0.5 ? PALETTE.nightGrassLight : PALETTE.nightGrassDark, 0.45);
+        g.fillRect(x, y, 2 + Math.random() * 3, 1 + Math.random() * 2);
+      }
+
+      for (let i = 0; i < 110; i += 1) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        g.lineStyle(1, PALETTE.nightBlade, 0.3);
         g.lineBetween(x, y, x + (Math.random() * 4 - 2), y + 3 + Math.random() * 3);
       }
     });

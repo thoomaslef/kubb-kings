@@ -57,6 +57,17 @@ export const PALETTE = {
   sand: 0xd9c48a,
   sandLight: 0xecdcac,
   sandDark: 0xb89f5f,
+  /**
+   * Nuit (terrain "Nuit") : remplace la pelouse sur tout le terrain, purement
+   * decoratif (memes obstacles/friction que "Classique" — aucun, cf.
+   * rules.ts::FIELD_PRESETS). Lune et son halo, dessines par MatchScene::drawMoon.
+   */
+  nightGrass: 0x18271f,
+  nightGrassLight: 0x22392c,
+  nightGrassDark: 0x0f1a14,
+  nightBlade: 0x2f4d3a,
+  moon: 0xeef1f5,
+  moonGlow: 0xb9c8de,
   /** Cactus (obstacles du terrain "Sable"), a la place des rochers habituels. */
   cactus: 0x4b7a4a,
   cactusLight: 0x6ea068,

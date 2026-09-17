@@ -68,6 +68,12 @@ const fr: Record<string, string> = {
   'terrain.glace.hint': 'Terrain glissant : le tir va bien plus loin, et rebondit plus fort sur les bandes',
   'terrain.sable.label': 'Sable',
   'terrain.sable.hint': 'Terrain qui freine, surtout la boule, avec 4 cactus symetriques : rebonds plus mous sur les bandes',
+  'terrain.nuit.label': 'Nuit',
+  'terrain.nuit.hint': "Meme terrain que Classique, juste l'ambiance : aucun obstacle, aucune friction modifiee",
+  'terrain.ruines.label': 'Ruines',
+  'terrain.ruines.hint': 'Trois rochers en triangle asymetrique : les deux lignes de lancer ne se valent pas',
+  'terrain.verger.label': 'Verger',
+  'terrain.verger.hint': 'Quatre rochers resserres pres du centre : le passage central se joue au plus pres',
 
   // ---- skin (theme.ts)
   'skin.bois.label': 'Bois',
@@ -423,6 +429,12 @@ const en: Record<string, string> = {
   'terrain.glace.hint': 'Slippery ground: throws go much farther, and bounce harder off the walls',
   'terrain.sable.label': 'Sand',
   'terrain.sable.hint': 'Ground that slows you down, especially the ball, with 4 symmetric cacti: softer bounces off the walls',
+  'terrain.nuit.label': 'Night',
+  'terrain.nuit.hint': 'Same field as Classic, just the mood: no obstacles, no friction change',
+  'terrain.ruines.label': 'Ruins',
+  'terrain.ruines.hint': "Three rocks in an asymmetric triangle: the two throwing lines aren't equal",
+  'terrain.verger.label': 'Orchard',
+  'terrain.verger.hint': 'Four rocks clustered near the center: the middle lane is fought over up close',
 
   // ---- skin
   'skin.bois.label': 'Wood',

@@ -232,11 +232,11 @@ comptent dans le total de 12 par equipe (`MatchScene.beginOpeningThrow` / `resol
 
 ## Terrains a obstacles
 
-Six presets, choisis au menu, dans [`src/game/rules.ts`](src/game/rules.ts)
+Neuf presets, choisis au menu, dans [`src/game/rules.ts`](src/game/rules.ts)
 (`FIELD_PRESETS`) : le terrain (`FIELD`, l&apos;espacement des kubbs, les hitboxes) ne
 change jamais — seuls des rochers statiques s&apos;ajoutent, definis en decalage
 (dx, dy) depuis le centre (sauf "Colline", "Glace" et "Sable", differentes —
-voir plus bas).
+voir plus bas ; "Nuit" n&apos;en ajoute aucun).
 
 | Preset         | Effet                                                          | Niveau requis |
 | -------------- | ------------------------------------------------------------------ | :-----------: |
@@ -246,8 +246,11 @@ voir plus bas).
 | **Colline**    | Un monticule au centre (zone de friction accrue, pas un rocher) : le traverser use plus de vitesse, il faut y mettre plus de puissance pour ressortir avec assez de force — cf. plus bas | 9 |
 | **Glace**      | Terrain entier a friction reduite et rebonds plus francs : le baton glisse plus loin et rebondit plus fort sur les bandes — cf. plus bas | 13 |
 | **Sable**      | Terrain entier a friction accrue et rebonds plus mous, la boule y patine bien plus que le baton, plus 4 cactus symetriques — cf. plus bas | 15 |
+| **Nuit**       | Aucun (identique a Classique) : juste l&apos;ambiance, palette sombre et lune — cf. plus bas | 26 |
+| **Ruines**     | Trois rochers en triangle ASYMETRIQUE (ni sur l&apos;axe, ni symetrique) : les deux lignes de lancer ne se valent pas — cf. plus bas | 28 |
+| **Verger**     | Quatre rochers en carre resserre pres du centre (~92px, contre ~155px pour Sable) : le passage central se joue de bien plus pres — cf. plus bas | 30 |
 
-Seul "Classique" reste disponible d&apos;office : les 5 autres sont desormais des
+Seul "Classique" reste disponible d&apos;office : les 8 autres sont desormais des
 articles de boutique (`src/game/shop.ts`, categorie `'terrain'`) — niveau ET pieces
 necessaires pour les acheter, cf. section "Boutique" plus bas.
 
@@ -343,6 +346,31 @@ chaque cadran a egale distance du centre (symetrie confirmee par calcul), un bat
 droit sur un cactus rebondit reellement dessus (inversion de vitesse mesuree), 6 parties
 completes sur Sable (Facile/Moyen/Difficile x vent on/off) et 5 parties sur les autres
 terrains (Difficile, vent) — toutes sans erreur console.
+
+**Nuit** est purement decorative : `FIELD_PRESETS.nuit` reprend EXACTEMENT les memes
+valeurs que "Classique" (`obstacles: []`, `frictionMultiplier`/`restitutionMultiplier`
+a 1) — seuls `groundTexture: 'night'` (tuile d&apos;herbe sombre,
+`BootScene::buildNightGrassTexture`) et `nightSky: true` (lune et son halo,
+`MatchScene::drawMoon`, meme principe decoratif que `drawHill` pour "Colline")
+different. `AiBoard` ne recevant jamais l&apos;un ou l&apos;autre, aucune verification IA
+n&apos;etait necessaire — uniquement une verification en navigateur (lune visible dans
+le coin superieur droit, terrain fonctionnellement identique a Classique, zero erreur).
+
+**Ruines** et **Verger** ajoutent des rochers a des positions nouvelles : Ruines en
+triangle asymetrique (aucun des trois cotes du terrain n&apos;etant equivalent aux
+autres, contrairement a Chicane ou Sentinelle), Verger en carre resserre autour du roi
+(~92px du centre, entre les 70px de Sentinelle et les ~155px de Sable — donc dans une
+plage de distances deja eprouvee, pas un nouvel extreme). `AiBoard.obstacles` change
+donc pour ces deux presets : reverification complete plutot que de supposer sur, meme
+si `curvedKingDanger` (la garde-fou principale contre un suicide) ignore deja
+volontairement tout rocher par construction — cf. plus haut. 1224 tirs decides
+(2 presets x 3 niveaux x 17 etats de vent x 6 configurations de kubbs adverses encore
+debout x kingTargetable vrai/faux), chacun rejoue 20 fois avec le vrai tirage aleatoire
+du lancer — 24&nbsp;480 trajectoires reelles verifiees. Zero suicide, zero tir invalide.
+Puis en navigateur reel (vraie physique Matter) : positions de rochers exactement
+celles attendues pour les deux presets (3 en triangle pour Ruines, 4 en carre pour
+Verger, verifie par calcul et par capture d&apos;ecran), lancer reel sur chacun des 3
+nouveaux terrains — zero erreur console.
 
 ---
 

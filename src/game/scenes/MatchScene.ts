@@ -1296,6 +1296,8 @@ export class MatchScene extends Phaser.Scene {
     // Colline : dessinee avant tout le reste (traces de tonte, lignes...),
     // qui restent visibles par-dessus, comme un vrai relief sous le terrain.
     if (FIELD_PRESETS[this.fieldPreset].hasHill) this.drawHill(g);
+    // Nuit : la lune, dans un coin du ciel — purement decoratif.
+    if (FIELD_PRESETS[this.fieldPreset].nightSky) this.drawMoon(g);
 
     // Traces de tonte : bandes alternees, juste assez marquees pour se voir.
     for (let y = FIELD.y; y < FIELD.y + FIELD.height; y += 128) {
@@ -1345,6 +1347,27 @@ export class MatchScene extends Phaser.Scene {
     }
     g.lineStyle(2, PALETTE.hillDark, 0.4);
     g.strokeCircle(FIELD_CENTER_X, FIELD_CENTER_Y, HILL_RADIUS);
+  }
+
+  /**
+   * Rendu du terrain "Nuit" : une lune et son halo, dans le coin superieur
+   * droit du terrain — purement decoratif (FieldPreset.nightSky), aucun
+   * effet sur les regles, la friction ni l'IA (contrairement a "Colline").
+   */
+  private drawMoon(g: Phaser.GameObjects.Graphics) {
+    const cx = FIELD.x + FIELD.width - 90;
+    const cy = FIELD.y + 90;
+    const rings = 5;
+    for (let i = rings; i >= 1; i -= 1) {
+      g.fillStyle(PALETTE.moonGlow, 0.05);
+      g.fillCircle(cx, cy, 30 + (i / rings) * 70);
+    }
+    g.fillStyle(PALETTE.moon, 0.95);
+    g.fillCircle(cx, cy, 26);
+    // Cratere : un croissant plus sombre, decale du centre du disque.
+    g.fillStyle(PALETTE.moonGlow, 0.5);
+    g.fillCircle(cx - 8, cy - 6, 7);
+    g.fillCircle(cx + 6, cy + 9, 4);
   }
 
   /** Assombrit les bords : donne du volume a une vue de dessus tres plate. */
