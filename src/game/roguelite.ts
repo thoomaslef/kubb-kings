@@ -32,12 +32,44 @@ export interface Stage {
   fieldPreset: FieldPresetId;
 }
 
+/**
+ * 25 manches, en 4 paliers : la difficulte (3 niveaux seulement, ai.ts) monte
+ * vite, puis la variete de terrain prend le relais pour faire durer la
+ * montee en puissance jusqu'au bout.
+ * - Facile (1-3) : premier contact, terrain nu puis 2 premiers obstacles.
+ * - Moyen (4-8) : meme progression d'obstacles, plus Colline et Nuit.
+ * - Difficile, 1er passage (9-19) : chaque terrain une fois, du plus simple
+ *   au plus corse (Sable, qui cumule obstacles ET friction modifiee, ferme
+ *   la marche — cf. README, section "Terrains a obstacles").
+ * - Difficile, remix final (20-25) : les terrains les plus techniques
+ *   reviennent, Sable en toute derniere manche.
+ */
 export const LADDER: readonly Stage[] = [
   { difficulty: 'facile', fieldPreset: 'classique' },
+  { difficulty: 'facile', fieldPreset: 'chicane' },
+  { difficulty: 'facile', fieldPreset: 'sentinelle' },
   { difficulty: 'moyen', fieldPreset: 'classique' },
   { difficulty: 'moyen', fieldPreset: 'chicane' },
+  { difficulty: 'moyen', fieldPreset: 'sentinelle' },
+  { difficulty: 'moyen', fieldPreset: 'colline' },
+  { difficulty: 'moyen', fieldPreset: 'nuit' },
+  { difficulty: 'difficile', fieldPreset: 'classique' },
+  { difficulty: 'difficile', fieldPreset: 'nuit' },
   { difficulty: 'difficile', fieldPreset: 'chicane' },
-  { difficulty: 'difficile', fieldPreset: 'sentinelle' }
+  { difficulty: 'difficile', fieldPreset: 'sentinelle' },
+  { difficulty: 'difficile', fieldPreset: 'colline' },
+  { difficulty: 'difficile', fieldPreset: 'glace' },
+  { difficulty: 'difficile', fieldPreset: 'ruines' },
+  { difficulty: 'difficile', fieldPreset: 'verger' },
+  { difficulty: 'difficile', fieldPreset: 'boue' },
+  { difficulty: 'difficile', fieldPreset: 'riviere' },
+  { difficulty: 'difficile', fieldPreset: 'sable' },
+  { difficulty: 'difficile', fieldPreset: 'verger' },
+  { difficulty: 'difficile', fieldPreset: 'boue' },
+  { difficulty: 'difficile', fieldPreset: 'ruines' },
+  { difficulty: 'difficile', fieldPreset: 'riviere' },
+  { difficulty: 'difficile', fieldPreset: 'glace' },
+  { difficulty: 'difficile', fieldPreset: 'sable' }
 ];
 
 /**

@@ -1051,21 +1051,26 @@ niveaux entre eux, pas pour deviner qui va gagner une vraie partie.
 ## Mode Defi (roguelite)
 
 [`src/game/roguelite.ts`](src/game/roguelite.ts), module pur comme `ai.ts` et
-`tutorial.ts` : une echelle de 5 manches contre l'IA, chacune plus dure que la
-precedente, avec un bonus au choix apres chaque victoire.
+`tutorial.ts` : une echelle de 25 manches contre l'IA, en 4 paliers — la difficulte
+(3 niveaux seulement, `ai.ts`) monte vite, puis la variete de terrain prend le relais
+pour faire durer la montee en puissance jusqu'au bout :
 
-| Manche | Niveau IA | Terrain    |
-| ------ | --------- | ---------- |
-| 1      | Facile    | Classique  |
-| 2      | Moyen     | Classique  |
-| 3      | Moyen     | Chicane    |
-| 4      | Difficile | Chicane    |
-| 5      | Difficile | Sentinelle |
+| Manches | Niveau IA | Terrains |
+| ------- | --------- | -------- |
+| 1-3     | Facile    | Classique, Chicane, Sentinelle |
+| 4-8     | Moyen     | Classique, Chicane, Sentinelle, Colline, Nuit |
+| 9-19    | Difficile | Chaque terrain une fois (Classique, Nuit, Chicane, Sentinelle, Colline, Glace, Ruines, Verger, Boue, Riviere, **Sable** en dernier — le seul a cumuler obstacles ET friction modifiee, cf. section "Terrains a obstacles") |
+| 20-25   | Difficile | Remix des terrains les plus techniques (Verger, Boue, Ruines, Riviere, Glace, **Sable** en toute derniere manche) |
 
 Seuls le niveau et le terrain changent d'une manche a l'autre : les regles et
-l'equilibrage restent ceux, deja calibres, du mode solo. **Une defaite, un match nul ou
-le timeout terminent la run immediatement** — c'est le ressort roguelite : pas de
-sauvegarde en cours de route.
+l'equilibrage restent ceux, deja calibres, du mode solo — chaque paire (niveau, terrain)
+de l'echelle a deja ete verifiee independamment lors de l'ajout de ce terrain (cf. les
+sections dediees plus haut) : allonger l'echelle a 25 manches ne fait que recombiner des
+paires deja sures, sans exposer l'IA a une seule situation nouvelle — aucune simulation
+supplementaire n'etait donc necessaire, seulement une verification en navigateur (menu
+annoncant bien 25 manches, bandeau HUD "Manche 25/25" en derniere manche, detection
+correcte de fin de run). **Une defaite, un match nul ou le timeout terminent la run
+immediatement** — c'est le ressort roguelite : pas de sauvegarde en cours de route.
 
 **Trois bonus**, chacun applicable au joueur uniquement (jamais a l'IA) :
 
@@ -1076,8 +1081,9 @@ sauvegarde en cours de route.
 | Second souffle         | Le premier lancer qui ne renverse rien n'est pas compte  |
 
 Un seul bonus est propose deux fois : `pickPerkChoices` tire deux options parmi ceux non
-encore debloques. Une fois les trois acquis, l'ecran de choix n'a plus rien a offrir et
-la manche suivante s'enchaine directement, sans faux choix a l'ecran.
+encore debloques. Une fois les trois acquis (des la 3e ou 4e manche gagnee, typiquement),
+l'ecran de choix n'a plus rien a offrir et la manche suivante s'enchaine directement,
+sans faux choix a l'ecran — ce qui concerne donc la majorite des 25 manches de l'echelle.
 
 La meilleure serie (nombre de manches franchies) est retenue en `localStorage`, affichee
 au menu, et proposee de nouveau a la prochaine run — sur le meme modele que la
