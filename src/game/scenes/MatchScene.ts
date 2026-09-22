@@ -1298,7 +1298,11 @@ export class MatchScene extends Phaser.Scene {
 
     const dirX = Math.cos(this.aimAngle);
     const dirY = Math.sin(this.aimAngle);
-    const length = 90 + this.aimPower * 430;
+    // Longueur divisee par 2 par rapport a l'origine (etait 90 + power*430) :
+    // a pleine charge, la fleche laissait deviner la trajectoire bien trop
+    // clairement. Purement visuel — aimPower/aimAngle, donc le lancer reel,
+    // sont inchanges ; l'IA ne lit jamais aimGfx.
+    const length = 45 + this.aimPower * 215;
 
     g.lineStyle(4, color, 0.85);
     for (let d = 34; d < length; d += 26) {
