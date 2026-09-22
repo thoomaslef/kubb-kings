@@ -1051,26 +1051,35 @@ niveaux entre eux, pas pour deviner qui va gagner une vraie partie.
 ## Mode Defi (roguelite)
 
 [`src/game/roguelite.ts`](src/game/roguelite.ts), module pur comme `ai.ts` et
-`tutorial.ts` : une echelle de 25 manches contre l'IA, en 4 paliers — la difficulte
-(3 niveaux seulement, `ai.ts`) monte vite, puis la variete de terrain prend le relais
-pour faire durer la montee en puissance jusqu'au bout :
+`tutorial.ts` : une echelle de 30 manches contre l'IA, en 3 paliers de 10 — un palier
+par niveau d'IA (3 niveaux seulement, `ai.ts`), la variete de terrain portant a elle
+seule la progression a l'interieur de chaque palier :
 
 | Manches | Niveau IA | Terrains |
 | ------- | --------- | -------- |
-| 1-3     | Facile    | Classique, Chicane, Sentinelle |
-| 4-8     | Moyen     | Classique, Chicane, Sentinelle, Colline, Nuit |
-| 9-19    | Difficile | Chaque terrain une fois (Classique, Nuit, Chicane, Sentinelle, Colline, Glace, Ruines, Verger, Boue, Riviere, **Sable** en dernier — le seul a cumuler obstacles ET friction modifiee, cf. section "Terrains a obstacles") |
-| 20-25   | Difficile | Remix des terrains les plus techniques (Verger, Boue, Ruines, Riviere, Glace, **Sable** en toute derniere manche) |
+| 1-10    | Facile    | Les 11 terrains sauf Riviere, ordre croissant en complexite, **Sable** en dernier |
+| 11-20   | Moyen     | Les 11 terrains sauf Boue, meme ordre, **Sable** en dernier |
+| 21-30   | Difficile | Les 11 terrains sauf Classique (plus de manche "a nu" a ce niveau), **Sable** en dernier |
+
+Onze terrains existent pour dix manches par palier (`rules.ts::FIELD_PRESETS`) : chaque
+palier en omet donc un, un terrain different a chaque fois — les trois paliers ne se
+ressemblent jamais tout a fait, et **Sable** (le seul a cumuler obstacles ET friction
+modifiee, cf. section "Terrains a obstacles") ferme systematiquement la marche.
 
 Seuls le niveau et le terrain changent d'une manche a l'autre : les regles et
-l'equilibrage restent ceux, deja calibres, du mode solo — chaque paire (niveau, terrain)
-de l'echelle a deja ete verifiee independamment lors de l'ajout de ce terrain (cf. les
-sections dediees plus haut) : allonger l'echelle a 25 manches ne fait que recombiner des
-paires deja sures, sans exposer l'IA a une seule situation nouvelle — aucune simulation
-supplementaire n'etait donc necessaire, seulement une verification en navigateur (menu
-annoncant bien 25 manches, bandeau HUD "Manche 25/25" en derniere manche, detection
-correcte de fin de run). **Une defaite, un match nul ou le timeout terminent la run
-immediatement** — c'est le ressort roguelite : pas de sauvegarde en cours de route.
+l'equilibrage restent ceux, deja calibres, du mode solo. Mieux : chaque ajout de terrain
+a toujours ete verifie par simulation headless contre **les trois niveaux de difficulte a
+la fois** (`Object.keys(AI_PROFILES)` dans chaque script de verification, cf. les
+sections dediees plus haut) — jamais seulement celui auquel l'ancienne echelle
+l'assignait a l'epoque. Reorganiser quel terrain va avec quel niveau, ou en changer les
+proportions (5/8/17 a l'origine, puis 3/5/22 a 25 manches, puis 10/10/10 ici), ne fait
+donc que recombiner des paires (niveau, terrain) deja sures individuellement, sans
+exposer l'IA a une seule situation nouvelle — aucune simulation supplementaire n'etait
+donc necessaire, seulement une verification en navigateur (menu annoncant bien 30
+manches, bandeau HUD "Manche 21/30" a l'entree du palier Difficile, "Manche 30/30" en
+derniere manche, detection correcte de fin de run). **Une defaite, un match nul ou le
+timeout terminent la run immediatement** — c'est le ressort roguelite : pas de
+sauvegarde en cours de route.
 
 **Treize bonus**, chacun applicable au joueur uniquement (jamais a l'IA) :
 
@@ -1100,7 +1109,7 @@ scene), l'IA ne sait meme pas que ce bonus existe.
 
 Un seul bonus est propose deux fois : `pickPerkChoices` tire deux options parmi ceux non
 encore debloques. Avec treize bonus a decouvrir, l'ecran de choix continue de proposer
-de vraies options sur la quasi-totalite des 25 manches de l'echelle ; ce n'est qu'une
+de vraies options sur la quasi-totalite des 30 manches de l'echelle ; ce n'est qu'une
 fois les treize acquis que la manche suivante s'enchaine directement, sans faux choix a
 l'ecran.
 

@@ -74,42 +74,59 @@ export interface Stage {
 }
 
 /**
- * 25 manches, en 4 paliers : la difficulte (3 niveaux seulement, ai.ts) monte
- * vite, puis la variete de terrain prend le relais pour faire durer la
- * montee en puissance jusqu'au bout.
- * - Facile (1-3) : premier contact, terrain nu puis 2 premiers obstacles.
- * - Moyen (4-8) : meme progression d'obstacles, plus Colline et Nuit.
- * - Difficile, 1er passage (9-19) : chaque terrain une fois, du plus simple
- *   au plus corse (Sable, qui cumule obstacles ET friction modifiee, ferme
- *   la marche — cf. README, section "Terrains a obstacles").
- * - Difficile, remix final (20-25) : les terrains les plus techniques
- *   reviennent, Sable en toute derniere manche.
+ * 30 manches, en 3 paliers de 10 : dix manches par niveau d'IA (ai.ts n'en a
+ * que trois), chacune sur un terrain different — la difficulte ne monte
+ * donc plus qu'une seule fois tous les 10 manches, et c'est la variete de
+ * terrain qui porte la progression a l'interieur de chaque palier.
+ *
+ * Seuls 11 terrains existent (rules.ts::FIELD_PRESETS) pour 10 manches par
+ * palier : chaque palier en omet donc un — un terrain different a chaque
+ * fois, pour que les trois paliers ne se ressemblent jamais tout a fait.
+ * Ordre croissant en complexite (terrain nu, puis obstacles, puis frictions
+ * modifiees), Sable (qui cumule les deux) en derniere manche de chaque
+ * palier :
+ * - Facile (1-10) : omet Riviere.
+ * - Moyen (11-20) : omet Boue.
+ * - Difficile (21-30) : omet Classique — a ce niveau, plus de manche "a nu".
+ *
+ * Aucune de ces combinaisons (niveau IA x terrain) n'est nouvelle pour
+ * l'IA : chaque ajout de terrain (cf. verify-boue.mjs, verify-terrains.mjs,
+ * verify-riviere.mjs dans l'historique de simulation) a toujours ete
+ * verifie contre LES TROIS niveaux de difficulte a la fois, jamais
+ * seulement celui que l'ancienne echelle lui assignait — reorganiser quel
+ * terrain va avec quel niveau ne fait donc, ici aussi, que recombiner des
+ * paires deja sures.
  */
 export const LADDER: readonly Stage[] = [
   { difficulty: 'facile', fieldPreset: 'classique' },
   { difficulty: 'facile', fieldPreset: 'chicane' },
   { difficulty: 'facile', fieldPreset: 'sentinelle' },
+  { difficulty: 'facile', fieldPreset: 'colline' },
+  { difficulty: 'facile', fieldPreset: 'nuit' },
+  { difficulty: 'facile', fieldPreset: 'glace' },
+  { difficulty: 'facile', fieldPreset: 'ruines' },
+  { difficulty: 'facile', fieldPreset: 'verger' },
+  { difficulty: 'facile', fieldPreset: 'boue' },
+  { difficulty: 'facile', fieldPreset: 'sable' },
   { difficulty: 'moyen', fieldPreset: 'classique' },
   { difficulty: 'moyen', fieldPreset: 'chicane' },
   { difficulty: 'moyen', fieldPreset: 'sentinelle' },
   { difficulty: 'moyen', fieldPreset: 'colline' },
   { difficulty: 'moyen', fieldPreset: 'nuit' },
-  { difficulty: 'difficile', fieldPreset: 'classique' },
-  { difficulty: 'difficile', fieldPreset: 'nuit' },
+  { difficulty: 'moyen', fieldPreset: 'glace' },
+  { difficulty: 'moyen', fieldPreset: 'ruines' },
+  { difficulty: 'moyen', fieldPreset: 'verger' },
+  { difficulty: 'moyen', fieldPreset: 'riviere' },
+  { difficulty: 'moyen', fieldPreset: 'sable' },
   { difficulty: 'difficile', fieldPreset: 'chicane' },
   { difficulty: 'difficile', fieldPreset: 'sentinelle' },
   { difficulty: 'difficile', fieldPreset: 'colline' },
+  { difficulty: 'difficile', fieldPreset: 'nuit' },
   { difficulty: 'difficile', fieldPreset: 'glace' },
   { difficulty: 'difficile', fieldPreset: 'ruines' },
   { difficulty: 'difficile', fieldPreset: 'verger' },
   { difficulty: 'difficile', fieldPreset: 'boue' },
   { difficulty: 'difficile', fieldPreset: 'riviere' },
-  { difficulty: 'difficile', fieldPreset: 'sable' },
-  { difficulty: 'difficile', fieldPreset: 'verger' },
-  { difficulty: 'difficile', fieldPreset: 'boue' },
-  { difficulty: 'difficile', fieldPreset: 'ruines' },
-  { difficulty: 'difficile', fieldPreset: 'riviere' },
-  { difficulty: 'difficile', fieldPreset: 'glace' },
   { difficulty: 'difficile', fieldPreset: 'sable' }
 ];
 
