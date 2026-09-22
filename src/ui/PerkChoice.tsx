@@ -1,13 +1,29 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
-import { LADDER, LANCER_BONUS_THROWS, BRAS_VIF_MULTIPLIER, pickPerkChoices, type PerkId } from '../game/roguelite';
+import {
+  LADDER,
+  LANCER_BONUS_THROWS,
+  BRAS_VIF_MULTIPLIER,
+  JAUGE_BASSE_MIN_POWER,
+  POIGNE_FERME_THRESHOLD_MULTIPLIER,
+  BOURSE_PLEINE_COINS_MULTIPLIER,
+  ETUDE_RAPIDE_XP_MULTIPLIER,
+  LONGUE_HALEINE_BONUS_MS,
+  pickPerkChoices,
+  type PerkId
+} from '../game/roguelite';
 import { useT } from '../i18n/useT';
 
 /** Parametres d'interpolation du texte de description (perk.<id>.description). */
 function descParams(id: PerkId): Record<string, number> | undefined {
   if (id === 'lancer-bonus') return { n: LANCER_BONUS_THROWS };
   if (id === 'bras-vif') return { pct: Math.round((BRAS_VIF_MULTIPLIER - 1) * 100) };
+  if (id === 'jauge-basse') return { pct: Math.round(JAUGE_BASSE_MIN_POWER * 100) };
+  if (id === 'poigne-ferme') return { pct: Math.round((1 - POIGNE_FERME_THRESHOLD_MULTIPLIER) * 100) };
+  if (id === 'bourse-pleine') return { pct: Math.round((BOURSE_PLEINE_COINS_MULTIPLIER - 1) * 100) };
+  if (id === 'etude-rapide') return { pct: Math.round((ETUDE_RAPIDE_XP_MULTIPLIER - 1) * 100) };
+  if (id === 'longue-haleine') return { s: Math.round(LONGUE_HALEINE_BONUS_MS / 1000) };
   return undefined;
 }
 

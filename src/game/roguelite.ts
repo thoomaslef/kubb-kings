@@ -11,15 +11,56 @@ import type { FieldPresetId } from './rules';
  * store ni a la scene, pour rester lisible et testable seul.
  */
 
-export type PerkId = 'lancer-bonus' | 'bras-vif' | 'second-souffle';
+export type PerkId =
+  | 'lancer-bonus'
+  | 'bras-vif'
+  | 'second-souffle'
+  | 'oeil-de-lynx'
+  | 'sang-froid'
+  | 'jauge-basse'
+  | 'poigne-ferme'
+  | 'bourse-pleine'
+  | 'etude-rapide'
+  | 'sursis'
+  | 'longue-haleine'
+  | 'renfort'
+  | 'calme-plat';
 
 /** Libelles et descriptions : src/i18n/dictionaries.ts (perk.<id>.label / .description). */
-export const PERK_IDS: readonly PerkId[] = ['lancer-bonus', 'bras-vif', 'second-souffle'];
+export const PERK_IDS: readonly PerkId[] = [
+  'lancer-bonus',
+  'bras-vif',
+  'second-souffle',
+  'oeil-de-lynx',
+  'sang-froid',
+  'jauge-basse',
+  'poigne-ferme',
+  'bourse-pleine',
+  'etude-rapide',
+  'sursis',
+  'longue-haleine',
+  'renfort',
+  'calme-plat'
+];
 
 /** Lancers supplementaires offerts par "Bras infatigable". */
 export const LANCER_BONUS_THROWS = 2;
 /** Multiplicateur de puissance offert par "Bras vif". */
 export const BRAS_VIF_MULTIPLIER = 1.15;
+/** Multiplicateur de la deviation aleatoire des lancers, offert par "Oeil de lynx". */
+export const OEIL_DE_LYNX_DEVIATION_MULTIPLIER = 0.5;
+/** Multiplicateur de l'effet du vent sur les lancers, offert par "Sang-froid". */
+export const SANG_FROID_WIND_MULTIPLIER = 0.5;
+/** Puissance minimale garantie d'un lancer, offerte par "Jauge basse". */
+export const JAUGE_BASSE_MIN_POWER = 0.5;
+/** Multiplicateur du seuil de vitesse necessaire pour renverser un kubb ou le roi, offert par "Poigne ferme". */
+export const POIGNE_FERME_THRESHOLD_MULTIPLIER = 0.85;
+/** Multiplicateur des pieces gagnees sur la manche, offert par "Bourse pleine". */
+export const BOURSE_PLEINE_COINS_MULTIPLIER = 1.5;
+/** Multiplicateur de l'XP gagnee sur la manche, offert par "Etude rapide". */
+export const ETUDE_RAPIDE_XP_MULTIPLIER = 1.5;
+/** Temps supplementaire (ms) offert par "Longue haleine". */
+export const LONGUE_HALEINE_BONUS_MS = 30000;
 
 /**
  * Echelle des manches. Seuls le niveau de l'IA et le terrain changent d'une
@@ -74,7 +115,7 @@ export const LADDER: readonly Stage[] = [
 
 /**
  * Deux bonus a proposer, tires parmi ceux que le joueur n'a pas encore.
- * Vide si les trois sont deja debloques — l'appelant doit alors avancer
+ * Vide si tous sont deja debloques — l'appelant doit alors avancer
  * directement, sans ecran de choix.
  */
 export function pickPerkChoices(owned: readonly PerkId[], rng: () => number = Math.random): PerkId[] {

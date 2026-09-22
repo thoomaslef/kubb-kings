@@ -1072,18 +1072,37 @@ annoncant bien 25 manches, bandeau HUD "Manche 25/25" en derniere manche, detect
 correcte de fin de run). **Une defaite, un match nul ou le timeout terminent la run
 immediatement** — c'est le ressort roguelite : pas de sauvegarde en cours de route.
 
-**Trois bonus**, chacun applicable au joueur uniquement (jamais a l'IA) :
+**Treize bonus**, chacun applicable au joueur uniquement (jamais a l'IA) :
 
-| Bonus                | Effet                                                    |
-| --------------------- | -------------------------------------------------------- |
-| Bras infatigable      | +2 lancers sur toute la manche                            |
-| Bras vif              | +15% de puissance au bout du glissement                   |
-| Second souffle         | Le premier lancer qui ne renverse rien n'est pas compte  |
+| Bonus             | Effet                                                                     |
+| ------------------ | -------------------------------------------------------------------------- |
+| Bras infatigable   | +2 lancers sur toute la manche                                             |
+| Bras vif           | +15% de puissance au bout du glissement                                    |
+| Second souffle     | Le premier lancer qui ne renverse rien n'est pas compte                    |
+| Oeil de lynx       | Deviation aleatoire des lancers reduite de moitie                          |
+| Sang-froid         | Effet du vent sur les lancers reduit de moitie                             |
+| Jauge basse        | Un lancer part toujours a au moins 50% de puissance                        |
+| Poigne ferme       | Seuil de chute des kubbs et du roi reduit de 15% pour les coups du joueur  |
+| Bourse pleine      | +50% de pieces gagnees sur la manche                                       |
+| Etude rapide       | +50% d'XP gagnee sur la manche                                             |
+| Sursis             | Une fois par run, un roi touche trop tot ne finit pas la run : la manche est rejouee |
+| Longue haleine     | +30 secondes sur l'horloge de la manche                                    |
+| Renfort            | Un kubb adverse au hasard est deja abattu avant le premier lancer          |
+| Calme plat         | La meteo (vent) est desactivee pour la manche, si elle etait active        |
+
+Chaque nouveau bonus modifie un reglage deja existant du meme sous-systeme qu'un des
+trois premiers (deviation/vent/seuil de chute deja lus par `ai.ts` pour l'IA, mais
+jamais pour le joueur ; horloge/recompenses deja calculees ailleurs) — aucun n'introduit
+de nouvelle mecanique de jeu, donc aucun ne touche a un seul reglage de securite de
+l'IA. Seul **Sursis** modifie le deroulement d'une manche (elle est rejouee au lieu de
+finir la run) : purement cote scene (`MatchScene::resolveKingHit`, redemarrage de la
+scene), l'IA ne sait meme pas que ce bonus existe.
 
 Un seul bonus est propose deux fois : `pickPerkChoices` tire deux options parmi ceux non
-encore debloques. Une fois les trois acquis (des la 3e ou 4e manche gagnee, typiquement),
-l'ecran de choix n'a plus rien a offrir et la manche suivante s'enchaine directement,
-sans faux choix a l'ecran — ce qui concerne donc la majorite des 25 manches de l'echelle.
+encore debloques. Avec treize bonus a decouvrir, l'ecran de choix continue de proposer
+de vraies options sur la quasi-totalite des 25 manches de l'echelle ; ce n'est qu'une
+fois les treize acquis que la manche suivante s'enchaine directement, sans faux choix a
+l'ecran.
 
 La meilleure serie (nombre de manches franchies) est retenue en `localStorage`, affichee
 au menu, et proposee de nouveau a la prochaine run — sur le meme modele que la

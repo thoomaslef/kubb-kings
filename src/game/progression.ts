@@ -128,8 +128,15 @@ export interface XpAward {
 /**
  * Calcule le gain d'XP d'un match et le nouvel etat de progression. Pure :
  * ne touche pas au stockage (voir progressionPersistence.ts / useGameStore).
+ * `multiplier` : bonus "Etude rapide" (Defi, roguelite.ts), 1 hors Defi —
+ * ne s'applique qu'a l'XP de performance, jamais aux succes (deja un bonus
+ * flat independant de la manche, meme discipline que computeCoinsAward).
  */
-export function computeXpAward(stats: MatchXpStats, before: ProgressionState): { award: XpAward; after: ProgressionState } {
+export function computeXpAward(
+  stats: MatchXpStats,
+  before: ProgressionState,
+  multiplier = 1
+): { award: XpAward; after: ProgressionState } {
   const win = stats.won ? XP_RULES.win : 0;
   const perfectWin = stats.won && stats.perfectWin ? XP_RULES.perfectWin : 0;
   const precision = stats.precisionHits * XP_RULES.precisionHit;
@@ -140,7 +147,7 @@ export function computeXpAward(stats: MatchXpStats, before: ProgressionState): {
   const streak = stats.won ? Math.min(winStreakAfter, XP_RULES.streakCap) * XP_RULES.streakPerWin : 0;
   const achievements = stats.achievementXp;
 
-  const total = win + perfectWin + precision + difficult + multi + streak + achievements;
+  const total = Math.round((win + perfectWin + precision + difficult + multi + streak) * multiplier) + achievements;
   const levelBefore = levelFromXp(before.totalXp).level;
   const totalXpAfter = before.totalXp + total;
   const levelAfter = levelFromXp(totalXpAfter).level;

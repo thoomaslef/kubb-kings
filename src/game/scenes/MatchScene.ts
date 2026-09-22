@@ -16,7 +16,19 @@ import { BATON_BODY, WALL_BODY } from '../physics/matterConfig';
 import { Juice } from '../juice';
 import { PALETTE, BORDER_WIDTH } from '../theme';
 import { AI_PROFILES, AI_TEAM, decideApproachThrow, decideThrow, type AiProfile } from '../ai';
-import { BRAS_VIF_MULTIPLIER, LADDER, LANCER_BONUS_THROWS, type PerkId } from '../roguelite';
+import {
+  BOURSE_PLEINE_COINS_MULTIPLIER,
+  BRAS_VIF_MULTIPLIER,
+  ETUDE_RAPIDE_XP_MULTIPLIER,
+  JAUGE_BASSE_MIN_POWER,
+  LADDER,
+  LANCER_BONUS_THROWS,
+  LONGUE_HALEINE_BONUS_MS,
+  OEIL_DE_LYNX_DEVIATION_MULTIPLIER,
+  POIGNE_FERME_THRESHOLD_MULTIPLIER,
+  SANG_FROID_WIND_MULTIPLIER,
+  type PerkId
+} from '../roguelite';
 import * as sfx from '../audio';
 import { translate } from '../../i18n/translate';
 import {
@@ -232,6 +244,10 @@ export class MatchScene extends Phaser.Scene {
     this.playerIndex = { blue: 1, red: 1 };
     this.fieldPreset = stage ? stage.fieldPreset : fieldPreset;
     this.runPerks = stage ? run?.perks ?? [] : [];
+    // "Calme plat" (Defi) : neutralise la meteo tiree plus haut, si active ce jour-la.
+    if (this.runPerks.includes('calme-plat')) this.wind = null;
+    // "Longue haleine" (Defi) : temps supplementaire pour la manche entiere.
+    if (this.runPerks.includes('longue-haleine')) this.timeLeftMs += LONGUE_HALEINE_BONUS_MS;
     this.secondSouffleUsed = false;
     this.knockedThisThrow = false;
     this.bouncedWallThisThrow = false;
@@ -256,6 +272,13 @@ export class MatchScene extends Phaser.Scene {
 
     this.teams = { blue: new Team(this, 'blue', kubbSkin), red: new Team(this, 'red', kubbSkin) };
     this.king = new King(this, FIELD_CENTER_X, FIELD_CENTER_Y, kingSkin);
+
+    // "Renfort" (Defi) : un kubb adverse au hasard est deja abattu avant le premier lancer.
+    if (this.runPerks.includes('renfort')) {
+      const standing = this.teams.red.kubbs.filter((k) => k.isInPlay);
+      const target = standing[Math.floor(Math.random() * standing.length)];
+      target?.knockDown(this);
+    }
 
     this.aimGfx = this.add.graphics().setDepth(5);
     this.juice = new Juice(this);
@@ -368,6 +391,10 @@ export class MatchScene extends Phaser.Scene {
 
     const distance = Phaser.Math.Distance.Between(origin.x, origin.y, pointer.worldX, pointer.worldY);
     let power = Phaser.Math.Clamp(distance / AIM.maxDragDistance, AIM.minPower, 1);
+    // "Jauge basse" (Defi) : plancher de puissance, avant le multiplicateur de "Bras vif".
+    if (this.activeTeam === 'blue' && this.runPerks.includes('jauge-basse')) {
+      power = Math.max(power, JAUGE_BASSE_MIN_POWER);
+    }
     // "Bras vif" (Defi) : ne joue que pour le joueur, jamais pour l'IA.
     if (this.activeTeam === 'blue' && this.runPerks.includes('bras-vif')) {
       power = Math.min(1, power * BRAS_VIF_MULTIPLIER);
@@ -410,7 +437,11 @@ export class MatchScene extends Phaser.Scene {
     const body = this.baton.sprite.body as MatterJS.BodyType;
     const steps = delta / (1000 / 60);
     const accel = windAcceleration(this.wind);
-    const mult = batonWindMultiplier(this.activeBatonStats());
+    let mult = batonWindMultiplier(this.activeBatonStats());
+    // "Sang-froid" (Defi) : ne joue que pour le joueur, jamais pour l'IA.
+    if (this.activeTeam === 'blue' && this.runPerks.includes('sang-froid')) {
+      mult *= SANG_FROID_WIND_MULTIPLIER;
+    }
     this.baton.sprite.setVelocity(body.velocity.x + accel.x * mult * steps, body.velocity.y + accel.y * mult * steps);
   }
 
@@ -458,12 +489,12 @@ export class MatchScene extends Phaser.Scene {
     const stats = this.activeBatonStats();
     const preset = FIELD_PRESETS[this.fieldPreset];
     this.baton = new Baton(this, origin.x, origin.y, stats.shape, stats.textureKey, preset.restitutionMultiplier);
-    this.baton.launch(
-      this.aimAngle,
-      this.aimPower,
-      batonDeviationDeg(stats, MAX_AIM_DEVIATION_DEG),
-      batonPowerMultiplier(stats)
-    );
+    let deviationDeg = batonDeviationDeg(stats, MAX_AIM_DEVIATION_DEG);
+    // "Oeil de lynx" (Defi) : ne joue que pour le joueur, jamais pour l'IA.
+    if (this.activeTeam === 'blue' && this.runPerks.includes('oeil-de-lynx')) {
+      deviationDeg *= OEIL_DE_LYNX_DEVIATION_MULTIPLIER;
+    }
+    this.baton.launch(this.aimAngle, this.aimPower, deviationDeg, batonPowerMultiplier(stats));
 
     this.juice.throwStart(origin.x, origin.y, this.aimPower);
 
@@ -951,11 +982,18 @@ export class MatchScene extends Phaser.Scene {
       if (!involvesBaton) continue;
 
       const speed = this.baton.impactSpeed;
-      const hardEnough = speed >= KNOCKDOWN_IMPACT_SPEED;
+      // "Poigne ferme" (Defi) : seuil de chute abaisse, ne joue que pour le
+      // joueur — affecte aussi bien un kubb que le roi, tous deux compares
+      // au meme seuil plus bas.
+      const knockdownThreshold =
+        this.activeTeam === 'blue' && this.runPerks.includes('poigne-ferme')
+          ? KNOCKDOWN_IMPACT_SPEED * POIGNE_FERME_THRESHOLD_MULTIPLIER
+          : KNOCKDOWN_IMPACT_SPEED;
+      const hardEnough = speed >= knockdownThreshold;
       // Force normalisee (0 au seuil de chute, 1 a pleine puissance) : tout le
       // feedback — secousse, particules, hauteur du choc — s'echelonne dessus.
       const force = Phaser.Math.Clamp(
-        (speed - KNOCKDOWN_IMPACT_SPEED) / (THROW.maxSpeed - KNOCKDOWN_IMPACT_SPEED),
+        (speed - knockdownThreshold) / (THROW.maxSpeed - knockdownThreshold),
         0,
         1
       );
@@ -1107,6 +1145,16 @@ export class MatchScene extends Phaser.Scene {
       this.tryUnlockAchievement('roi-dernier-lancer', { x, y: y - 46 });
     }
 
+    // "Sursis" (Defi) : une seule fois par run, toucher le roi trop tot ne
+    // met pas fin a la run — la manche est simplement rejouee (restart de
+    // la scene, meme manche/perks, sans passer par finish() ni ResultScene).
+    if (!legal && this.activeTeam === 'blue' && this.runPerks.includes('sursis') && !gameStore.getState().run?.sursisUsed) {
+      gameStore.getState().useSursis();
+      this.juice.floatingText(x, y - 80, translate(gameStore.getState().lang, 'match.sursis'), '#5ad1ff');
+      this.time.delayedCall(1500, () => this.scene.restart());
+      return;
+    }
+
     this.finish(
       {
         winner: legal ? this.activeTeam : OPPONENT[this.activeTeam],
@@ -1164,17 +1212,27 @@ export class MatchScene extends Phaser.Scene {
       this.tryUnlockAchievement('victoire-parfaite', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 90 });
     }
 
-    gameStore.getState().awardMatchXp({
-      won: result.winner === 'blue',
-      perfectWin: result.winner === 'blue' && this.teams.blue.downCount === 0,
-      precisionHits: this.matchXpStats.precisionHits,
-      difficultHits: this.matchXpStats.difficultHits,
-      doubles: this.matchXpStats.doubles,
-      triples: this.matchXpStats.triples,
-      perfects: this.matchXpStats.perfects,
-      achievementXp: this.achievementRewards.xp
-    });
-    gameStore.getState().awardMatchCoins(result.knockedDown.blue, result.winner === 'blue', this.achievementRewards.coins);
+    // "Etude rapide"/"Bourse pleine" (Defi) : bonus sur les recompenses de la
+    // manche, cote joueur uniquement — jamais suivis par l'IA.
+    const xpMultiplier = this.runPerks.includes('etude-rapide') ? ETUDE_RAPIDE_XP_MULTIPLIER : 1;
+    const coinsMultiplier = this.runPerks.includes('bourse-pleine') ? BOURSE_PLEINE_COINS_MULTIPLIER : 1;
+
+    gameStore.getState().awardMatchXp(
+      {
+        won: result.winner === 'blue',
+        perfectWin: result.winner === 'blue' && this.teams.blue.downCount === 0,
+        precisionHits: this.matchXpStats.precisionHits,
+        difficultHits: this.matchXpStats.difficultHits,
+        doubles: this.matchXpStats.doubles,
+        triples: this.matchXpStats.triples,
+        perfects: this.matchXpStats.perfects,
+        achievementXp: this.achievementRewards.xp
+      },
+      xpMultiplier
+    );
+    gameStore
+      .getState()
+      .awardMatchCoins(result.knockedDown.blue, result.winner === 'blue', this.achievementRewards.coins, coinsMultiplier);
     gameStore.getState().unlockAchievements([...this.achievementsEarnedThisMatch]);
 
     // Le verdict sonore arrive apres le choc, pas par-dessus.

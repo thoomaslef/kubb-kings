@@ -53,6 +53,8 @@ export interface RunState {
   stageIndex: number;
   /** Bonus deja debloques cette run ; repart a vide a chaque nouvelle run. */
   perks: PerkId[];
+  /** "Sursis" deja consomme cette run (une seule fois) ; repart a false a chaque nouvelle run. */
+  sursisUsed: boolean;
 }
 
 /** Quel match de l'arbre du tournoi le match en cours represente. */
@@ -210,6 +212,8 @@ interface GameState {
   advanceRun: () => void;
   /** Ajoute un bonus a la run en cours ; no-op hors run active. */
   addPerk: (id: PerkId) => void;
+  /** Consomme le bonus "Sursis" de la run en cours ; no-op hors run active. */
+  useSursis: () => void;
   /** Construit l'arbre a partir des noms (4 ou 8) et demarre le tournoi. */
   startTournament: (names: string[]) => void;
   /** Note quel match de l'arbre le prochain match 1v1 represente. */
@@ -228,14 +232,16 @@ interface GameState {
    * persiste le nouvel etat et le rend disponible via `lastXpAward` pour
    * l'ecran de resultat.
    */
-  awardMatchXp: (stats: MatchXpStats) => void;
+  /** `multiplier` : "Etude rapide" (Defi), 1 sinon. */
+  awardMatchXp: (stats: MatchXpStats, multiplier?: number) => void;
   /**
    * Calcule et applique le gain de pieces d'un match qui vient de se
    * terminer (cote equipe Bleue), persiste le nouveau solde.
    * `achievementCoins` : bonus deja calcule des succes nouvellement
    * debloques ce match (cf. unlockAchievements ci-dessous).
+   * `multiplier` : "Bourse pleine" (Defi), 1 sinon.
    */
-  awardMatchCoins: (knockedDownByBlue: number, won: boolean, achievementCoins?: number) => void;
+  awardMatchCoins: (knockedDownByBlue: number, won: boolean, achievementCoins?: number, multiplier?: number) => void;
   /** Effet de lancer choisi au menu — voir `trailEffect` ci-dessus. */
   setTrailEffect: (id: ThrowEffectId) => void;
   /**
@@ -295,11 +301,13 @@ export const useGameStore = create<GameState>((set) => ({
   setBatonId: (id) => set({ batonId: id }),
   setWindEnabled: (enabled) => set({ windEnabled: enabled }),
   setFieldKubbsEnabled: (enabled) => set({ fieldKubbsEnabled: enabled }),
-  startRun: () => set({ run: { stageIndex: 0, perks: [] } }),
+  startRun: () => set({ run: { stageIndex: 0, perks: [], sursisUsed: false } }),
   advanceRun: () =>
     set((state) => (state.run ? { run: { ...state.run, stageIndex: state.run.stageIndex + 1 } } : state)),
   addPerk: (id) =>
     set((state) => (state.run ? { run: { ...state.run, perks: [...state.run.perks, id] } } : state)),
+  useSursis: () =>
+    set((state) => (state.run ? { run: { ...state.run, sursisUsed: true } } : state)),
   startTournament: (names) => set({ tournament: buildBracket(names), tournamentPending: null }),
   beginTournamentMatch: (round, slot, blueName, redName) =>
     set({ tournamentPending: { round, slot, blueName, redName } }),
@@ -320,15 +328,15 @@ export const useGameStore = create<GameState>((set) => ({
     persistLang(lang);
     set({ lang });
   },
-  awardMatchXp: (stats) =>
+  awardMatchXp: (stats, multiplier = 1) =>
     set((state) => {
-      const { award, after } = computeXpAward(stats, state.progression);
+      const { award, after } = computeXpAward(stats, state.progression, multiplier);
       saveProgression(after);
       return { progression: after, lastXpAward: award };
     }),
-  awardMatchCoins: (knockedDownByBlue, won, achievementCoins = 0) =>
+  awardMatchCoins: (knockedDownByBlue, won, achievementCoins = 0, multiplier = 1) =>
     set((state) => {
-      const gained = computeCoinsAward(knockedDownByBlue, won, achievementCoins);
+      const gained = computeCoinsAward(knockedDownByBlue, won, achievementCoins, multiplier);
       const coins = state.coins + gained;
       saveCurrency({ coins });
       return { coins, lastCoinsAward: gained };
