@@ -55,8 +55,16 @@ import {
   type FieldPresetId,
   type Wind
 } from '../rules';
-import { BATONS, batonDeviationDeg, batonPowerMultiplier, batonWindMultiplier, type BatonStats } from '../batons';
+import { BATONS, batonDeviationDeg, batonPowerMultiplier, batonWindMultiplier, type BatonId, type BatonStats } from '../batons';
 import { THROW_EFFECT_TINT } from '../throwEffects';
+import {
+  PROTOCOL_VERSION,
+  appendThrow,
+  createRecord,
+  type MatchRecord,
+  type MatchSnapshot,
+  type ThrowInput
+} from '../online/protocol';
 import {
   ACHIEVEMENTS,
   COMEBACK_MAX_STANDING,
@@ -112,6 +120,23 @@ export class MatchScene extends Phaser.Scene {
    * partie — l'UI lit la meme valeur pour savoir qui a gagne.
    */
   private profileTeam: TeamId = 'blue';
+  /** Projectile du joueur de cet appareil, relu du store a chaque create(). */
+  private batonId: BatonId = 'base';
+  /**
+   * Partie en cours, enregistree lancer par lancer (online/protocol.ts).
+   * Alimente dans TOUS les modes, pas seulement en ligne : c'est la meme
+   * trace qui servira un jour a faire rejouer une partie par un serveur
+   * pour valider un classement.
+   */
+  private matchRecord: MatchRecord = createRecord({
+    version: PROTOCOL_VERSION,
+    fieldPreset: 'classique',
+    wind: null,
+    fieldKubbsEnabled: false,
+    batons: { blue: 'base', red: 'base' }
+  });
+  /** Entrees du lancer en cours, retenues jusqu'a ce qu'on connaisse son resultat. */
+  private pendingThrowInput: ThrowInput | null = null;
   private activeTeam: TeamId = 'blue';
   private throwsLeft: Record<TeamId, number> = { blue: 0, red: 0 };
   private timeLeftMs = MATCH_DURATION_MS;
@@ -254,6 +279,7 @@ export class MatchScene extends Phaser.Scene {
     const { mode, difficulty, fieldPreset, kubbSkin, kingSkin, batonId, windEnabled, fieldKubbsEnabled, profileTeam, run } =
       gameStore.getState();
     this.batonStats = BATONS[batonId];
+    this.batonId = batonId;
     this.fieldKubbsEnabled = fieldKubbsEnabled;
     this.profileTeam = profileTeam;
     this.wind = windEnabled
@@ -309,6 +335,18 @@ export class MatchScene extends Phaser.Scene {
       const target = standing[Math.floor(Math.random() * standing.length)];
       target?.knockDown(this);
     }
+
+    // Enregistrement de la partie : ouvert ici, une fois le terrain, le vent
+    // et les projectiles connus — c'est exactement ce dont un adversaire (ou
+    // un serveur qui rejouerait la partie) a besoin avant le premier lancer.
+    this.matchRecord = createRecord({
+      version: PROTOCOL_VERSION,
+      fieldPreset: this.fieldPreset,
+      wind: this.wind,
+      fieldKubbsEnabled: this.fieldKubbsEnabled,
+      batons: { blue: this.batonIdForTeam('blue'), red: this.batonIdForTeam('red') }
+    });
+    this.pendingThrowInput = null;
 
     this.aimGfx = this.add.graphics().setDepth(5);
     this.juice = new Juice(this);
@@ -524,7 +562,16 @@ export class MatchScene extends Phaser.Scene {
     if (this.isProfileTeam(this.activeTeam) && this.runPerks.includes('oeil-de-lynx')) {
       deviationDeg *= OEIL_DE_LYNX_DEVIATION_MULTIPLIER;
     }
-    this.baton.launch(this.aimAngle, this.aimPower, deviationDeg, batonPowerMultiplier(stats));
+    const roll = this.baton.launch(this.aimAngle, this.aimPower, deviationDeg, batonPowerMultiplier(stats));
+    // Retenu jusqu'a la fin du lancer : l'enregistrement associe des entrees
+    // a leur RESULTAT, qu'on ne connait pas encore ici.
+    this.pendingThrowInput = {
+      throwX: this.throwX[this.activeTeam],
+      angle: this.aimAngle,
+      power: this.aimPower,
+      batonId: this.batonIdForTeam(this.activeTeam),
+      roll
+    };
 
     this.juice.throwStart(origin.x, origin.y, this.aimPower);
 
@@ -540,7 +587,87 @@ export class MatchScene extends Phaser.Scene {
     this.syncHud();
   }
 
+  /**
+   * Fin de lancer : resout le tour, puis archive le lancer (entrees +
+   * resultat) dans l'enregistrement de la partie. L'archivage se fait APRES
+   * la resolution, car c'est l'etat d'apres — a qui de jouer, quels kubbs
+   * sont tombes — qui fait autorite pour l'adversaire.
+   */
   private endThrow() {
+    const input = this.pendingThrowInput;
+    const team = this.activeTeam;
+    this.resolveEndOfThrow();
+    if (input) {
+      appendThrow(this.matchRecord, { team, input, outcome: this.captureSnapshot() });
+      this.pendingThrowInput = null;
+    }
+  }
+
+  /** Etat du terrain tel qu'il sera transmis a l'adversaire (online/protocol.ts). */
+  private captureSnapshot(): MatchSnapshot {
+    return {
+      kubbs: {
+        blue: this.teams.blue.kubbs.map((k) => k.status),
+        red: this.teams.red.kubbs.map((k) => k.status)
+      },
+      kingStanding: this.king.isStanding,
+      throwsLeft: { ...this.throwsLeft },
+      activeTeam: this.activeTeam,
+      stage: this.matchStage
+    };
+  }
+
+  /**
+   * Cale le terrain sur l'etat transmis par l'adversaire, apres avoir rejoue
+   * son lancer pour l'animation : c'est LUI qui fait autorite, la physique
+   * locale n'etant pas reproductible (cf. online/protocol.ts).
+   *
+   * Un kubb de champ ne peut jamais revenir a sa ligne dans le jeu (il ne
+   * sort que par 'out'), cette transition-la n'est donc pas traitee.
+   */
+  private applySnapshot(snapshot: MatchSnapshot) {
+    for (const team of ['blue', 'red'] as TeamId[]) {
+      snapshot.kubbs[team].forEach((status, index) => {
+        const kubb = this.teams[team].kubbs[index];
+        if (kubb.status === status) return;
+        if (kubb.status === 'out') kubb.reviveUp(this);
+        if (status === 'out') {
+          kubb.knockDown(this);
+        } else if (status === 'field') {
+          const slot = this.fieldKubbSlot(kubb);
+          kubb.plantInField(this, slot.x, slot.y);
+        }
+      });
+    }
+    if (!snapshot.kingStanding && this.king.isStanding) this.king.knockDown(this);
+    this.throwsLeft = { ...snapshot.throwsLeft };
+    this.activeTeam = snapshot.activeTeam;
+    this.matchStage = snapshot.stage;
+    this.syncHud();
+  }
+
+  /**
+   * Rejoue un enregistrement sur le terrain courant : chaque lancer y amene
+   * le terrain a l'etat que son auteur a transmis. C'est la contrepartie de
+   * `captureSnapshot` — ce qui rend un `MatchRecord` reellement REJOUABLE,
+   * et exactement le chemin que suivra l'adversaire en ligne a chaque coup
+   * recu. Public : c'est une capacite de la scene, pas un detail interne.
+   */
+  replayRecord(record: MatchRecord) {
+    for (const entry of record.throws) this.applySnapshot(entry.outcome);
+  }
+
+  /** Enregistrement de la partie en cours (online/protocol.ts). */
+  get record(): MatchRecord {
+    return this.matchRecord;
+  }
+
+  /** Projectile reellement en jeu pour `team` : l'IA reste toujours sur le baton de base. */
+  private batonIdForTeam(team: TeamId): BatonId {
+    return this.isAiTeam(team) ? 'base' : this.batonId;
+  }
+
+  private resolveEndOfThrow() {
     this.juice.throwEnd();
     const lastBatonPos = this.baton ? { x: this.baton.sprite.x, y: this.baton.sprite.y } : null;
     this.baton?.destroy();

@@ -1229,6 +1229,52 @@ l&apos;abstraction tient vient du test inverse : en basculant le store sur Rouge
 memes succes tombent, le meme XP et les memes pieces sont credites, le meme titre
 s&apos;affiche — et rien n&apos;est credite quand c&apos;est l&apos;adversaire qui gagne.
 
+### Protocole d&apos;un coup et enregistrement rejouable
+
+[`src/game/online/protocol.ts`](src/game/online/protocol.ts), module **pur** (ni
+Phaser ni store, comme `ai.ts` ou `rules.ts`) : il doit pouvoir etre lu par un futur
+serveur Node aussi bien que par le navigateur.
+
+**Un coup = des entrees + un resultat.** La physique n&apos;est pas reproductible d&apos;un
+appareil a l&apos;autre — le pas Matter suit le delta de frame (`matterConfig.ts`, aucun
+pas fixe), donc deux telephones a 60 et 120 Hz ne calculent pas la meme trajectoire.
+Rejouer seulement les entrees ferait diverger les deux parties. **Le lanceur fait donc
+autorite** : il transmet ses entrees ET l&apos;etat du terrain apres son lancer
+(`MatchSnapshot`). L&apos;adversaire rejoue les entrees pour l&apos;animation, puis se
+cale sur l&apos;instantane — une divergence ne coute qu&apos;une fraction de seconde
+d&apos;animation, jamais l&apos;etat de la partie.
+
+| Element | Contenu | Pourquoi |
+| --- | --- | --- |
+| `MatchSetup` | terrain, vent, regle Kubbs de champ, projectile de chaque camp | Tire par l&apos;hote : le vent notamment est aleatoire a chaque partie, sans lui chacun jouerait sur un terrain different |
+| `ThrowInput` | `throwX`, angle, puissance, projectile, **tirage aleatoire** | Sans le tirage transmis, l&apos;adversaire verrait un baton partir droit sur une cible que l&apos;instantane declare manquee |
+| `MatchSnapshot` | statut des 10 kubbs, roi, lancers restants, a qui de jouer, phase | Minimal : les positions se deduisent (un kubb de champ va toujours au meme emplacement), un kubb `'out'` n&apos;est plus que du decor |
+| `MatchRecord` | le setup + la suite des lancers numerotes | Une partie entiere, rejouable sans rien connaitre de l&apos;appareil qui l&apos;a produite |
+
+`Baton.launch` **renvoie** desormais le tirage applique (deviation + sens de rotation) et
+accepte qu&apos;on le lui impose : c&apos;est ce qui permet a l&apos;adversaire de rejouer
+exactement le meme lancer. `MatchScene` archive chaque lancer dans **tous les modes**, pas
+seulement en ligne — c&apos;est la meme trace qui servira a faire valider un classement
+par un serveur, sans changer le protocole.
+
+Le choix est volontairement naif face a la triche : un joueur peut mentir sur son
+resultat. Sans consequence entre amis, et c&apos;est precisement pourquoi la partie
+entiere est enregistree.
+
+**Verifie en navigateur** : trois vrais lancers (physique Matter reelle, terrain Chicane,
+vent actif, Kubbs de champ actives, projectile Nordique) produisent un enregistrement a
+numerotation continue, entrees et resultats complets, les deux camps representes ; le
+`MatchSetup` archive correspond bien au vent reellement tire ; le tirage aleatoire est
+rejouable a l&apos;identique quand on l&apos;impose ; et **rejouer l&apos;enregistrement
+sur un terrain neuf reconstitue exactement le meme etat** (statuts des dix kubbs, roi,
+lancers restants, tour courant, phase). Zero erreur console.
+
+> **Observation, non corrigee.** La trace a revele qu&apos;un kubb peut etre abattu
+> pendant le **tir d&apos;ouverture** : la branche « kubb » de `onCollisionStart` n&apos;a
+> aucune garde sur `matchStage`, seul le roi y est traite a part. C&apos;est anterieur au
+> chantier en ligne et c&apos;est une question de regle (au vrai Kubb, le tirage au sort
+> ne fait que designer qui commence) — a trancher, pas a corriger en passant.
+
 > **Note d&apos;outillage.** Chromium headless fait tourner la boucle de rendu a
 > environ un quart de la vitesse reelle : un `delayedCall` de 750 ms de temps de jeu
 > demande ~3 s d&apos;attente reelle. Les verifications doivent donc **attendre un

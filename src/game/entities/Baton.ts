@@ -3,6 +3,7 @@ import { BATON_BODY } from '../physics/matterConfig';
 import { THROW, MAX_AIM_DEVIATION_DEG, HITBOX } from '../rules';
 import { SHADOW } from '../theme';
 import type { BatonStats } from '../batons';
+import type { ThrowRoll } from '../online/protocol';
 
 /**
  * Le projectile lance par le joueur actif : le baton par defaut (rectangle
@@ -72,17 +73,32 @@ export class Baton {
    * defaut MAX_AIM_DEVIATION_DEG) est ajoutee a l'angle vise : c'est "l'effet"
    * leger du MVP. `speedMultiplier` (baton du joueur, cf. batons.ts) module la
    * vitesse atteinte a jauge egale — 1 par defaut (baton de base / IA).
+   *
+   * Le tirage aleatoire (deviation + sens de rotation) est RENVOYE, et peut
+   * etre impose via `roll` : en ligne, c'est le lanceur qui tire, et
+   * l'adversaire rejoue exactement le meme lancer pour que son animation
+   * corresponde a ce qui s'est reellement passe (cf. online/protocol.ts).
    */
-  launch(angle: number, power: number, deviationDeg = MAX_AIM_DEVIATION_DEG, speedMultiplier = 1) {
-    const deviation = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-deviationDeg, deviationDeg));
-    const finalAngle = angle + deviation;
+  launch(
+    angle: number,
+    power: number,
+    deviationDeg = MAX_AIM_DEVIATION_DEG,
+    speedMultiplier = 1,
+    roll?: ThrowRoll
+  ): ThrowRoll {
+    const applied: ThrowRoll = roll ?? {
+      deviationRad: Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-deviationDeg, deviationDeg)),
+      spinSign: Math.random() < 0.5 ? -1 : 1
+    };
+    const finalAngle = angle + applied.deviationRad;
     const speed = THROW.maxSpeed * power * speedMultiplier;
 
     // La texture est verticale : on aligne son grand axe sur la trajectoire.
     this.sprite.setRotation(finalAngle - Math.PI / 2);
     this.sprite.setVelocity(Math.cos(finalAngle) * speed, Math.sin(finalAngle) * speed);
-    this.sprite.setAngularVelocity(THROW.spin * (Math.random() < 0.5 ? -1 : 1));
+    this.sprite.setAngularVelocity(THROW.spin * applied.spinSign);
     this.previousSpeed = speed;
+    return applied;
   }
 
   get speed(): number {
