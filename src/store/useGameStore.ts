@@ -15,6 +15,7 @@ import { computeCoinsAward } from '../game/currency';
 import { loadCurrency, saveCurrency } from '../game/currencyPersistence';
 import { loadOwnedItems, saveOwnedItems } from '../game/shopPersistence';
 import { loadUnlockedAchievements, saveUnlockedAchievements } from '../game/achievementsPersistence';
+import { loadTerrainWins, saveTerrainWins } from '../game/terrainWinsPersistence';
 import { getInitialLang, persistLang } from '../i18n/langPersistence';
 import type { Lang } from '../i18n/translate';
 
@@ -194,6 +195,12 @@ interface GameState {
    * cette session, ou si le dernier match n'en a debloque aucun.
    */
   lastAchievementsUnlocked: AchievementId[];
+  /**
+   * Terrains sur lesquels le joueur a deja gagne au moins une fois, persistes
+   * (terrainWinsPersistence.ts) — seul etat de succes qui se construit d'une
+   * partie a l'autre, pour "Collectionneur".
+   */
+  terrainWins: FieldPresetId[];
 
   setScreen: (screen: Screen) => void;
   setPaused: (paused: boolean) => void;
@@ -262,6 +269,12 @@ interface GameState {
    * "possede" et exposer la liste pour l'affichage.
    */
   unlockAchievements: (ids: AchievementId[]) => void;
+  /**
+   * Note une victoire sur ce terrain pour le succes "Collectionneur".
+   * Idempotent (un terrain deja note n'est pas duplique), comme
+   * unlockAchievements/purchaseItem.
+   */
+  recordTerrainWin: (preset: FieldPresetId) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -289,6 +302,7 @@ export const useGameStore = create<GameState>((set) => ({
   trailEffect: 'none',
   unlockedAchievements: loadUnlockedAchievements(),
   lastAchievementsUnlocked: [],
+  terrainWins: loadTerrainWins() as FieldPresetId[],
 
   setScreen: (screen) => set({ screen }),
   setPaused: (paused) => set({ paused }),
@@ -364,6 +378,13 @@ export const useGameStore = create<GameState>((set) => ({
       const unlockedAchievements = [...state.unlockedAchievements, ...newOnes];
       saveUnlockedAchievements(unlockedAchievements);
       return { unlockedAchievements, lastAchievementsUnlocked: newOnes };
+    }),
+  recordTerrainWin: (preset) =>
+    set((state) => {
+      if (state.terrainWins.includes(preset)) return state;
+      const terrainWins = [...state.terrainWins, preset];
+      saveTerrainWins(terrainWins);
+      return { terrainWins };
     })
 }));
 

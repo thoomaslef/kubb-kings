@@ -828,6 +828,33 @@ tombe pendant la partie.
 | Sans-faute        | Gagner une partie sans rater un seul lancer                      | +400 XP · +150 🪙 |
 | Victoire parfaite | Gagner une partie sans perdre un seul de ses propres kubbs       | +350 XP · +125 🪙 |
 | Coup de grace     | Faire tomber le roi sur son tout dernier lancer disponible       | +400 XP · +150 🪙 |
+| Froleur           | Au tir d&apos;ouverture, s&apos;arreter a moins de 60px du roi sans le toucher | +250 XP · +75 🪙  |
+| Nettoyeur         | Degager 3 kubbs de champ de son camp dans la meme partie         | +250 XP · +75 🪙  |
+| Dans le vent      | Abattre un kubb avec un vent de travers de force 2               | +150 XP · +50 🪙  |
+| Chirurgien        | Gagner sans qu&apos;un seul de ses batons touche une bande       | +400 XP · +150 🪙 |
+| Remontada         | Gagner apres n&apos;avoir plus eu qu&apos;un seul kubb debout    | +350 XP · +125 🪙 |
+| Collectionneur    | Gagner au moins une fois sur chacun des 11 terrains              | +500 XP · +200 🪙 |
+| Increvable        | Terminer les 30 manches du mode Defi                             | +600 XP · +250 🪙 |
+
+Les seuils (`GRAZE_MAX_DISTANCE = 60`, `FIELD_KUBBS_CLEARED_TARGET = 3`,
+`COMEBACK_MAX_STANDING = 1`) sont nommes dans
+[`src/game/achievements.ts`](src/game/achievements.ts) plutot qu&apos;en dur dans la
+scene : ce sont des reglages de succes, sans aucun effet sur les regles.
+
+**Collectionneur est le premier succes CUMULATIF** : tous les autres se jouent
+entierement dans une seule partie (un simple booleen suffit), celui-la se construit
+d&apos;une partie a l&apos;autre et a donc sa propre trace persistee
+(`terrainWinsPersistence.ts`, `terrainWins` dans le store, action idempotente
+`recordTerrainWin`). C&apos;est la brique dont un futur mode en ligne aura de toute
+facon besoin pour des succes a progression.
+
+> **A trancher avant l&apos;en-ligne.** Le systeme suppose aujourd&apos;hui que
+> « le joueur = Bleue » (toutes les detections testent `activeTeam === 'blue'`), et
+> stocke tout en `localStorage` — donc ni portable d&apos;un appareil a l&apos;autre,
+> ni verifiable. Des succes en ligne (premiere victoire contre un humain, battre un
+> adversaire d&apos;un niveau bien superieur, serie de victoires en ligne) demanderont
+> d&apos;abord une notion de « mon camp » independante de la couleur, et une
+> validation serveur — sans quoi ils sont falsifiables ou farmables a deux comptes.
 
 **Aucun effet sur l&apos;IA ni sur les regles.** Un systeme de detection cote joueur
 pur, ajoute par-dessus les evenements deja suivis pour le combo (Phase 1) et l&apos;XP
@@ -841,6 +868,16 @@ restait des lancers), idempotence (un succes deja possede ou deja gagne plus tot
 dans le meme match ne redonne jamais sa recompense), calcul d&apos;XP/pieces qui
 inclut bien le bonus de succes, persistance apres rechargement, et l&apos;ecran Succes
 + le bandeau de resultat en navigateur reel — zero simulation IA necessaire.
+
+Les sept derniers ont ete verifies de la meme facon, en navigateur, **par le vrai
+chemin de jeu** (`resolveOpeningThrow`, `onCollisionStart`, `finish` — jamais en
+ecrivant dans le store), avec a chaque fois une contre-epreuve : un frolement au bon
+ecart mais roi effleure ne debloque PAS Froleur ; un vent de force 2 dans l&apos;AXE
+du terrain (N/S, qui ne fait qu&apos;allonger ou raccourcir) ne debloque PAS Dans le
+vent, contrairement a un vent lateral ; une bande touchee annule Chirurgien ; une
+manche intermediaire du Defi ne debloque PAS Increvable. Collectionneur a ete joue
+sur les 11 terrains d&apos;affilee (11 victoires, une par terrain) jusqu&apos;au
+declenchement — zero erreur console sur l&apos;ensemble.
 
 ---
 

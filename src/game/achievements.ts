@@ -19,7 +19,14 @@ export type AchievementId =
   | 'sans-faute'
   | 'victoire-parfaite'
   | 'ricochet'
-  | 'roi-dernier-lancer';
+  | 'roi-dernier-lancer'
+  | 'frolement'
+  | 'nettoyeur'
+  | 'dans-le-vent'
+  | 'chirurgien'
+  | 'remontada'
+  | 'collectionneur'
+  | 'increvable';
 
 export interface Achievement {
   id: AchievementId;
@@ -35,5 +42,31 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'ricochet', xp: 150, coins: 50 },
   { id: 'sans-faute', xp: 400, coins: 150 },
   { id: 'victoire-parfaite', xp: 350, coins: 125 },
-  { id: 'roi-dernier-lancer', xp: 400, coins: 150 }
+  { id: 'roi-dernier-lancer', xp: 400, coins: 150 },
+  { id: 'frolement', xp: 250, coins: 75 },
+  { id: 'nettoyeur', xp: 250, coins: 75 },
+  { id: 'dans-le-vent', xp: 150, coins: 50 },
+  { id: 'chirurgien', xp: 400, coins: 150 },
+  { id: 'remontada', xp: 350, coins: 125 },
+  { id: 'collectionneur', xp: 500, coins: 200 },
+  { id: 'increvable', xp: 600, coins: 250 }
 ];
+
+/**
+ * Seuils de detection, nommes ici plutot qu'en dur dans MatchScene : ce sont
+ * des reglages de succes, sans aucun effet sur les regles ni sur l'IA.
+ */
+
+/**
+ * "Frolement" : distance maximale au CENTRE du roi ou le baton doit
+ * s'immobiliser au tir d'ouverture, sans l'avoir touche. Le rayon de
+ * collision du roi vaut ~27px (HITBOX.kingRadius + batonWidth/2) : 60px du
+ * centre laisse donc une marge reelle d'a peine ~33px.
+ */
+export const GRAZE_MAX_DISTANCE = 60;
+
+/** "Nettoyeur" : kubbs de champ a degager dans une meme manche. */
+export const FIELD_KUBBS_CLEARED_TARGET = 3;
+
+/** "Remontada" : nombre de kubbs encore debout en dessous duquel la remontee compte. */
+export const COMEBACK_MAX_STANDING = 1;

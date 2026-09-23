@@ -49,6 +49,7 @@ import {
   THROW,
   THROW_POSITIONS,
   WIND_DIRECTIONS,
+  WIND_UNIT_VECTORS,
   availableThrowPositions,
   windAcceleration,
   type FieldPresetId,
@@ -56,7 +57,13 @@ import {
 } from '../rules';
 import { BATONS, batonDeviationDeg, batonPowerMultiplier, batonWindMultiplier, type BatonStats } from '../batons';
 import { THROW_EFFECT_TINT } from '../throwEffects';
-import { ACHIEVEMENTS, type AchievementId } from '../achievements';
+import {
+  ACHIEVEMENTS,
+  COMEBACK_MAX_STANDING,
+  FIELD_KUBBS_CLEARED_TARGET,
+  GRAZE_MAX_DISTANCE,
+  type AchievementId
+} from '../achievements';
 
 /** La plus proche d'un ensemble de positions de lancer (voir THROW_POSITIONS). */
 function nearestThrowPosition(x: number, positions: readonly number[]): number {
@@ -166,6 +173,12 @@ export class MatchScene extends Phaser.Scene {
   private blueThrowsMadeInMatch = 0;
   /** true des qu'un lancer de Bleue en partie normale n'a rien renverse. */
   private blueMissedThisMatch = false;
+  /** Kubbs de champ degages par Bleue cette manche — succes "nettoyeur". */
+  private blueFieldKubbsCleared = 0;
+  /** true des qu'un baton de Bleue a touche une bande — succes "chirurgien". */
+  private blueTouchedWallThisMatch = false;
+  /** true des que Bleue est tombee a COMEBACK_MAX_STANDING kubbs debout — succes "remontada". */
+  private blueWasCornered = false;
   /**
    * Vent (direction + force) pour la partie en cours, tire une seule fois a
    * create() — jamais par lancer, sans quoi il n'y aurait rien a lire ni a
@@ -260,6 +273,9 @@ export class MatchScene extends Phaser.Scene {
     this.farthestTarget = null;
     this.blueThrowsMadeInMatch = 0;
     this.blueMissedThisMatch = false;
+    this.blueFieldKubbsCleared = 0;
+    this.blueTouchedWallThisMatch = false;
+    this.blueWasCornered = false;
     // "Bras infatigable" (Defi) : lancers en plus pour le joueur uniquement.
     if (this.runPerks.includes('lancer-bonus')) this.throwsLeft.blue += LANCER_BONUS_THROWS;
 
@@ -516,6 +532,12 @@ export class MatchScene extends Phaser.Scene {
     this.baton?.destroy();
     this.baton = null;
 
+    // Succes "remontada" (achievements.ts) : verrou pose des que Bleue est
+    // acculee, lu a la victoire. Releve en fin de lancer, une fois tous les
+    // kubbs de ce lancer resolus — et jamais remis a false, une redresse
+    // (ricochet) ne doit pas effacer le fait qu'elle y est passee.
+    if (this.teams.blue.standingCount <= COMEBACK_MAX_STANDING) this.blueWasCornered = true;
+
     // "Second souffle" (Defi) : le tout premier lancer du joueur qui ne
     // renverse rien de la manche n'est pas compte. Une seule fois par manche.
     const refunded =
@@ -616,6 +638,12 @@ export class MatchScene extends Phaser.Scene {
     this.openingResults[this.activeTeam] = { touched: this.openingTouchedKingThisThrow, distance };
 
     if (this.activeTeam === 'blue') {
+      // Succes "frolement" (achievements.ts) : s'arreter a portee de main du
+      // roi au tir d'ouverture sans l'avoir effleure — l'exercice exact que
+      // cette phase demande, pousse a l'extreme.
+      if (!this.openingTouchedKingThisThrow && distance <= GRAZE_MAX_DISTANCE && lastBatonPos) {
+        this.tryUnlockAchievement('frolement', lastBatonPos);
+      }
       this.beginOpeningThrow('red');
       return;
     }
@@ -1015,7 +1043,12 @@ export class MatchScene extends Phaser.Scene {
         pair.bodyA.label === 'obstacle' ||
         pair.bodyB.label === 'obstacle'
       ) {
-        if (pair.bodyA.label === 'wall' || pair.bodyB.label === 'wall') this.bouncedWallThisThrow = true;
+        if (pair.bodyA.label === 'wall' || pair.bodyB.label === 'wall') {
+          this.bouncedWallThisThrow = true;
+          // Succes "chirurgien" (achievements.ts) : une seule bande touchee
+          // dans toute la partie suffit a le perdre.
+          if (this.activeTeam === 'blue') this.blueTouchedWallThisMatch = true;
+        }
         this.playBounce(speed);
         continue;
       }
@@ -1068,12 +1101,32 @@ export class MatchScene extends Phaser.Scene {
       // de champ" est active : il est alors replante dans le camp de son
       // tombeur, qui devra le degager a son tour (cf. fieldKubbSlot).
       const planted = !kubb.isFieldKubb && this.fieldKubbsEnabled;
+      // Releve avant l'abattage : knockDown fait passer le statut a 'out'.
+      const wasFieldKubb = kubb.isFieldKubb;
       if (planted) {
         const slot = this.fieldKubbSlot(kubb);
         kubb.plantInField(this, slot.x, slot.y);
       } else {
         kubb.knockDown(this);
       }
+
+      if (this.activeTeam === 'blue') {
+        // Succes "nettoyeur" (achievements.ts) : degager plusieurs kubbs de
+        // champ de son propre camp dans la meme manche.
+        if (wasFieldKubb) {
+          this.blueFieldKubbsCleared += 1;
+          if (this.blueFieldKubbsCleared === FIELD_KUBBS_CLEARED_TARGET) {
+            this.tryUnlockAchievement('nettoyeur', { x, y: y - 40 });
+          }
+        }
+        // Succes "dans-le-vent" (achievements.ts) : abattre un kubb avec un
+        // vent de force 2 ayant une composante LATERALE (tout sauf N/S, qui
+        // soufflent dans l'axe du terrain et ne font que raccourcir/allonger).
+        if (this.wind && this.wind.force === 2 && WIND_UNIT_VECTORS[this.wind.direction].x !== 0) {
+          this.tryUnlockAchievement('dans-le-vent', { x, y: y - 70 });
+        }
+      }
+
       this.knockedThisThrow = true;
       this.knockedThisThrowCount += 1;
       this.knockedThisThrowMaxForce = Math.max(this.knockedThisThrowMaxForce, force);
@@ -1218,6 +1271,37 @@ export class MatchScene extends Phaser.Scene {
     // sur la meme victoire.
     if (result.winner === 'blue' && this.teams.blue.downCount === 0) {
       this.tryUnlockAchievement('victoire-parfaite', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 90 });
+    }
+    // Succes "chirurgien" (achievements.ts) : victoire de Bleue sans qu'un
+    // seul de ses batons ait touche une bande (au moins un lancer effectue).
+    if (result.winner === 'blue' && this.blueThrowsMadeInMatch > 0 && !this.blueTouchedWallThisMatch) {
+      this.tryUnlockAchievement('chirurgien', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 140 });
+    }
+    // Succes "remontada" (achievements.ts) : victoire de Bleue apres etre
+    // descendue a un seul kubb debout (ou aucun).
+    if (result.winner === 'blue' && this.blueWasCornered) {
+      this.tryUnlockAchievement('remontada', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 190 });
+    }
+    // Succes "collectionneur" (achievements.ts) : le seul succes cumulatif —
+    // une victoire sur chacun des terrains, d'une partie a l'autre. On note
+    // d'abord ce terrain, puis on relit la collection (set() de Zustand est
+    // synchrone, la victoire du jour est donc deja comptee).
+    if (result.winner === 'blue') {
+      gameStore.getState().recordTerrainWin(this.fieldPreset);
+      const won = gameStore.getState().terrainWins;
+      const allTerrains = Object.keys(FIELD_PRESETS) as FieldPresetId[];
+      if (allTerrains.every((id) => won.includes(id))) {
+        this.tryUnlockAchievement('collectionneur', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 240 });
+      }
+    }
+    // Succes "increvable" (achievements.ts) : derniere manche du mode Defi
+    // remportee, soit l'echelle entiere franchie (meme calcul que
+    // ResultScreen : stagesCleared = stageIndex + 1 sur une victoire).
+    if (this.mode === 'defi' && result.winner === 'blue') {
+      const stagesCleared = (gameStore.getState().run?.stageIndex ?? 0) + 1;
+      if (stagesCleared >= LADDER.length) {
+        this.tryUnlockAchievement('increvable', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y + 60 });
+      }
     }
 
     // "Etude rapide"/"Bourse pleine" (Defi) : bonus sur les recompenses de la

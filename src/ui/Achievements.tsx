@@ -1,6 +1,22 @@
 import { useGameStore } from '../store/useGameStore';
-import { ACHIEVEMENTS } from '../game/achievements';
+import {
+  ACHIEVEMENTS,
+  FIELD_KUBBS_CLEARED_TARGET,
+  GRAZE_MAX_DISTANCE,
+  type AchievementId
+} from '../game/achievements';
+import { FIELD_PRESETS } from '../game/rules';
+import { LADDER } from '../game/roguelite';
 import { useT } from '../i18n/useT';
+
+/** Parametres d'interpolation de l'indice (achievement.<id>.hint). */
+function hintParams(id: AchievementId): Record<string, number> | undefined {
+  if (id === 'frolement') return { n: GRAZE_MAX_DISTANCE };
+  if (id === 'nettoyeur') return { n: FIELD_KUBBS_CLEARED_TARGET };
+  if (id === 'collectionneur') return { n: Object.keys(FIELD_PRESETS).length };
+  if (id === 'increvable') return { n: LADDER.length };
+  return undefined;
+}
 
 /** Panneau des succes : liste des defis ponctuels, possedes ou non. */
 export function Achievements() {
@@ -21,7 +37,9 @@ export function Achievements() {
               <div key={achievement.id} className={`shop-item${earned ? ' shop-item--owned' : ''}`}>
                 <div className="shop-item__body">
                   <span className="shop-item__label">{t(`achievement.${achievement.id}.label`)}</span>
-                  <span className="shop-item__hint">{t(`achievement.${achievement.id}.hint`)}</span>
+                  <span className="shop-item__hint">
+                    {t(`achievement.${achievement.id}.hint`, hintParams(achievement.id))}
+                  </span>
                   <span className="shop-item__hint">
                     {t('achievements.reward', { xp: achievement.xp, coins: achievement.coins })}
                   </span>
