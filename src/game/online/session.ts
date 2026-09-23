@@ -1,4 +1,4 @@
-import { checkSeq, isCompatible, type MatchSetup, type RecordedThrow } from './protocol';
+import { checkSeq, isCompatible, type MatchRecord, type MatchSetup, type RecordedThrow } from './protocol';
 import type { OnlineMessage, Transport } from './transport';
 import type { TeamId } from '../entities/teamData';
 
@@ -16,6 +16,16 @@ import type { TeamId } from '../entities/teamData';
  * puisse changer (tirage au sort, alternance) sans toucher l'invite.
  */
 
+/**
+ * Battement de coeur. Avec le faux transport local, une coupure n'existe
+ * pas ; sur un vrai reseau elle est SILENCIEUSE — pas de message d'adieu,
+ * juste plus rien. Sans ces deux reglages, le joueur reste devant un
+ * plateau fige a attendre un tour qui ne viendra jamais.
+ */
+const HEARTBEAT_MS = 3000;
+/** Sans le moindre signe de vie pendant ce delai, on declare la liaison perdue. */
+export const CONNECTION_TIMEOUT_MS = 10000;
+
 export type SessionRole = 'host' | 'guest';
 export type SessionState = 'connecting' | 'ready' | 'closed';
 
@@ -28,7 +38,9 @@ export type CloseReason =
   /** Un coup manque : impossible de continuer sans se desynchroniser. */
   | 'desynchronise'
   /** Protocoles incompatibles (versions differentes). */
-  | 'incompatible';
+  | 'incompatible'
+  /** Plus aucun signe de vie : liaison coupee sans que l'autre ait pu prevenir. */
+  | 'perdu';
 
 type Listener<T> = (value: T) => void;
 
@@ -49,7 +61,24 @@ export class OnlineSession {
    */
   private expectedSeq = 0;
 
+  private heartbeat: ReturnType<typeof setInterval> | null = null;
+  private lastSeenAt = Date.now();
+  /**
+   * Partie a renvoyer a un joueur qui revient. Fournie par la scene, qui
+   * seule connait l'etat courant — la session ne stocke rien d'elle-meme.
+   */
+  private recordProvider: (() => MatchRecord) | null = null;
+  /**
+   * Partie recue avant que la scene ne soit la pour l'entendre. Au retour
+   * d'un joueur, l'hote renvoie la partie dans la foulee de l'accueil,
+   * alors que la scene, elle, ne demarre qu'a la frame suivante : sans cette
+   * retenue le message arriverait dans le vide et l'arrivant reprendrait sur
+   * un plateau vierge.
+   */
+  private pendingResync: MatchRecord | null = null;
+
   private readyListeners = new Set<Listener<void>>();
+  private resyncListeners = new Set<Listener<MatchRecord>>();
   private throwListeners = new Set<Listener<RecordedThrow>>();
   private closeListeners = new Set<Listener<CloseReason>>();
 
@@ -93,6 +122,27 @@ export class OnlineSession {
     return () => this.readyListeners.delete(fn);
   }
 
+  /**
+   * Branche de quoi remettre a niveau un joueur qui revient. Sans cela une
+   * reprise est impossible : l'arrivant n'a aucun moyen de savoir ou en est
+   * la partie.
+   */
+  provideRecord(provider: () => MatchRecord) {
+    this.recordProvider = provider;
+  }
+
+  /** La partie complete vient d'etre renvoyee : il faut la rejouer pour se remettre a niveau. */
+  onResync(fn: Listener<MatchRecord>): () => void {
+    this.resyncListeners.add(fn);
+    // Partie arrivee avant l'abonnement : on la sert tout de suite, une fois.
+    if (this.pendingResync) {
+      const record = this.pendingResync;
+      this.pendingResync = null;
+      fn(record);
+    }
+    return () => this.resyncListeners.delete(fn);
+  }
+
   onRemoteThrow(fn: Listener<RecordedThrow>): () => void {
     this.throwListeners.add(fn);
     return () => this.throwListeners.delete(fn);
@@ -127,12 +177,15 @@ export class OnlineSession {
 
   private handle(message: OnlineMessage) {
     if (this._state === 'closed') return;
+    // N'importe quel message prouve que l'autre est toujours la.
+    this.lastSeenAt = Date.now();
 
     switch (message.kind) {
       case 'join': {
         // Seul l'hote accueille. Un 'join' repete (invite qui recharge sa
         // page) doit rester sans danger : on re-accueille, sans rien casser.
         if (this.role !== 'host' || !this._setup) return;
+        const wasReady = this._state === 'ready';
         this.transport.send({
           kind: 'welcome',
           playerId: this.playerId,
@@ -140,6 +193,12 @@ export class OnlineSession {
           guestTeam: 'red'
         });
         this.becomeReady();
+        // 'join' alors que la partie tournait deja : l'invite revient apres
+        // une coupure ou un rechargement. On lui renvoie la partie entiere
+        // plutot que de le laisser reprendre sur un plateau vierge.
+        if (wasReady && this.recordProvider) {
+          this.transport.send({ kind: 'resync', playerId: this.playerId, record: this.recordProvider() });
+        }
         return;
       }
 
@@ -171,6 +230,21 @@ export class OnlineSession {
         return;
       }
 
+      case 'resync': {
+        // La suite des coups repart de zero avec la partie renvoyee.
+        this.expectedSeq = message.record.throws.length;
+        if (this.resyncListeners.size === 0) {
+          this.pendingResync = message.record;
+          return;
+        }
+        for (const fn of [...this.resyncListeners]) fn(message.record);
+        return;
+      }
+
+      case 'ping':
+        // Le signe de vie a deja ete pris en compte plus haut.
+        return;
+
       case 'leave':
         this.close('parti');
     }
@@ -179,12 +253,28 @@ export class OnlineSession {
   private becomeReady() {
     if (this._state === 'ready') return;
     this._state = 'ready';
+    this.lastSeenAt = Date.now();
+    this.heartbeat = setInterval(() => this.beat(), HEARTBEAT_MS);
     for (const fn of [...this.readyListeners]) fn();
+  }
+
+  /** Un signe de vie sortant, et un controle du silence entrant. */
+  private beat() {
+    if (this._state !== 'ready') return;
+    if (Date.now() - this.lastSeenAt > CONNECTION_TIMEOUT_MS) {
+      this.close('perdu');
+      return;
+    }
+    this.transport.send({ kind: 'ping', playerId: this.playerId });
   }
 
   private close(reason: CloseReason) {
     if (this._state === 'closed') return;
     this._state = 'closed';
+    if (this.heartbeat !== null) {
+      clearInterval(this.heartbeat);
+      this.heartbeat = null;
+    }
     this.unsubscribe();
     this.transport.close();
     for (const fn of [...this.closeListeners]) fn(reason);

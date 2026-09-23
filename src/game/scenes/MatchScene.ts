@@ -66,7 +66,7 @@ import {
   type RecordedThrow,
   type ThrowInput
 } from '../online/protocol';
-import { getCurrentSession } from '../online/currentSession';
+import { getCurrentSession, setCurrentSession } from '../online/currentSession';
 import type { OnlineSession } from '../online/session';
 import {
   ACHIEVEMENTS,
@@ -143,6 +143,8 @@ export class MatchScene extends Phaser.Scene {
   private pendingThrowInput: ThrowInput | null = null;
   /** Partie en ligne en cours, ou null dans tous les autres modes. */
   private session: OnlineSession | null = null;
+  /** Depart en cours : empeche `handleLeave` de se rappeler lui-meme (cf. plus bas). */
+  private leaving = false;
   /**
    * Lancer de l'adversaire en train d'etre rejoue. Tant qu'il est present,
    * la fin de vol ne resout PAS le tour localement : c'est l'instantane
@@ -301,6 +303,7 @@ export class MatchScene extends Phaser.Scene {
     // sont imposees par l'hote via la session, sans quoi les deux joueurs
     // ne joueraient pas sur le meme terrain (le vent est tire au hasard).
     this.session = mode === 'online' ? getCurrentSession() : null;
+    this.leaving = false;
     this.remoteThrow = null;
     this.resultThisThrow = null;
     this.wind = windEnabled
@@ -393,16 +396,26 @@ export class MatchScene extends Phaser.Scene {
 
     bridge.on('leave-match', this.handleLeave, this);
 
+    // Reprise apres coupure : la scene est la seule a connaitre l'etat
+    // courant, c'est donc elle qui fournit la partie a renvoyer, et elle qui
+    // se remet a niveau quand on la lui renvoie.
+    this.session?.provideRecord(() => this.record);
+    const offResync = this.session?.onResync((record) => this.replayRecord(record));
     const offRemoteThrow = this.session?.onRemoteThrow((entry) => this.playRemoteThrow(entry));
     const offClosed = this.session?.onClosed((reason) => {
+      // Deux fermetures n'ont rien a annoncer : celle qui suit une partie
+      // allee a son terme (les deux joueurs ont deja leur resultat), et
+      // notre propre depart (le joueur sait qu'il vient de partir).
+      if (this.phase === 'over' || reason === 'quitte') return;
       gameStore.getState().patchOnline({ status: 'terminee', endedBecause: reason });
       // Partie interrompue : on ne peut pas la faire finir "normalement"
       // (l'adversaire ne jouera plus), on rend donc la main au joueur.
-      if (this.phase !== 'over') this.handleLeave();
+      this.handleLeave();
     });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       bridge.off('leave-match', this.handleLeave, this);
+      offResync?.();
       offRemoteThrow?.();
       offClosed?.();
       // Le ralenti du hit-stop survivrait au changement de scene sans ce reset.
@@ -779,9 +792,26 @@ export class MatchScene extends Phaser.Scene {
    * `captureSnapshot` — ce qui rend un `MatchRecord` reellement REJOUABLE,
    * et exactement le chemin que suivra l'adversaire en ligne a chaque coup
    * recu. Public : c'est une capacite de la scene, pas un detail interne.
+   *
+   * Sert aussi a REPRENDRE une partie apres une coupure : l'enregistrement
+   * remplace alors celui de la scene, sans quoi le joueur qui revient
+   * renumeroterait ses lancers a partir de zero et desynchroniserait la
+   * partie au premier coup joue.
    */
   replayRecord(record: MatchRecord) {
+    this.matchRecord = record;
     for (const entry of record.throws) this.applySnapshot(entry.outcome);
+    const last = record.throws[record.throws.length - 1];
+    if (last?.result) {
+      this.finish(last.result);
+      return;
+    }
+    // On revient en plein milieu : la main revient a qui de droit, et
+    // l'interface doit repartir de l'etat rejoue, pas du plateau initial.
+    this.phase = 'aiming';
+    this.aimAngle = this.forwardAngle();
+    this.drawAim();
+    this.syncHud();
   }
 
   /** Enregistrement de la partie en cours (online/protocol.ts). */
@@ -1987,6 +2017,21 @@ export class MatchScene extends Phaser.Scene {
   }
 
   private handleLeave() {
+    // Reentrance : quitter ferme la session, ce qui rappelle ce meme code
+    // par `onClosed`. Sans ce verrou la scene serait relancee deux fois.
+    if (this.leaving) return;
+    this.leaving = true;
+    if (this.session) {
+      // Session encore ouverte = c'est NOUS qui partons. Si elle est deja
+      // fermee, c'est la partie qui s'est arretee sans nous : on garde alors
+      // l'etat en ligne tel quel, c'est lui qui portera l'explication au menu.
+      const voluntary = this.session.state === 'ready';
+      // Mot d'adieu explicite : sans lui, l'adversaire resterait devant un
+      // plateau fige jusqu'a l'expiration du battement de coeur.
+      this.session.leave();
+      setCurrentSession(null);
+      if (voluntary) gameStore.getState().endOnline();
+    }
     this.scene.start('MenuScene');
   }
 }

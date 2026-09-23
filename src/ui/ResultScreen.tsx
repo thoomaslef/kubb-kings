@@ -60,7 +60,10 @@ export function ResultScreen() {
   const lastCoinsAward = useGameStore((s) => s.lastCoinsAward);
   const lastAchievementsUnlocked = useGameStore((s) => s.lastAchievementsUnlocked);
   const isDefi = mode === 'defi';
-  const soloLike = mode === 'solo' || isDefi;
+  const isOnline = mode === 'online';
+  // En ligne comme en solo, le joueur n'a qu'un camp : le titre se lit de son
+  // point de vue ("Victoire") et non de celui d'un arbitre ("Bleue gagne").
+  const soloLike = mode === 'solo' || isDefi || isOnline;
   const isTournamentMatch = tournamentPending !== null;
 
   // "J'ai gagne" se lit sur le camp du joueur de cet appareil, pas sur la
@@ -297,6 +300,13 @@ export function ResultScreen() {
                 </button>
               </>
             )
+          ) : isOnline ? (
+            // Pas de "Rejouer" en ligne : relancer la scene de son cote
+            // seulement laisserait l'adversaire sur une autre partie. Une
+            // revanche demande un aller-retour, elle viendra avec le reste.
+            <button className="btn btn--primary" onClick={quitRun}>
+              {t('result.menu')}
+            </button>
           ) : (
             <>
               <button className="btn btn--primary" onClick={() => bridge.send('restart-match')}>

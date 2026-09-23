@@ -42,6 +42,8 @@ export function Menu() {
   const lang = useGameStore((s) => s.lang);
   const setLang = useGameStore((s) => s.setLang);
   const setMode = useGameStore((s) => s.setMode);
+  const online = useGameStore((s) => s.online);
+  const endOnline = useGameStore((s) => s.endOnline);
   const startRun = useGameStore((s) => s.startRun);
   const progression = useGameStore((s) => s.progression);
   const levelInfo = levelFromXp(progression.totalXp);
@@ -80,6 +82,24 @@ export function Menu() {
     startRun();
     bridge.send('start-match');
   };
+
+  // Une partie en ligne qui s'arrete seule (adversaire parti, liaison
+  // coupee) ramenait au menu sans un mot : le joueur ne pouvait que deviner.
+  if (online && online.status === 'terminee' && online.endedBecause) {
+    return (
+      <div className="overlay overlay--solid">
+        <div className="panel">
+          <h2 className="panel__title">{t('online.endedTitle')}</h2>
+          <p className="panel__text">{t(`online.ended.${online.endedBecause}`)}</p>
+          <div className="button-column">
+            <button className="btn" onClick={endOnline}>
+              {t('online.back')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="overlay overlay--solid">

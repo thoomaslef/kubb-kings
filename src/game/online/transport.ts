@@ -1,4 +1,4 @@
-import type { MatchSetup, RecordedThrow } from './protocol';
+import type { MatchRecord, MatchSetup, RecordedThrow } from './protocol';
 import type { TeamId } from '../entities/teamData';
 
 /**
@@ -28,7 +28,19 @@ export type OnlineMessage =
   /** Un lancer joue, avec son resultat (l'auteur fait autorite). */
   | { kind: 'throw'; entry: RecordedThrow }
   /** Depart volontaire — a distinguer d'une coupure subie. */
-  | { kind: 'leave'; playerId: string };
+  | { kind: 'leave'; playerId: string }
+  /**
+   * Signe de vie periodique. Indispensable des qu'un VRAI reseau est en
+   * jeu : une coupure y est silencieuse (pas de message d'adieu), et sans
+   * battement l'autre joueur attendrait indefiniment son tour.
+   */
+  | { kind: 'ping'; playerId: string }
+  /**
+   * Remise a niveau d'un joueur qui revient : la partie entiere lui est
+   * renvoyee, il la rejoue pour se retrouver dans l'etat exact ou elle en
+   * est (cf. MatchScene::replayRecord).
+   */
+  | { kind: 'resync'; playerId: string; record: MatchRecord };
 
 export interface Transport {
   send(message: OnlineMessage): void;

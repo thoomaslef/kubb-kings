@@ -1310,9 +1310,8 @@ detecte et session fermee, depart volontaire vu comme « parti » d&apos;un cote
 « quitte » de l&apos;autre, et message d&apos;accueil d&apos;une version de protocole
 future refuse. Zero erreur console.
 
-Ces modules ne sont pas encore appeles par le jeu — ils n&apos;entrent donc pas dans le
-bundle. Le branchement a `MatchScene` et l&apos;interface (creer/rejoindre par code,
-attente, abandon) forment l&apos;etape suivante.
+Ces modules n&apos;ont d&apos;abord ete que des fondations ; ils sont desormais branches
+au jeu (section suivante).
 
 ### Une partie en ligne, de bout en bout
 
@@ -1374,6 +1373,62 @@ tot termine la partie **des deux cotes avec le meme resultat**. Zero erreur cons
 > demande ~3 s d&apos;attente reelle. Les verifications doivent donc **attendre un
 > etat** (`screen === 'result'`), jamais un delai en temps reel — sinon elles
 > concluent a tort qu&apos;une transition ne se produit pas.
+
+### Quand la liaison lache
+
+Avec le faux transport local, une coupure n&apos;existe pas : les deux onglets vivent
+ou meurent ensemble. **Sur un vrai reseau, une coupure est silencieuse** — pas de
+message d&apos;adieu, juste plus rien. Ces deux defauts-la ne se voient donc jamais
+tant qu&apos;on ne les traite pas expres, et ils sont exactement « ce qui doit etre
+pret avant d&apos;investir » : leur correction ne coute rien.
+
+**1. Battement de coeur.** Chaque camp envoie un `ping` toutes les 3 s. Sans le
+moindre signe de vie pendant `CONNECTION_TIMEOUT_MS` (10 s), la session se ferme
+avec la raison `perdu`. Sans cela, le joueur reste devant un plateau fige a
+attendre un tour qui ne viendra jamais.
+
+**2. Reprise apres coupure.** Un joueur qui recharge sa page perd tout. En
+rejoignant **le meme code**, il est re-accueilli et l&apos;hote lui renvoie la
+partie entiere (`resync` + le `MatchRecord` complet) ; `MatchScene::replayRecord`
+adopte cet enregistrement et rejoue chaque instantane — c&apos;est precisement le
+but pour lequel l&apos;enregistrement rejouable existait deja. La numerotation des
+coups reprend a la bonne valeur des deux cotes, donc la partie continue au lieu de
+se desynchroniser au coup suivant.
+
+> **Piege de synchronisation, corrige.** L&apos;hote renvoie la partie dans la
+> foulee de l&apos;accueil, alors que la scene du revenant ne demarre qu&apos;a la
+> frame suivante : le message arrivait dans le vide et le joueur reprenait sur un
+> plateau vierge. La session **retient** donc un `resync` recu sans auditeur et le
+> sert au premier abonne.
+
+**3. Depart explicite.** Quitter un match en ligne envoie desormais `leave` :
+sinon l&apos;adversaire patientait jusqu&apos;a l&apos;expiration du battement pour
+apprendre un depart pourtant volontaire.
+
+**4. On dit pourquoi.** Une partie qui s&apos;arrete seule ramenait au menu sans un
+mot — le joueur ne pouvait que deviner. Le menu affiche maintenant « Partie
+interrompue » et la raison (adversaire parti, liaison perdue, coup manquant,
+versions incompatibles). Rien n&apos;est affiche apres une fin normale ni apres son
+propre depart : on n&apos;annonce que ce que le joueur ne sait pas deja.
+
+Au passage, l&apos;ecran de resultat en ligne se lit du point de vue du joueur
+(« Victoire » et non « Bleue gagne »), et **« Rejouer » y disparait** : relancer la
+scene de son seul cote laisserait l&apos;adversaire sur une autre partie. Une
+revanche demande un aller-retour, elle viendra avec le reste.
+
+**Verifie avec deux vrais onglets** : deux lancers joues, l&apos;invite **recharge
+sa page** (store vide, retour au menu), rejoint avec le meme code et se retrouve
+dans l&apos;etat EXACT de l&apos;hote (memes coups enregistres, memes statuts des dix
+kubbs, memes lancers restants, meme tour) ; un troisieme lancer passe ensuite
+normalement, preuve que la numerotation a bien repris ; puis l&apos;onglet invite est
+**ferme sans un mot** et l&apos;hote detecte la coupure en ~12 s, revient au menu et
+affiche « Liaison perdue ». Zero erreur console.
+
+> **Limite connue, assumee.** C&apos;est l&apos;hote qui garde la partie : si
+> c&apos;est LUI qui recharge, l&apos;enregistrement disparait avec sa page et
+> l&apos;invite recoit `perdu`. Une reprise des deux cotes suppose que la partie soit
+> gardee ailleurs que dans un onglet — c&apos;est le travail d&apos;un vrai serveur,
+> pas du faux transport local.
 
 ---
 
