@@ -99,6 +99,19 @@ export class MatchScene extends Phaser.Scene {
    */
   private openingTouchedKingThisThrow = false;
   private mode: GameMode = 'local';
+  /**
+   * Equipe du joueur de CET appareil : celle dont les succes, l'XP, les
+   * pieces et les bonus de run sont suivis (le "profil"). Toujours Bleue
+   * aujourd'hui — en 1v1/2v2 local les deux camps sont humains mais un seul
+   * profil existe, et en solo/Defi Bleue est le joueur.
+   *
+   * Existe pour le jeu en ligne, ou l'invite tiendra Rouge : c'est alors le
+   * SEUL reglage a changer pour que toute la detection suive (cf.
+   * isProfileTeam ci-dessous, utilise partout plutot qu'un 'blue' en dur).
+   * Relu depuis le store a chaque create(), comme les autres reglages de
+   * partie — l'UI lit la meme valeur pour savoir qui a gagne.
+   */
+  private profileTeam: TeamId = 'blue';
   private activeTeam: TeamId = 'blue';
   private throwsLeft: Record<TeamId, number> = { blue: 0, red: 0 };
   private timeLeftMs = MATCH_DURATION_MS;
@@ -170,15 +183,15 @@ export class MatchScene extends Phaser.Scene {
    */
   private farthestTarget: Kubb | null = null;
   /** Nombre de lancers de Bleue en partie normale — sert au succes "sans-faute". */
-  private blueThrowsMadeInMatch = 0;
+  private profileThrowsMadeInMatch = 0;
   /** true des qu'un lancer de Bleue en partie normale n'a rien renverse. */
-  private blueMissedThisMatch = false;
+  private profileMissedThisMatch = false;
   /** Kubbs de champ degages par Bleue cette manche — succes "nettoyeur". */
-  private blueFieldKubbsCleared = 0;
+  private profileFieldKubbsCleared = 0;
   /** true des qu'un baton de Bleue a touche une bande — succes "chirurgien". */
-  private blueTouchedWallThisMatch = false;
+  private profileTouchedWallThisMatch = false;
   /** true des que Bleue est tombee a COMEBACK_MAX_STANDING kubbs debout — succes "remontada". */
-  private blueWasCornered = false;
+  private profileWasCornered = false;
   /**
    * Vent (direction + force) pour la partie en cours, tire une seule fois a
    * create() — jamais par lancer, sans quoi il n'y aurait rien a lire ni a
@@ -238,10 +251,11 @@ export class MatchScene extends Phaser.Scene {
     this.aiTimer = null;
     this.aiTween = null;
 
-    const { mode, difficulty, fieldPreset, kubbSkin, kingSkin, batonId, windEnabled, fieldKubbsEnabled, run } =
+    const { mode, difficulty, fieldPreset, kubbSkin, kingSkin, batonId, windEnabled, fieldKubbsEnabled, profileTeam, run } =
       gameStore.getState();
     this.batonStats = BATONS[batonId];
     this.fieldKubbsEnabled = fieldKubbsEnabled;
+    this.profileTeam = profileTeam;
     this.wind = windEnabled
       ? {
           direction: WIND_DIRECTIONS[Math.floor(Math.random() * WIND_DIRECTIONS.length)],
@@ -271,13 +285,13 @@ export class MatchScene extends Phaser.Scene {
     this.achievementsEarnedThisMatch = new Set();
     this.achievementRewards = { xp: 0, coins: 0 };
     this.farthestTarget = null;
-    this.blueThrowsMadeInMatch = 0;
-    this.blueMissedThisMatch = false;
-    this.blueFieldKubbsCleared = 0;
-    this.blueTouchedWallThisMatch = false;
-    this.blueWasCornered = false;
+    this.profileThrowsMadeInMatch = 0;
+    this.profileMissedThisMatch = false;
+    this.profileFieldKubbsCleared = 0;
+    this.profileTouchedWallThisMatch = false;
+    this.profileWasCornered = false;
     // "Bras infatigable" (Defi) : lancers en plus pour le joueur uniquement.
-    if (this.runPerks.includes('lancer-bonus')) this.throwsLeft.blue += LANCER_BONUS_THROWS;
+    if (this.runPerks.includes('lancer-bonus')) this.throwsLeft[this.profileTeam] += LANCER_BONUS_THROWS;
 
     gameStore.getState().setScreen('match');
 
@@ -291,7 +305,7 @@ export class MatchScene extends Phaser.Scene {
 
     // "Renfort" (Defi) : un kubb adverse au hasard est deja abattu avant le premier lancer.
     if (this.runPerks.includes('renfort')) {
-      const standing = this.teams.red.kubbs.filter((k) => k.isInPlay);
+      const standing = this.teams[OPPONENT[this.profileTeam]].kubbs.filter((k) => k.isInPlay);
       const target = standing[Math.floor(Math.random() * standing.length)];
       target?.knockDown(this);
     }
@@ -408,11 +422,11 @@ export class MatchScene extends Phaser.Scene {
     const distance = Phaser.Math.Distance.Between(origin.x, origin.y, pointer.worldX, pointer.worldY);
     let power = Phaser.Math.Clamp(distance / AIM.maxDragDistance, AIM.minPower, 1);
     // "Jauge basse" (Defi) : plancher de puissance, avant le multiplicateur de "Bras vif".
-    if (this.activeTeam === 'blue' && this.runPerks.includes('jauge-basse')) {
+    if (this.isProfileTeam(this.activeTeam) && this.runPerks.includes('jauge-basse')) {
       power = Math.max(power, JAUGE_BASSE_MIN_POWER);
     }
     // "Bras vif" (Defi) : ne joue que pour le joueur, jamais pour l'IA.
-    if (this.activeTeam === 'blue' && this.runPerks.includes('bras-vif')) {
+    if (this.isProfileTeam(this.activeTeam) && this.runPerks.includes('bras-vif')) {
       power = Math.min(1, power * BRAS_VIF_MULTIPLIER);
     }
     this.aimPower = power;
@@ -455,7 +469,7 @@ export class MatchScene extends Phaser.Scene {
     const accel = windAcceleration(this.wind);
     let mult = batonWindMultiplier(this.activeBatonStats());
     // "Sang-froid" (Defi) : ne joue que pour le joueur, jamais pour l'IA.
-    if (this.activeTeam === 'blue' && this.runPerks.includes('sang-froid')) {
+    if (this.isProfileTeam(this.activeTeam) && this.runPerks.includes('sang-froid')) {
       mult *= SANG_FROID_WIND_MULTIPLIER;
     }
     this.baton.sprite.setVelocity(body.velocity.x + accel.x * mult * steps, body.velocity.y + accel.y * mult * steps);
@@ -507,7 +521,7 @@ export class MatchScene extends Phaser.Scene {
     this.baton = new Baton(this, origin.x, origin.y, stats.shape, stats.textureKey, preset.restitutionMultiplier);
     let deviationDeg = batonDeviationDeg(stats, MAX_AIM_DEVIATION_DEG);
     // "Oeil de lynx" (Defi) : ne joue que pour le joueur, jamais pour l'IA.
-    if (this.activeTeam === 'blue' && this.runPerks.includes('oeil-de-lynx')) {
+    if (this.isProfileTeam(this.activeTeam) && this.runPerks.includes('oeil-de-lynx')) {
       deviationDeg *= OEIL_DE_LYNX_DEVIATION_MULTIPLIER;
     }
     this.baton.launch(this.aimAngle, this.aimPower, deviationDeg, batonPowerMultiplier(stats));
@@ -536,12 +550,12 @@ export class MatchScene extends Phaser.Scene {
     // acculee, lu a la victoire. Releve en fin de lancer, une fois tous les
     // kubbs de ce lancer resolus — et jamais remis a false, une redresse
     // (ricochet) ne doit pas effacer le fait qu'elle y est passee.
-    if (this.teams.blue.standingCount <= COMEBACK_MAX_STANDING) this.blueWasCornered = true;
+    if (this.teams.blue.standingCount <= COMEBACK_MAX_STANDING) this.profileWasCornered = true;
 
     // "Second souffle" (Defi) : le tout premier lancer du joueur qui ne
     // renverse rien de la manche n'est pas compte. Une seule fois par manche.
     const refunded =
-      this.activeTeam === 'blue' &&
+      this.isProfileTeam(this.activeTeam) &&
       !this.knockedThisThrow &&
       !this.secondSouffleUsed &&
       this.runPerks.includes('second-souffle');
@@ -637,7 +651,7 @@ export class MatchScene extends Phaser.Scene {
       : Infinity;
     this.openingResults[this.activeTeam] = { touched: this.openingTouchedKingThisThrow, distance };
 
-    if (this.activeTeam === 'blue') {
+    if (this.isProfileTeam(this.activeTeam)) {
       // Succes "frolement" (achievements.ts) : s'arreter a portee de main du
       // roi au tir d'ouverture sans l'avoir effleure — l'exercice exact que
       // cette phase demande, pousse a l'extreme.
@@ -690,9 +704,9 @@ export class MatchScene extends Phaser.Scene {
 
     // Succes "sans-faute" (achievements.ts) : compte chaque lancer de Bleue
     // en partie normale, et retient si l'un d'eux n'a rien renverse.
-    if (team === 'blue') {
-      this.blueThrowsMadeInMatch += 1;
-      if (count === 0) this.blueMissedThisMatch = true;
+    if (this.isProfileTeam(team)) {
+      this.profileThrowsMadeInMatch += 1;
+      if (count === 0) this.profileMissedThisMatch = true;
     }
 
     if (count === 0) {
@@ -721,7 +735,7 @@ export class MatchScene extends Phaser.Scene {
 
     // Alimente la progression (XP, cf. progression.ts) — seule l'equipe
     // Bleue compte pour le profil persistant, cf. awardMatchXp dans finish().
-    if (team === 'blue') {
+    if (this.isProfileTeam(team)) {
       if (precise) this.matchXpStats.precisionHits += 1;
       if (count === 2) this.matchXpStats.doubles += 1;
       else if (count === 3) this.matchXpStats.triples += 1;
@@ -759,11 +773,11 @@ export class MatchScene extends Phaser.Scene {
    * pour la progression, inutile de le calculer pour l'IA.
    */
   private updateFarthestTarget(origin: { x: number; y: number }) {
-    if (this.activeTeam !== 'blue' || this.matchStage !== 'match') {
+    if (!this.isProfileTeam(this.activeTeam) || this.matchStage !== 'match') {
       this.farthestTarget = null;
       return;
     }
-    const standing = this.legalTargets('blue');
+    const standing = this.legalTargets(this.profileTeam);
     this.farthestTarget = standing.reduce<Kubb | null>((best, k) => {
       if (!best) return k;
       const d = Phaser.Math.Distance.Between(origin.x, origin.y, k.sprite.x, k.sprite.y);
@@ -975,6 +989,11 @@ export class MatchScene extends Phaser.Scene {
    * de filtre de legalite pour onCollisionStart : les deux doivent toujours
    * s'accorder.
    */
+  /** true si `team` est celle du joueur de cet appareil (cf. profileTeam). */
+  private isProfileTeam(team: TeamId): boolean {
+    return team === this.profileTeam;
+  }
+
   private legalTargets(team: TeamId): Kubb[] {
     const opponentKubbs = this.teams[OPPONENT[team]].kubbs;
     const inOwnHalf = opponentKubbs.filter((k) => k.isFieldKubb);
@@ -1022,7 +1041,7 @@ export class MatchScene extends Phaser.Scene {
       // joueur — affecte aussi bien un kubb que le roi, tous deux compares
       // au meme seuil plus bas.
       const knockdownThreshold =
-        this.activeTeam === 'blue' && this.runPerks.includes('poigne-ferme')
+        this.isProfileTeam(this.activeTeam) && this.runPerks.includes('poigne-ferme')
           ? KNOCKDOWN_IMPACT_SPEED * POIGNE_FERME_THRESHOLD_MULTIPLIER
           : KNOCKDOWN_IMPACT_SPEED;
       const hardEnough = speed >= knockdownThreshold;
@@ -1047,7 +1066,7 @@ export class MatchScene extends Phaser.Scene {
           this.bouncedWallThisThrow = true;
           // Succes "chirurgien" (achievements.ts) : une seule bande touchee
           // dans toute la partie suffit a le perdre.
-          if (this.activeTeam === 'blue') this.blueTouchedWallThisMatch = true;
+          if (this.isProfileTeam(this.activeTeam)) this.profileTouchedWallThisMatch = true;
         }
         this.playBounce(speed);
         continue;
@@ -1110,12 +1129,12 @@ export class MatchScene extends Phaser.Scene {
         kubb.knockDown(this);
       }
 
-      if (this.activeTeam === 'blue') {
+      if (this.isProfileTeam(this.activeTeam)) {
         // Succes "nettoyeur" (achievements.ts) : degager plusieurs kubbs de
         // champ de son propre camp dans la meme manche.
         if (wasFieldKubb) {
-          this.blueFieldKubbsCleared += 1;
-          if (this.blueFieldKubbsCleared === FIELD_KUBBS_CLEARED_TARGET) {
+          this.profileFieldKubbsCleared += 1;
+          if (this.profileFieldKubbsCleared === FIELD_KUBBS_CLEARED_TARGET) {
             this.tryUnlockAchievement('nettoyeur', { x, y: y - 40 });
           }
         }
@@ -1142,7 +1161,7 @@ export class MatchScene extends Phaser.Scene {
       );
       // Succes "kubb-eloigne" (achievements.ts) : ce kubb etait bien le plus
       // eloigne du point de lancer au moment ou Bleue a arme ce tir.
-      if (this.activeTeam === 'blue' && kubb === this.farthestTarget) {
+      if (this.isProfileTeam(this.activeTeam) && kubb === this.farthestTarget) {
         this.tryUnlockAchievement('kubb-eloigne', { x, y });
       }
       if (this.bouncedWallThisThrow) this.reviveLeftmostKubb(this.activeTeam);
@@ -1169,7 +1188,7 @@ export class MatchScene extends Phaser.Scene {
     );
 
     // Succes "ricochet" (achievements.ts) : redresse obtenue via un tir indirect.
-    if (team === 'blue') {
+    if (this.isProfileTeam(team)) {
       this.tryUnlockAchievement('ricochet', { x: fallen.sprite.x, y: fallen.sprite.y });
     }
   }
@@ -1202,14 +1221,14 @@ export class MatchScene extends Phaser.Scene {
     // Succes "roi-dernier-lancer" (achievements.ts) : victoire sur le tout
     // dernier lancer disponible de Bleue (avant decompte : endThrow() n'est
     // jamais atteint pour ce lancer puisque finish() met deja phase='over').
-    if (legal && this.activeTeam === 'blue' && this.throwsLeft.blue === 1) {
+    if (legal && this.isProfileTeam(this.activeTeam) && this.throwsLeft[this.profileTeam] === 1) {
       this.tryUnlockAchievement('roi-dernier-lancer', { x, y: y - 46 });
     }
 
     // "Sursis" (Defi) : une seule fois par run, toucher le roi trop tot ne
     // met pas fin a la run — la manche est simplement rejouee (restart de
     // la scene, meme manche/perks, sans passer par finish() ni ResultScene).
-    if (!legal && this.activeTeam === 'blue' && this.runPerks.includes('sursis') && !gameStore.getState().run?.sursisUsed) {
+    if (!legal && this.isProfileTeam(this.activeTeam) && this.runPerks.includes('sursis') && !gameStore.getState().run?.sursisUsed) {
       gameStore.getState().useSursis();
       this.juice.floatingText(x, y - 80, translate(gameStore.getState().lang, 'match.sursis'), '#5ad1ff');
       this.time.delayedCall(1500, () => this.scene.restart());
@@ -1262,31 +1281,31 @@ export class MatchScene extends Phaser.Scene {
 
     // Succes "sans-faute" (achievements.ts) : victoire de Bleue sans un seul
     // lancer manque en partie normale (au moins un lancer effectue).
-    if (result.winner === 'blue' && this.blueThrowsMadeInMatch > 0 && !this.blueMissedThisMatch) {
+    if (result.winner === this.profileTeam && this.profileThrowsMadeInMatch > 0 && !this.profileMissedThisMatch) {
       this.tryUnlockAchievement('sans-faute', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 40 });
     }
     // Succes "victoire-parfaite" (achievements.ts) : victoire de Bleue sans
     // avoir perdu un seul de ses propres kubbs de toute la partie. Bandeau
     // decale plus haut que celui de "sans-faute" : les deux peuvent tomber
     // sur la meme victoire.
-    if (result.winner === 'blue' && this.teams.blue.downCount === 0) {
+    if (result.winner === this.profileTeam && this.teams[this.profileTeam].downCount === 0) {
       this.tryUnlockAchievement('victoire-parfaite', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 90 });
     }
     // Succes "chirurgien" (achievements.ts) : victoire de Bleue sans qu'un
     // seul de ses batons ait touche une bande (au moins un lancer effectue).
-    if (result.winner === 'blue' && this.blueThrowsMadeInMatch > 0 && !this.blueTouchedWallThisMatch) {
+    if (result.winner === this.profileTeam && this.profileThrowsMadeInMatch > 0 && !this.profileTouchedWallThisMatch) {
       this.tryUnlockAchievement('chirurgien', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 140 });
     }
     // Succes "remontada" (achievements.ts) : victoire de Bleue apres etre
     // descendue a un seul kubb debout (ou aucun).
-    if (result.winner === 'blue' && this.blueWasCornered) {
+    if (result.winner === this.profileTeam && this.profileWasCornered) {
       this.tryUnlockAchievement('remontada', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 190 });
     }
     // Succes "collectionneur" (achievements.ts) : le seul succes cumulatif —
     // une victoire sur chacun des terrains, d'une partie a l'autre. On note
     // d'abord ce terrain, puis on relit la collection (set() de Zustand est
     // synchrone, la victoire du jour est donc deja comptee).
-    if (result.winner === 'blue') {
+    if (result.winner === this.profileTeam) {
       gameStore.getState().recordTerrainWin(this.fieldPreset);
       const won = gameStore.getState().terrainWins;
       const allTerrains = Object.keys(FIELD_PRESETS) as FieldPresetId[];
@@ -1297,7 +1316,7 @@ export class MatchScene extends Phaser.Scene {
     // Succes "increvable" (achievements.ts) : derniere manche du mode Defi
     // remportee, soit l'echelle entiere franchie (meme calcul que
     // ResultScreen : stagesCleared = stageIndex + 1 sur une victoire).
-    if (this.mode === 'defi' && result.winner === 'blue') {
+    if (this.mode === 'defi' && result.winner === this.profileTeam) {
       const stagesCleared = (gameStore.getState().run?.stageIndex ?? 0) + 1;
       if (stagesCleared >= LADDER.length) {
         this.tryUnlockAchievement('increvable', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y + 60 });
@@ -1311,8 +1330,8 @@ export class MatchScene extends Phaser.Scene {
 
     gameStore.getState().awardMatchXp(
       {
-        won: result.winner === 'blue',
-        perfectWin: result.winner === 'blue' && this.teams.blue.downCount === 0,
+        won: result.winner === this.profileTeam,
+        perfectWin: result.winner === this.profileTeam && this.teams[this.profileTeam].downCount === 0,
         precisionHits: this.matchXpStats.precisionHits,
         difficultHits: this.matchXpStats.difficultHits,
         doubles: this.matchXpStats.doubles,
@@ -1324,7 +1343,7 @@ export class MatchScene extends Phaser.Scene {
     );
     gameStore
       .getState()
-      .awardMatchCoins(result.knockedDown.blue, result.winner === 'blue', this.achievementRewards.coins, coinsMultiplier);
+      .awardMatchCoins(result.knockedDown[this.profileTeam], result.winner === this.profileTeam, this.achievementRewards.coins, coinsMultiplier);
     gameStore.getState().unlockAchievements([...this.achievementsEarnedThisMatch]);
 
     // Le verdict sonore arrive apres le choc, pas par-dessus.

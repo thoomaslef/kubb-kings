@@ -150,6 +150,15 @@ interface GameState {
    * son equipe au tour suivant (MatchScene::legalTargets).
    */
   fieldKubbsEnabled: boolean;
+  /**
+   * Equipe tenue par le joueur de CET appareil — celle dont les succes,
+   * l'XP, les pieces et les bonus de run sont suivis. Toujours 'blue' hors
+   * ligne (en 1v1/2v2 local les deux camps sont humains, mais un seul profil
+   * existe sur l'appareil). Prevu pour le jeu en ligne, ou l'invite tiendra
+   * Rouge : c'est le seul reglage a basculer, cote scene comme cote UI.
+   * Non persiste — c'est un role de partie, pas une preference.
+   */
+  profileTeam: TeamId;
   /** null hors mode 'defi' — pas de run en cours. */
   run: RunState | null;
   /** null hors tournoi local — pas de tournoi en cours. */
@@ -215,6 +224,8 @@ interface GameState {
   setBatonId: (id: BatonId) => void;
   setWindEnabled: (enabled: boolean) => void;
   setFieldKubbsEnabled: (enabled: boolean) => void;
+  /** Bascule le camp tenu par le joueur de cet appareil (cf. `profileTeam`). */
+  setProfileTeam: (team: TeamId) => void;
   /** (Re)demarre une run a la manche 1, sans bonus. */
   startRun: () => void;
   /** Passe a la manche suivante ; no-op hors run active. */
@@ -290,6 +301,7 @@ export const useGameStore = create<GameState>((set) => ({
   batonId: 'base',
   windEnabled: false,
   fieldKubbsEnabled: false,
+  profileTeam: 'blue',
   run: null,
   tournament: null,
   tournamentPending: null,
@@ -317,6 +329,7 @@ export const useGameStore = create<GameState>((set) => ({
   setBatonId: (id) => set({ batonId: id }),
   setWindEnabled: (enabled) => set({ windEnabled: enabled }),
   setFieldKubbsEnabled: (enabled) => set({ fieldKubbsEnabled: enabled }),
+  setProfileTeam: (team) => set({ profileTeam: team }),
   startRun: () => set({ run: { stageIndex: 0, perks: [], sursisUsed: false } }),
   advanceRun: () =>
     set((state) => (state.run ? { run: { ...state.run, stageIndex: state.run.stageIndex + 1 } } : state)),

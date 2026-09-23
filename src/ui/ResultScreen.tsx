@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
-import { TEAMS, OPPONENT } from '../game/entities/teamData';
-import { AI_TEAM } from '../game/ai';
+import { TEAMS, OPPONENT, type TeamId } from '../game/entities/teamData';
 import { levelFromXp } from '../game/progression';
 import { LADDER, setBestStageIfHigher } from '../game/roguelite';
 import { downloadBlob, shareCardBlob } from '../game/shareCard';
@@ -12,10 +11,16 @@ import type { MatchResult } from '../store/useGameStore';
 
 type ShareStatus = 'idle' | 'sharing' | 'shared' | 'downloaded' | 'error';
 
-/** En solo (et en Defi, qui en est une variante) le joueur n'est pas "l'equipe Bleue" : c'est lui. */
-function headline(lang: Lang, result: MatchResult, soloLike: boolean) {
+/**
+ * En solo (et en Defi, qui en est une variante) le joueur n'est pas
+ * "l'equipe Bleue" : c'est lui. La victoire se lit donc sur SON camp
+ * (`profileTeam`) et non sur une couleur en dur — l'ancienne version
+ * deduisait la defaite de `winner === AI_TEAM`, ce qui revient a supposer
+ * que l'adversaire est toujours Rouge : vrai contre l'IA, faux en ligne.
+ */
+function headline(lang: Lang, result: MatchResult, soloLike: boolean, profileTeam: TeamId) {
   if (result.winner === 'draw') return translate(lang, 'result.draw');
-  if (soloLike) return translate(lang, result.winner === AI_TEAM ? 'result.defeat' : 'result.victory');
+  if (soloLike) return translate(lang, result.winner === profileTeam ? 'result.victory' : 'result.defeat');
   return translate(lang, 'result.teamVictory', { team: translate(lang, `team.${result.winner}.label`) });
 }
 
@@ -44,6 +49,7 @@ export function ResultScreen() {
   const result = useGameStore((s) => s.result);
   const setScreen = useGameStore((s) => s.setScreen);
   const mode = useGameStore((s) => s.mode);
+  const profileTeam = useGameStore((s) => s.profileTeam);
   const run = useGameStore((s) => s.run);
   const startRun = useGameStore((s) => s.startRun);
   const tournamentPending = useGameStore((s) => s.tournamentPending);
@@ -57,7 +63,9 @@ export function ResultScreen() {
   const soloLike = mode === 'solo' || isDefi;
   const isTournamentMatch = tournamentPending !== null;
 
-  const wonMatch = result?.winner === 'blue';
+  // "J'ai gagne" se lit sur le camp du joueur de cet appareil, pas sur la
+  // couleur : en ligne, l'invite tient Rouge (cf. `profileTeam`).
+  const wonMatch = result?.winner === profileTeam;
   const stageIndex = run?.stageIndex ?? 0;
   // Nombre de manches franchies : celle-ci comptee si elle vient d'etre gagnee.
   const stagesCleared = wonMatch ? stageIndex + 1 : stageIndex;
@@ -91,7 +99,7 @@ export function ResultScreen() {
       : t('result.tournament.draw')
     : isDefi && wonMatch && !runComplete
       ? t('result.defi.stageCleared', { n: stagesCleared })
-      : headline(lang, result, soloLike);
+      : headline(lang, result, soloLike, profileTeam);
 
   const detailText = isTournamentMatch
     ? tournamentWinnerName
@@ -108,8 +116,12 @@ export function ResultScreen() {
             })
       : detail(lang, result);
 
-  const blueLabel = isTournamentMatch ? tournamentPending.blueName : soloLike ? t('result.you') : t('team.blue.label');
-  const redLabel = isTournamentMatch ? tournamentPending.redName : soloLike ? t('result.ai') : t('team.red.label');
+  // "Vous" va au camp du profil, pas a Bleue : en solo c'est le meme, en
+  // ligne ce ne le sera pas toujours.
+  const sideLabel = (team: TeamId) =>
+    soloLike ? t(team === profileTeam ? 'result.you' : 'result.ai') : t(`team.${team}.label`);
+  const blueLabel = isTournamentMatch ? tournamentPending.blueName : sideLabel('blue');
+  const redLabel = isTournamentMatch ? tournamentPending.redName : sideLabel('red');
 
   const levelLine = lastXpAward
     ? [

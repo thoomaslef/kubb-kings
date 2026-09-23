@@ -808,8 +808,8 @@ Purement un ecran de lecture cote joueur, aucun effet sur l&apos;IA.
 
 ## Succes
 
-Phase 4 de la progression : des defis ponctuels, cote equipe Bleue uniquement, chacun
-debloque une seule fois par appareil (persiste, `achievementsPersistence.ts`) et
+Phase 4 de la progression : des defis ponctuels, cote **equipe du profil** (cf. la
+section « Preparation du jeu en ligne » plus bas), chacun debloque une seule fois par appareil (persiste, `achievementsPersistence.ts`) et
 recompense en XP + pieces au moment ou il est franchi — la recompense est simplement
 pliee dans le meme calcul de fin de match que la victoire, la precision ou les
 combos (`MatchXpStats.achievementXp`, `computeCoinsAward(..., achievementCoins)`),
@@ -848,13 +848,12 @@ d&apos;une partie a l&apos;autre et a donc sa propre trace persistee
 `recordTerrainWin`). C&apos;est la brique dont un futur mode en ligne aura de toute
 facon besoin pour des succes a progression.
 
-> **A trancher avant l&apos;en-ligne.** Le systeme suppose aujourd&apos;hui que
-> « le joueur = Bleue » (toutes les detections testent `activeTeam === 'blue'`), et
-> stocke tout en `localStorage` — donc ni portable d&apos;un appareil a l&apos;autre,
-> ni verifiable. Des succes en ligne (premiere victoire contre un humain, battre un
-> adversaire d&apos;un niveau bien superieur, serie de victoires en ligne) demanderont
-> d&apos;abord une notion de « mon camp » independante de la couleur, et une
-> validation serveur — sans quoi ils sont falsifiables ou farmables a deux comptes.
+> **A trancher avant l&apos;en-ligne.** La notion de « mon camp » est desormais reglee
+> (`profileTeam`, section suivante), mais tout reste stocke en `localStorage` — donc ni
+> portable d&apos;un appareil a l&apos;autre, ni verifiable. Des succes en ligne
+> (premiere victoire contre un humain, battre un adversaire d&apos;un niveau bien
+> superieur, serie de victoires en ligne) demanderont une validation serveur — sans
+> quoi ils sont falsifiables ou farmables a deux comptes.
 
 **Aucun effet sur l&apos;IA ni sur les regles.** Un systeme de detection cote joueur
 pur, ajoute par-dessus les evenements deja suivis pour le combo (Phase 1) et l&apos;XP
@@ -1193,6 +1192,48 @@ l'ecran.
 La meilleure serie (nombre de manches franchies) est retenue en `localStorage`, affichee
 au menu, et proposee de nouveau a la prochaine run — sur le meme modele que la
 persistance du tutoriel.
+
+---
+
+## Preparation du jeu en ligne
+
+Rien de reseau n&apos;existe encore : cette section documente la **premiere brique**,
+posee en amont parce qu&apos;elle est necessaire quelle que soit la suite et
+qu&apos;elle ne coute rien.
+
+**`profileTeam` : « mon camp » au lieu de « Bleue ».** Le jeu supposait partout que le
+joueur de l&apos;appareil tenait Bleue — 34 occurrences de `'blue'` en dur dans
+`MatchScene`, plus l&apos;ecran de resultat. C&apos;est vrai en solo, en Defi et en
+local (un seul profil sur l&apos;appareil), mais faux en ligne des que l&apos;invite
+tient Rouge. Un seul reglage porte desormais cette information
+(`profileTeam` dans le store, relu par `MatchScene.create()` et par
+`ResultScreen`), et tout le reste passe par `isProfileTeam(team)` :
+
+| Ce qui suit le profil | Ce qui reste en dur (et doit le rester) |
+| --- | --- |
+| Succes, XP, pieces, bonus de run | Construction des deux equipes et de leurs sprites |
+| « Ai-je gagne ? », titre et libelles de l&apos;ecran de fin | Bleue ouvre le tir d&apos;ouverture |
+| Cible la plus eloignee, compteurs de manche | Comparaisons symetriques (departage, points) |
+| Kubb adverse abattu par « Renfort » | Noms des slots Bleu/Rouge de l&apos;arbre de tournoi |
+
+Un defaut latent a ete trouve au passage, exactement grace a ce basculement :
+`ResultScreen::headline` deduisait la defaite de `result.winner === AI_TEAM`,
+c&apos;est-a-dire « l&apos;adversaire est forcement Rouge ». Correct contre l&apos;IA,
+faux des qu&apos;on tient Rouge — le titre s&apos;affichait alors **inverse**. Les
+libelles « Vous »/« IA » du tableau de fin avaient le meme biais.
+
+**Comportement inchange aujourd&apos;hui** : `profileTeam` vaut `'blue'` partout, donc
+tous les modes existants se comportent a l&apos;identique — verifie en rejouant
+l&apos;integralite de la verification des 15 succes (zero regression). La preuve que
+l&apos;abstraction tient vient du test inverse : en basculant le store sur Rouge, les
+memes succes tombent, le meme XP et les memes pieces sont credites, le meme titre
+s&apos;affiche — et rien n&apos;est credite quand c&apos;est l&apos;adversaire qui gagne.
+
+> **Note d&apos;outillage.** Chromium headless fait tourner la boucle de rendu a
+> environ un quart de la vitesse reelle : un `delayedCall` de 750 ms de temps de jeu
+> demande ~3 s d&apos;attente reelle. Les verifications doivent donc **attendre un
+> etat** (`screen === 'result'`), jamais un delai en temps reel — sinon elles
+> concluent a tort qu&apos;une transition ne se produit pas.
 
 ---
 
