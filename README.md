@@ -1269,6 +1269,51 @@ rejouable a l&apos;identique quand on l&apos;impose ; et **rejouer l&apos;enregi
 sur un terrain neuf reconstitue exactement le meme etat** (statuts des dix kubbs, roi,
 lancers restants, tour courant, phase). Zero erreur console.
 
+### Transport et session
+
+Deux modules, toujours sans la moindre infrastructure :
+
+- [`transport.ts`](src/game/online/transport.ts) — **le tuyau, et rien d&apos;autre**.
+  Tout le mode en ligne est ecrit contre cette interface (`send` / `onMessage` /
+  `close`), jamais contre un prestataire. Contraintes volontaires pour qu&apos;un vrai
+  service puisse s&apos;y conformer : messages serialisables en JSON, aucun ordre
+  suppose (le numero de coup s&apos;en charge), aucune notion de reconnexion a ce
+  niveau.
+- [`localTransport.ts`](src/game/online/localTransport.ts) — **faux transport** :
+  deux onglets du meme navigateur se parlent par `BroadcastChannel`. Ce n&apos;est pas
+  un bouche-trou : c&apos;est ce qui permet de construire ET de verifier tout le jeu
+  en ligne a cout nul, et de continuer a le tester plus tard sans dependre d&apos;un
+  service tiers. Limite assumee : ca ne franchit pas la machine.
+- [`session.ts`](src/game/online/session.ts) — la partie a deux : poignee de main,
+  qui tient quel camp, verification du numero de coup. Ne connait ni Phaser, ni le
+  store, ni l&apos;interface.
+
+L&apos;hote tient Bleue, l&apos;invite Rouge — regle transmise explicitement dans le
+message d&apos;accueil (`guestTeam`) plutot que deduite de chaque cote, pour
+qu&apos;elle n&apos;existe qu&apos;a un seul endroit et puisse changer (tirage au sort,
+alternance) sans toucher l&apos;invite.
+
+Les lancers des deux joueurs forment **une seule suite numerotee** : un coup envoye
+comme un coup recu font avancer le meme compteur. D&apos;ou trois cas distincts, et
+trois reactions differentes :
+
+| Cas | Reaction | Pourquoi |
+| --- | --- | --- |
+| Numero attendu | applique | — |
+| Numero deja vu | **ignore** | Un message rejoue est benin |
+| Numero trop grand | **arret franc** (`desynchronise`) | Un coup manque : continuer donnerait deux parties differentes |
+
+**Verifie avec deux vrais onglets** (Playwright, meme contexte navigateur) : poignee
+de main et repartition des camps, transmission integrale du `MatchSetup`, echange de
+deux coups dans les deux sens, doublon ignore sans casser la session, coup manquant
+detecte et session fermee, depart volontaire vu comme « parti » d&apos;un cote et
+« quitte » de l&apos;autre, et message d&apos;accueil d&apos;une version de protocole
+future refuse. Zero erreur console.
+
+Ces modules ne sont pas encore appeles par le jeu — ils n&apos;entrent donc pas dans le
+bundle. Le branchement a `MatchScene` et l&apos;interface (creer/rejoindre par code,
+attente, abandon) forment l&apos;etape suivante.
+
 > **Observation, non corrigee.** La trace a revele qu&apos;un kubb peut etre abattu
 > pendant le **tir d&apos;ouverture** : la branche « kubb » de `onCollisionStart` n&apos;a
 > aucune garde sur `matchStage`, seul le roi y est traite a part. C&apos;est anterieur au
