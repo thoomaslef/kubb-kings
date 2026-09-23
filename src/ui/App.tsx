@@ -15,6 +15,7 @@ import { Shop } from './Shop';
 import { Achievements } from './Achievements';
 import { Progression } from './Progression';
 import { Legal } from './Legal';
+import { OnlineLobby } from './OnlineLobby';
 import { About } from './About';
 import { Boot } from './Boot';
 
@@ -65,6 +66,7 @@ export function App() {
       {screen === 'progression' && <Progression />}
       {screen === 'legal' && <Legal />}
       {screen === 'about' && <About />}
+      {screen === 'online' && <OnlineLobby />}
     </div>
   );
 }

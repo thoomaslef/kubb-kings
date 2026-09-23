@@ -63,8 +63,11 @@ import {
   createRecord,
   type MatchRecord,
   type MatchSnapshot,
+  type RecordedThrow,
   type ThrowInput
 } from '../online/protocol';
+import { getCurrentSession } from '../online/currentSession';
+import type { OnlineSession } from '../online/session';
 import {
   ACHIEVEMENTS,
   COMEBACK_MAX_STANDING,
@@ -133,10 +136,21 @@ export class MatchScene extends Phaser.Scene {
     fieldPreset: 'classique',
     wind: null,
     fieldKubbsEnabled: false,
-    batons: { blue: 'base', red: 'base' }
+    batons: { blue: 'base', red: 'base' },
+    startingTeam: 'blue'
   });
   /** Entrees du lancer en cours, retenues jusqu'a ce qu'on connaisse son resultat. */
   private pendingThrowInput: ThrowInput | null = null;
+  /** Partie en ligne en cours, ou null dans tous les autres modes. */
+  private session: OnlineSession | null = null;
+  /**
+   * Lancer de l'adversaire en train d'etre rejoue. Tant qu'il est present,
+   * la fin de vol ne resout PAS le tour localement : c'est l'instantane
+   * transmis qui fait foi (cf. endRemoteThrow).
+   */
+  private remoteThrow: RecordedThrow | null = null;
+  /** Resultat produit par le lancer en cours, s'il a termine la partie. */
+  private resultThisThrow: MatchResult | null = null;
   private activeTeam: TeamId = 'blue';
   private throwsLeft: Record<TeamId, number> = { blue: 0, red: 0 };
   private timeLeftMs = MATCH_DURATION_MS;
@@ -282,6 +296,13 @@ export class MatchScene extends Phaser.Scene {
     this.batonId = batonId;
     this.fieldKubbsEnabled = fieldKubbsEnabled;
     this.profileTeam = profileTeam;
+
+    // En ligne, les conditions ne viennent pas des reglages locaux : elles
+    // sont imposees par l'hote via la session, sans quoi les deux joueurs
+    // ne joueraient pas sur le meme terrain (le vent est tire au hasard).
+    this.session = mode === 'online' ? getCurrentSession() : null;
+    this.remoteThrow = null;
+    this.resultThisThrow = null;
     this.wind = windEnabled
       ? {
           direction: WIND_DIRECTIONS[Math.floor(Math.random() * WIND_DIRECTIONS.length)],
@@ -293,9 +314,19 @@ export class MatchScene extends Phaser.Scene {
     // pas des selecteurs du menu casual — mais l'IA reste exactement la
     // meme machine qu'en solo, juste sur un profil plus dur.
     const stage = mode === 'defi' ? LADDER[run?.stageIndex ?? 0] : null;
+    // Aucune IA en ligne : les deux camps sont tenus par des humains.
     this.ai = stage ? AI_PROFILES[stage.difficulty] : mode === 'solo' ? AI_PROFILES[difficulty] : null;
     this.playerIndex = { blue: 1, red: 1 };
     this.fieldPreset = stage ? stage.fieldPreset : fieldPreset;
+
+    const remoteSetup = this.session?.setup ?? null;
+    if (remoteSetup) {
+      this.fieldPreset = remoteSetup.fieldPreset;
+      this.wind = remoteSetup.wind;
+      this.fieldKubbsEnabled = remoteSetup.fieldKubbsEnabled;
+      this.batonId = remoteSetup.batons[this.profileTeam];
+      this.batonStats = BATONS[this.batonId];
+    }
     this.runPerks = stage ? run?.perks ?? [] : [];
     // "Calme plat" (Defi) : neutralise la meteo tiree plus haut, si active ce jour-la.
     if (this.runPerks.includes('calme-plat')) this.wind = null;
@@ -344,7 +375,10 @@ export class MatchScene extends Phaser.Scene {
       fieldPreset: this.fieldPreset,
       wind: this.wind,
       fieldKubbsEnabled: this.fieldKubbsEnabled,
-      batons: { blue: this.batonIdForTeam('blue'), red: this.batonIdForTeam('red') }
+      batons: { blue: this.batonIdForTeam('blue'), red: this.batonIdForTeam('red') },
+      // Hors ligne, le tir d'ouverture designe le premier joueur : la valeur
+      // n'a d'effet qu'en ligne, ou l'hote l'a tiree au sort.
+      startingTeam: remoteSetup?.startingTeam ?? 'blue'
     });
     this.pendingThrowInput = null;
 
@@ -358,8 +392,19 @@ export class MatchScene extends Phaser.Scene {
     this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onPointerUp, this);
 
     bridge.on('leave-match', this.handleLeave, this);
+
+    const offRemoteThrow = this.session?.onRemoteThrow((entry) => this.playRemoteThrow(entry));
+    const offClosed = this.session?.onClosed((reason) => {
+      gameStore.getState().patchOnline({ status: 'terminee', endedBecause: reason });
+      // Partie interrompue : on ne peut pas la faire finir "normalement"
+      // (l'adversaire ne jouera plus), on rend donc la main au joueur.
+      if (this.phase !== 'over') this.handleLeave();
+    });
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       bridge.off('leave-match', this.handleLeave, this);
+      offRemoteThrow?.();
+      offClosed?.();
       // Le ralenti du hit-stop survivrait au changement de scene sans ce reset.
       this.juice.destroy();
       this.cancelAiTurn();
@@ -367,7 +412,10 @@ export class MatchScene extends Phaser.Scene {
       this.matter.world?.off(Phaser.Physics.Matter.Events.COLLISION_START, this.onCollisionStart, this);
     });
 
-    this.beginOpeningThrow('blue');
+    // En ligne, pas de tir d'ouverture : l'hote a deja tire au sort qui
+    // commence (cf. MatchSetup.startingTeam et le commentaire qui l'explique).
+    if (remoteSetup) this.beginMatch(remoteSetup.startingTeam);
+    else this.beginOpeningThrow('blue');
   }
 
   update(_time: number, delta: number) {
@@ -394,7 +442,8 @@ export class MatchScene extends Phaser.Scene {
       this.baton.rememberSpeed();
 
       if (this.restMs >= THROW.restDelayMs || this.flightMs >= THROW.maxFlightMs) {
-        this.endThrow();
+        if (this.remoteThrow) this.endRemoteThrow();
+        else this.endThrow();
       }
     }
   }
@@ -424,8 +473,18 @@ export class MatchScene extends Phaser.Scene {
    * encore debout, comme au vrai Kubb) — pas n'importe ou sur une ligne
    * continue.
    */
+  /**
+   * Le joueur de cet appareil a-t-il la main ? En ligne, la phase ne suffit
+   * pas : apres notre lancer, la scene repasse en 'aiming' alors que c'est
+   * le tour de l'adversaire — sans cette garde, on jouerait a sa place.
+   */
+  private canAimNow(): boolean {
+    if (this.phase !== 'aiming') return false;
+    return !this.session || this.activeTeam === this.profileTeam;
+  }
+
   private onPointerDown(pointer: Phaser.Input.Pointer) {
-    if (this.phase !== 'aiming') return;
+    if (!this.canAimNow()) return;
 
     this.throwX[this.activeTeam] = nearestThrowPosition(pointer.worldX, this.availablePositions(this.activeTeam));
     this.throwerSprites[this.activeTeam].x = this.throwX[this.activeTeam];
@@ -551,10 +610,16 @@ export class MatchScene extends Phaser.Scene {
     body.frictionAir = insideRiver ? withHill * RIVER_FRICTION_MULTIPLIER : withHill;
   }
 
-  private launch() {
+  /**
+   * Lance le baton. `imposed` rejoue un lancer de l'adversaire a
+   * l'identique — memes angle, puissance, projectile et meme tirage
+   * aleatoire — pour que l'animation corresponde a ce qui s'est vraiment
+   * passe chez lui (cf. online/protocol.ts).
+   */
+  private launch(imposed?: ThrowInput) {
     const origin = this.origin();
     this.updateFarthestTarget(origin);
-    const stats = this.activeBatonStats();
+    const stats = imposed ? BATONS[imposed.batonId] : this.activeBatonStats();
     const preset = FIELD_PRESETS[this.fieldPreset];
     this.baton = new Baton(this, origin.x, origin.y, stats.shape, stats.textureKey, preset.restitutionMultiplier);
     let deviationDeg = batonDeviationDeg(stats, MAX_AIM_DEVIATION_DEG);
@@ -562,10 +627,16 @@ export class MatchScene extends Phaser.Scene {
     if (this.isProfileTeam(this.activeTeam) && this.runPerks.includes('oeil-de-lynx')) {
       deviationDeg *= OEIL_DE_LYNX_DEVIATION_MULTIPLIER;
     }
-    const roll = this.baton.launch(this.aimAngle, this.aimPower, deviationDeg, batonPowerMultiplier(stats));
+    const roll = this.baton.launch(
+      this.aimAngle,
+      this.aimPower,
+      deviationDeg,
+      batonPowerMultiplier(stats),
+      imposed?.roll
+    );
     // Retenu jusqu'a la fin du lancer : l'enregistrement associe des entrees
     // a leur RESULTAT, qu'on ne connait pas encore ici.
-    this.pendingThrowInput = {
+    this.pendingThrowInput = imposed ?? {
       throwX: this.throwX[this.activeTeam],
       angle: this.aimAngle,
       power: this.aimPower,
@@ -598,9 +669,65 @@ export class MatchScene extends Phaser.Scene {
     const team = this.activeTeam;
     this.resolveEndOfThrow();
     if (input) {
-      appendThrow(this.matchRecord, { team, input, outcome: this.captureSnapshot() });
+      const entry = appendThrow(this.matchRecord, {
+        team,
+        input,
+        outcome: this.captureSnapshot(),
+        ...(this.resultThisThrow ? { result: this.resultThisThrow } : {})
+      });
       this.pendingThrowInput = null;
+      // En ligne, c'est ce message qui fait autorite chez l'adversaire.
+      if (this.session && team === this.profileTeam) this.session.sendThrow(entry);
     }
+    this.resultThisThrow = null;
+  }
+
+  /**
+   * Rejoue le lancer que l'adversaire vient de jouer. On remet la scene dans
+   * SES conditions (son camp, sa position de lancer, son angle) puis on
+   * lance : tout ce qui se passe ensuite n'est qu'une animation, la verite
+   * arrivera avec l'instantane a la fin du vol (endRemoteThrow).
+   */
+  private playRemoteThrow(entry: RecordedThrow) {
+    if (this.phase === 'over') return;
+    this.remoteThrow = entry;
+    this.activeTeam = entry.team;
+    this.throwX[entry.team] = entry.input.throwX;
+    this.throwerSprites[entry.team].x = entry.input.throwX;
+    this.aimAngle = entry.input.angle;
+    this.aimPower = entry.input.power;
+    this.launch(entry.input);
+  }
+
+  /**
+   * Fin du vol d'un lancer distant : on ne resout RIEN localement (le
+   * decompte des lancers, le changement de tour et les chutes de kubbs sont
+   * ceux de l'adversaire), on se cale sur son instantane. S'il a termine la
+   * partie, il a joint son resultat — le deduire ici serait impossible, un
+   * roi couche pouvant valoir victoire ou defaite selon son droit de le
+   * viser.
+   */
+  private endRemoteThrow() {
+    const entry = this.remoteThrow;
+    if (!entry) return;
+    this.remoteThrow = null;
+    this.pendingThrowInput = null;
+
+    this.juice.throwEnd();
+    this.baton?.destroy();
+    this.baton = null;
+
+    appendThrow(this.matchRecord, { team: entry.team, input: entry.input, outcome: entry.outcome, result: entry.result });
+    this.applySnapshot(entry.outcome);
+
+    if (entry.result) {
+      this.finish(entry.result);
+      return;
+    }
+    this.phase = 'aiming';
+    this.aimAngle = this.forwardAngle();
+    this.drawAim();
+    this.syncHud();
   }
 
   /** Etat du terrain tel qu'il sera transmis a l'adversaire (online/protocol.ts). */
@@ -1398,7 +1525,30 @@ export class MatchScene extends Phaser.Scene {
   }
 
   private finish(result: MatchResult, delayMs = 750) {
+    // Pendant le rejeu d'un lancer adverse, la physique locale n'a pas voix
+    // au chapitre : c'est le resultat TRANSMIS qui tranche (endRemoteThrow
+    // le passera ici une fois `remoteThrow` relache). Sans cette garde, un
+    // roi touche a l'animation ferait conclure la partie de travers.
+    if (this.remoteThrow) return;
+
+    // Retenu pour etre joint au lancer en cours : l'adversaire ne peut pas
+    // deduire l'issue du seul instantane.
+    this.resultThisThrow = result;
     this.phase = 'over';
+
+    // Un lancer qui termine la partie ne repasse jamais par endThrow() :
+    // update() sort des que la phase vaut 'over'. Sans cet envoi ici, le
+    // coup decisif ne partirait pas et l'adversaire attendrait indefiniment.
+    if (this.session && this.pendingThrowInput && this.activeTeam === this.profileTeam) {
+      const entry = appendThrow(this.matchRecord, {
+        team: this.activeTeam,
+        input: this.pendingThrowInput,
+        outcome: this.captureSnapshot(),
+        result
+      });
+      this.pendingThrowInput = null;
+      this.session.sendThrow(entry);
+    }
     this.isDragging = false;
     this.cancelAiTurn();
     this.baton?.destroy();

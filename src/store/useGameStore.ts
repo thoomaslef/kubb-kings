@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { TeamId } from '../game/entities/teamData';
+import type { MatchResult } from '../game/matchResult';
 import type { Difficulty } from '../game/ai';
 import type { PerkId } from '../game/roguelite';
 import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId, type Wind } from '../game/rules';
@@ -34,7 +35,8 @@ export type Screen =
   | 'achievements'
   | 'progression'
   | 'legal'
-  | 'about';
+  | 'about'
+  | 'online';
 
 /** Phase du tour courant, pilotee par MatchScene. */
 export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';
@@ -46,7 +48,27 @@ export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';
  * partagent juste chaque camp, cf. `playerIndex` dans MatchScene.
  * 'defi' = roguelite solo (cf. `run` ci-dessous et `src/game/roguelite.ts`).
  */
-export type GameMode = 'local' | '2v2' | 'solo' | 'defi';
+export type GameMode = 'local' | '2v2' | 'solo' | 'defi' | 'online';
+
+/** Ou en est la partie en ligne (cf. src/game/online/session.ts). */
+export type OnlineStatus =
+  /** Salon cree, en attente de l'adversaire. */
+  | 'attente'
+  /** Les deux joueurs sont la, la partie tourne. */
+  | 'en-jeu'
+  /** Terminee : l'adversaire est parti, s'est desynchronise, ou on a quitte. */
+  | 'terminee';
+
+/** Partie en ligne en cours, cote interface. null hors mode 'online'. */
+export interface OnlineState {
+  roomCode: string;
+  role: 'host' | 'guest';
+  status: OnlineStatus;
+  /** Camp tenu par ce joueur ; null tant que la poignee de main n'a pas abouti. */
+  team: TeamId | null;
+  /** Renseigne quand la partie s'arrete autrement que par une fin normale. */
+  endedBecause: string | null;
+}
 
 /** Progression de la run en cours, en mode 'defi' uniquement. */
 export interface RunState {
@@ -66,18 +88,9 @@ export interface TournamentPending {
   redName: string;
 }
 
-export type WinReason =
-  | 'king-down'
-  | 'king-early'
-  | 'timeout'
-  | 'throws-exhausted';
-
-export interface MatchResult {
-  winner: TeamId | 'draw';
-  reason: WinReason;
-  /** Kubbs adverses abattus par chaque equipe, pour l'ecran de fin. */
-  knockedDown: Record<TeamId, number>;
-}
+// Definis dans game/matchResult.ts (donnee de jeu, transportable sur le
+// reseau) et re-exportes ici : les ecrans continuent de les importer du store.
+export type { WinReason, MatchResult } from '../game/matchResult';
 
 export interface HudState {
   activeTeam: TeamId;
@@ -161,6 +174,8 @@ interface GameState {
   profileTeam: TeamId;
   /** null hors mode 'defi' — pas de run en cours. */
   run: RunState | null;
+  /** null hors mode 'online' — pas de partie en ligne en cours. */
+  online: OnlineState | null;
   /** null hors tournoi local — pas de tournoi en cours. */
   tournament: TournamentState | null;
   /**
@@ -234,6 +249,12 @@ interface GameState {
   addPerk: (id: PerkId) => void;
   /** Consomme le bonus "Sursis" de la run en cours ; no-op hors run active. */
   useSursis: () => void;
+  /** Ouvre un salon en ligne (avant meme que l'adversaire arrive). */
+  startOnline: (roomCode: string, role: 'host' | 'guest') => void;
+  /** Met a jour la partie en ligne en cours ; no-op s'il n'y en a pas. */
+  patchOnline: (patch: Partial<OnlineState>) => void;
+  /** Referme la partie en ligne (retour au menu). */
+  endOnline: () => void;
   /** Construit l'arbre a partir des noms (4 ou 8) et demarre le tournoi. */
   startTournament: (names: string[]) => void;
   /** Note quel match de l'arbre le prochain match 1v1 represente. */
@@ -303,6 +324,7 @@ export const useGameStore = create<GameState>((set) => ({
   fieldKubbsEnabled: false,
   profileTeam: 'blue',
   run: null,
+  online: null,
   tournament: null,
   tournamentPending: null,
   lang: getInitialLang(),
@@ -337,6 +359,16 @@ export const useGameStore = create<GameState>((set) => ({
     set((state) => (state.run ? { run: { ...state.run, perks: [...state.run.perks, id] } } : state)),
   useSursis: () =>
     set((state) => (state.run ? { run: { ...state.run, sursisUsed: true } } : state)),
+  startOnline: (roomCode, role) =>
+    set({
+      online: { roomCode, role, status: 'attente', team: null, endedBecause: null },
+      // L'hote tient Bleue, l'invite Rouge — la session le confirmera, mais
+      // l'interface doit deja savoir de quel cote se placer.
+      profileTeam: role === 'host' ? 'blue' : 'red'
+    }),
+  patchOnline: (patch) =>
+    set((state) => (state.online ? { online: { ...state.online, ...patch } } : state)),
+  endOnline: () => set({ online: null, profileTeam: 'blue' }),
   startTournament: (names) => set({ tournament: buildBracket(names), tournamentPending: null }),
   beginTournamentMatch: (round, slot, blueName, redName) =>
     set({ tournamentPending: { round, slot, blueName, redName } }),

@@ -2,6 +2,7 @@ import type { KubbStatus } from '../entities/Kubb';
 import type { TeamId } from '../entities/teamData';
 import type { BatonId } from '../batons';
 import type { FieldPresetId, Wind } from '../rules';
+import type { MatchResult } from '../matchResult';
 
 /**
  * Protocole d'une partie : ce qui doit transiter entre deux joueurs en
@@ -86,6 +87,14 @@ export interface RecordedThrow {
   input: ThrowInput;
   /** Etat du terrain apres ce lancer, selon le lanceur (il fait autorite). */
   outcome: MatchSnapshot;
+  /**
+   * Renseigne uniquement si CE lancer a termine la partie. L'instantane ne
+   * suffit pas a le deduire : un roi couche peut signifier une victoire ou
+   * une defaite du lanceur selon qu'il avait le droit de le viser, et cette
+   * information n'existe que chez lui. Le receveur applique donc le
+   * resultat tel quel, plutot que de tenter de le recalculer.
+   */
+  result?: MatchResult;
 }
 
 /**
@@ -102,6 +111,19 @@ export interface MatchSetup {
   fieldKubbsEnabled: boolean;
   /** Projectile de chaque camp — il a un vrai effet de jeu, pas cosmetique. */
   batons: Record<TeamId, BatonId>;
+  /**
+   * Qui commence, tire au sort par l'hote.
+   *
+   * Simplification ASSUMEE de la premiere version en ligne : le tir
+   * d'ouverture (chaque camp approche le roi, le plus pres commence) est
+   * saute. Son arbitrage a besoin des DEUX mesures avant de trancher, ce
+   * qui en fait un etat reparti — avec rejeu quand les deux touchent le
+   * roi, et donc toute une classe de desynchronisations pour un mecanisme
+   * qui ne fait que designer le premier joueur. Le tirage au sort par
+   * l'hote donne le meme resultat sans le risque. A reprendre si l'on veut
+   * l'ouverture fidele en ligne.
+   */
+  startingTeam: TeamId;
 }
 
 /**

@@ -36,6 +36,8 @@ export function HUD() {
   const setScreen = useGameStore((s) => s.setScreen);
 
   const mode = useGameStore((s) => s.mode);
+  const online = useGameStore((s) => s.online);
+  const profileTeam = useGameStore((s) => s.profileTeam);
   const run = useGameStore((s) => s.run);
   const tournamentPending = useGameStore((s) => s.tournamentPending);
   const resetTournament = useGameStore((s) => s.resetTournament);
@@ -160,6 +162,15 @@ export function HUD() {
         ) : (
           <>
             {hud.phase === 'ai-aiming' && <div className="hud__banner hud__banner--ai">{t('hud.aiAiming')}</div>}
+
+            {/* En ligne, la phase ne dit pas a qui est le tour : apres notre
+                lancer la scene repasse en 'aiming' alors que c'est a
+                l'adversaire. Sans ce bandeau, on croit pouvoir jouer. */}
+            {online && hud.phase !== 'over' && (
+              <div className={`hud__banner${hud.activeTeam === profileTeam ? '' : ' hud__banner--ai'}`}>
+                {t(hud.activeTeam === profileTeam ? 'online.yourTurn' : 'online.opponentTurn')}
+              </div>
+            )}
 
             {hud.phase === 'aiming' && hud.fieldKubbs[hud.activeTeam] > 0 && (
               <div className="hud__banner">{t('hud.fieldKubbsPriority')}</div>

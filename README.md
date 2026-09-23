@@ -1314,6 +1314,55 @@ Ces modules ne sont pas encore appeles par le jeu — ils n&apos;entrent donc pa
 bundle. Le branchement a `MatchScene` et l&apos;interface (creer/rejoindre par code,
 attente, abandon) forment l&apos;etape suivante.
 
+### Une partie en ligne, de bout en bout
+
+Le mode `'online'` est jouable : **Menu -> En ligne**, on cree une partie (code a 4
+lettres) ou l&apos;on rejoint avec le code. L&apos;hote tient Bleue, l&apos;invite
+Rouge.
+
+- **L&apos;hote impose les conditions** (terrain, vent, Kubbs de champ, projectiles) :
+  les tirer de chaque cote donnerait deux parties differentes.
+- **On ne joue que son tour.** La phase ne suffit pas a le savoir : apres notre lancer
+  la scene repasse en `'aiming'` alors que c&apos;est a l&apos;adversaire. D&apos;ou
+  `canAimNow()` cote scene, et un bandeau « L&apos;adversaire joue... » cote HUD.
+- **Un coup distant est rejoue puis corrige** : `playRemoteThrow` relance le meme
+  baton (memes angle, puissance, projectile, meme tirage aleatoire) pour l&apos;animation,
+  et `endRemoteThrow` se cale ensuite sur l&apos;instantane transmis. Aucune resolution
+  locale du tour : les lancers restants, le tour et les chutes sont ceux de
+  l&apos;adversaire.
+
+Deux pieges corriges, tous deux trouves par la verification et invisibles a la lecture :
+
+1. **Le coup decisif ne partait pas.** Quand un lancer termine la partie, `finish()`
+   met la phase a `'over'` et `update()` sort aussitot — `endThrow()` n&apos;est donc
+   jamais atteint, et le coup n&apos;etait pas transmis : l&apos;adversaire attendait
+   indefiniment. `finish()` archive et envoie desormais lui-meme ce dernier coup.
+2. **La physique locale concluait a la place du resultat transmis.** Pendant le rejeu
+   d&apos;un coup adverse, un roi touche a l&apos;animation appelait `finish()` avec le
+   verdict LOCAL. `finish()` ignore maintenant ces appels tant qu&apos;un coup distant
+   est en cours : seul le resultat joint au coup fait foi.
+
+> **Simplification assumee : pas de tir d&apos;ouverture en ligne.** Son arbitrage a
+> besoin des DEUX mesures avant de trancher — c&apos;est un etat reparti, avec rejeu
+> quand les deux joueurs touchent le roi, donc toute une classe de desynchronisations
+> pour un mecanisme qui ne fait que designer le premier joueur. L&apos;hote tire au
+> sort (`MatchSetup.startingTeam`). A reprendre si l&apos;on veut l&apos;ouverture
+> fidele en ligne.
+
+**Verifie avec deux vrais onglets jouant l&apos;un contre l&apos;autre**, par
+l&apos;interface (creer, partager le code, rejoindre) et avec la physique Matter
+reelle : les deux arrivent en match avec le meme decor et le meme premier joueur ;
+celui qui n&apos;a pas la main ne peut pas viser et voit le bandeau ; deux lancers
+successifs se propagent dans les deux sens avec **etat identique de part et
+d&apos;autre** (statuts des dix kubbs, lancers restants, tour) ; et un roi touche trop
+tot termine la partie **des deux cotes avec le meme resultat**. Zero erreur console.
+
+> **Note d&apos;outillage.** Deux jeux Phaser dans un meme navigateur headless
+> ralentissent le temps de JEU bien plus que le facteur ~4 d&apos;une seule page : un
+> vol de 3 s de jeu peut demander une minute de temps reel. Toute la verification
+> attend donc des ETATS (`record.throws.length`, `screen === 'result'`), jamais un
+> delai.
+
 > **Observation, non corrigee.** La trace a revele qu&apos;un kubb peut etre abattu
 > pendant le **tir d&apos;ouverture** : la branche « kubb » de `onCollisionStart` n&apos;a
 > aucune garde sur `matchStage`, seul le roi y est traite a part. C&apos;est anterieur au

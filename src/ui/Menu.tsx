@@ -143,6 +143,9 @@ export function Menu() {
           <button className="btn" onClick={() => setScreen('tournament-setup')}>
             {t('menu.tournament')}
           </button>
+          <button className="btn" onClick={() => setScreen('online')}>
+            {t('menu.online')}
+          </button>
           {bestStage > 0 && (
             <p className="footnote footnote--tight">
               {t(bestStage > 1 ? 'menu.bestStage.many' : 'menu.bestStage.one', {
