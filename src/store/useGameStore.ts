@@ -89,9 +89,11 @@ export interface HudState {
   /** Kubbs encore en jeu de chaque equipe (baseline + field = cibles restantes pour l'adversaire). */
   kubbsStanding: Record<TeamId, number>;
   /**
-   * Regle "Kubbs de champ" (menu) : kubbs de chaque equipe actuellement
-   * replantes dans le camp adverse, cibles prioritaires de leur propre
-   * equipe au tour suivant. Toujours a 0 partout si la regle est desactivee.
+   * Regle "Kubbs de champ" (menu) : nombre de kubbs de champ plantes DANS le
+   * camp de chaque equipe — ce sont donc des kubbs ADVERSES, et c'est a
+   * l'equipe de ce camp de les degager en priorite avant de viser la ligne
+   * d'en face. Indexe par le camp ou ils se dressent, pas par leur
+   * proprietaire. Toujours a 0 partout si la regle est desactivee.
    */
   fieldKubbs: Record<TeamId, number>;
   throwsLeft: Record<TeamId, number>;

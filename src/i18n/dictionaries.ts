@@ -35,7 +35,7 @@ const fr: Record<string, string> = {
   'menu.fieldKubbsOff': 'Regle classique',
   'menu.fieldKubbsOn': 'Kubbs de champ',
   'menu.fieldKubbsOnHint':
-    "Un kubb abattu est replante dans le camp de son lanceur : il devient une cible prioritaire pour son equipe au tour suivant, avant tout kubb de ligne adverse",
+    "Un kubb abattu est replante dans votre camp : vous devrez l'y abattre une seconde fois, en priorite, avant de viser de nouveau la ligne adverse",
   'menu.fieldKubbsOffHint': 'Un kubb abattu quitte directement le jeu',
   'menu.skinAria': 'Skin des kubbs',
   'menu.kingSkinAria': 'Skin du roi',
@@ -249,7 +249,7 @@ const fr: Record<string, string> = {
   'hud.aiAiming': "L'IA vise…",
   'hud.kingTipExpanded': 'Le roi est a portee : le viser maintenant fait gagner la partie',
   'hud.kingTipShort': 'Le roi est a portee — visez-le pour gagner',
-  'hud.fieldKubbsPriority': 'Abattez vos kubbs de champ en priorite avant de viser la ligne adverse',
+  'hud.fieldKubbsPriority': 'Degagez les kubbs de champ de votre camp avant de viser la ligne adverse',
   'hud.openingThrow': "Tir d'ouverture : approchez le roi le plus possible SANS le toucher",
   'hud.resume': 'Reprendre',
   'hud.leaveMatch': 'Quitter la partie',
@@ -320,7 +320,7 @@ const fr: Record<string, string> = {
   'rules.item9':
     "Un tir qui ricoche sur une bande avant d'abattre un kubb adverse redresse en recompense l'un de vos propres kubbs tombes, toujours le plus a gauche.",
   'rules.itemFieldKubbs':
-    "Regle « Kubbs de champ » (activable au menu) : un kubb abattu n'est pas retire du jeu, il est replante dans votre propre camp — il devient alors votre cible prioritaire au tour suivant, avant tout kubb de ligne adverse.",
+    "Regle « Kubbs de champ » (activable au menu) : un kubb que vous abattez n'est pas retire du jeu, il est replante dans VOTRE camp — vous devrez l'y abattre une seconde fois, en priorite, avant de pouvoir viser de nouveau la ligne adverse.",
   'rules.itemOpening':
     "Avant la partie, chaque equipe tire une fois vers le roi pour savoir qui commence : le plus proche SANS le toucher est prioritaire. Toucher le roi fait perdre ce tirage — sauf si l'adversaire le touche aussi, auquel cas on recommence.",
   'rules.back': 'Retour',
@@ -421,7 +421,7 @@ const en: Record<string, string> = {
   'menu.fieldKubbsOff': 'Classic rule',
   'menu.fieldKubbsOn': 'Field kubbs',
   'menu.fieldKubbsOnHint':
-    "A knocked-down kubb is replanted in its own throwing camp: it becomes its team's priority target next turn, before any opposing baseline kubb",
+    'A knocked-down kubb is replanted in your half: you must knock it down a second time, as a priority, before aiming at the opposing baseline again',
   'menu.fieldKubbsOffHint': 'A knocked-down kubb leaves play right away',
   'menu.skinAria': 'Kubb skin',
   'menu.kingSkinAria': 'King skin',
@@ -635,7 +635,7 @@ const en: Record<string, string> = {
   'hud.aiAiming': 'AI is aiming…',
   'hud.kingTipExpanded': 'The king is in range: hitting it now wins the match',
   'hud.kingTipShort': 'The king is in range — aim for it to win',
-  'hud.fieldKubbsPriority': 'Clear your field kubbs first, before aiming at the opposing baseline',
+  'hud.fieldKubbsPriority': 'Clear the field kubbs in your half before aiming at the opposing baseline',
   'hud.openingThrow': "Opening throw: get as close to the king as you can WITHOUT touching it",
   'hud.resume': 'Resume',
   'hud.leaveMatch': 'Leave the match',
@@ -703,7 +703,7 @@ const en: Record<string, string> = {
   'rules.item9':
     "A throw that bounces off a wall before knocking down an opposing kubb revives one of your own fallen kubbs as a reward — always the leftmost one.",
   'rules.itemFieldKubbs':
-    "\"Field kubbs\" rule (toggle in the menu): a knocked-down kubb isn't removed from play, it's replanted in your own camp — it then becomes your priority target next turn, before any opposing baseline kubb.",
+    "\"Field kubbs\" rule (toggle in the menu): a kubb you knock down isn't removed from play, it's replanted in YOUR half — you must knock it down a second time, as a priority, before you can aim at the opposing baseline again.",
   'rules.itemOpening':
     "Before the match, each team throws once at the king to decide who starts: whoever gets closest WITHOUT touching it goes first. Touching the king loses this toss — unless the other team also touches it, in which case it's replayed.",
   'rules.back': 'Back',

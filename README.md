@@ -164,9 +164,10 @@ React  <--(store Zustand : ecran, HUD, resultat)------------   Scenes Phaser
 - Faire tomber le roi dans les regles = **victoire**.
 - Duree limitee a **4 minutes** et **12 lancers par equipe**. Au buzzer, l&apos;equipe qui a
   abattu le plus de kubbs adverses gagne ; a egalite, match nul.
-- **Kubbs de champ** (bouton au menu, off par defaut) : un kubb de ligne abattu peut etre
-  replante dans le camp de son lanceur plutot que retire du jeu — voir section dediee
-  plus bas.
+- **Kubbs de champ** (bouton au menu, off par defaut) : un kubb de ligne abattu est
+  replante dans le camp de l&apos;equipe qui vient de l&apos;abattre, plutot que retire du
+  jeu — c&apos;est a elle de l&apos;y degager avant de viser de nouveau la ligne d&apos;en
+  face, voir section dediee plus bas.
 
 ### Choix d'interpretation
 
@@ -896,65 +897,104 @@ du vrai Kubb la plus souvent absente des adaptations numeriques. Desactivee, le 
 identique a avant cette regle.
 
 Activee : un kubb de **ligne** abattu n&apos;est pas retire du jeu, il est aussitot
-**replante** dans le camp de son PROPRE lanceur (`Kubb.plantInField`, placement
-automatique et instantane — pas de sous-lancer physique) et devient un **kubb de champ**,
-cible **prioritaire** de sa propre equipe au tour suivant, avant tout kubb de ligne
-adverse. Un deuxieme abattage le retire cette fois definitivement (`Kubb.knockDown`).
-Chaque kubb a donc 3 statuts (`Kubb.status` : `'baseline' | 'field' | 'out'`) au lieu de 2
+**replante dans le camp de l&apos;equipe qui vient de l&apos;abattre** (`Kubb.plantInField`,
+placement automatique et instantane — pas de sous-lancer physique) et devient un **kubb de
+champ**. C&apos;est alors a cette equipe — celle dans le camp de qui il se dresse — de le
+degager, **en priorite** sur tout kubb de ligne adverse : au vrai Kubb, abattre un kubb ne
+l&apos;elimine pas, ca le renvoie dans votre moitie de terrain ou il vous barre la route.
+Un deuxieme abattage, par cette meme equipe, le retire cette fois definitivement
+(`Kubb.knockDown`) : il faut donc **deux touches** pour eliminer un kubb pour de bon.
+Chaque kubb a 3 statuts (`Kubb.status` : `'baseline' | 'field' | 'out'`) au lieu de 2
 avant cette regle.
+
+> **Correction (2026-09).** La premiere implementation inversait la priorite : elle
+> demandait a chaque equipe de degager **ses propres** kubbs de champ, plantes dans le
+> camp d&apos;en face. Outre que ce n&apos;etait pas la regle reelle, ca produisait un
+> **blocage complet** des qu&apos;une equipe avait abattu les 5 kubbs de ligne adverses :
+> `legalTargets` ne renvoyait plus rien (aucun kubb de ligne adverse debout, aucun kubb de
+> champ a soi) et `isKingTargetable` refusait le roi (l&apos;adversaire comptait encore 5
+> kubbs de champ « en jeu »). L&apos;equipe n&apos;avait alors plus **aucune cible
+> legale** : ses batons rebondissaient sur le mur de kubbs plante devant sa propre ligne
+> de lancer, et la manche ne pouvait plus se terminer qu&apos;au temps ecoule. La priorite
+> est desormais indexee sur le camp ou le kubb se dresse, ce qui remet la regle a
+> l&apos;endroit et supprime l&apos;etat mort.
 
 - **Placement** : a la meme abscisse que sa position de ligne d&apos;origine (une par
   index, jamais de chevauchement entre les kubbs de champ d&apos;une meme equipe), a une
   ordonnee fixe du cote ou son equipe lance (`FIELD_KUBB_INSET = 260px` depuis le centre,
-  cf. [`src/game/rules.ts`](src/game/rules.ts)) — assez loin du centre pour ne jamais
-  chevaucher la zone de friction « Colline » (rayon 130) ni les obstacles des autres
-  terrains, assez pres de la ligne de fond adverse pour rester une cible nettement plus
-  courte qu&apos;un kubb de ligne (~640px de distance de lancer contre ~830px).
-- **Priorite propre a chaque equipe.** `MatchScene.legalTargets(team)` renvoie les kubbs
-  de champ de `team` s&apos;il en existe (et EUX SEULS), sinon les kubbs de ligne adverses
-  encore debout — comportement inchange sans cette regle. Une equipe qui a des kubbs de
-  champ a elle doit donc les abattre elle-meme (ses propres kubbs, mais replantes dans le
-  camp adverse) avant tout autre tir ; l&apos;autre equipe, elle, n&apos;est jamais
-  contrainte par les kubbs de champ de son adversaire — elle continue de viser la ligne
-  normalement. Cette meme fonction sert a la fois de liste de cibles pour l&apos;IA
-  (`beginAiTurn`) et de filtre de legalite reel pour `onCollisionStart` : un coup sur une
-  cible non prioritaire rebondit sans effet, exactement comme une bande.
-- **Roi.** `MatchScene.isKingTargetable(team)` exige a la fois que l&apos;adversaire
-  n&apos;ait plus aucun kubb en jeu (ligne + champ) ET que `team` elle-meme n&apos;ait
-  plus de kubb de champ a elle a abattre — le viser trop tot reste une defaite immediate,
-  meme quand l&apos;adversaire est deja entierement elimine.
+  cf. [`src/game/rules.ts`](src/game/rules.ts)) — soit, par construction, le camp
+  d&apos;en face : assez loin du centre pour ne jamais chevaucher la zone de friction
+  « Colline » (rayon 130) ni les obstacles des autres terrains, et a seulement ~120px de
+  la ligne de lancer de l&apos;equipe qui devra le degager, contre ~830px pour un kubb de
+  ligne. Un kubb de champ est donc une cible **courte**, la ou un kubb de ligne est une
+  cible longue.
+- **Priorite indexee sur le camp, pas sur le proprietaire.**
+  `MatchScene.legalTargets(team)` renvoie les kubbs de champ **adverses** plantes dans le
+  camp de `team` s&apos;il en existe (et EUX SEULS), sinon les kubbs de ligne adverses
+  encore debout — comportement inchange sans cette regle. Les deux branches ne listent que
+  des kubbs adverses : on ne vise jamais les siens. Cette meme fonction sert a la fois de
+  liste de cibles pour l&apos;IA (`beginAiTurn`) et de filtre de legalite reel pour
+  `onCollisionStart` : un coup sur une cible non prioritaire rebondit sans effet,
+  exactement comme une bande.
+- **Roi.** `MatchScene.isKingTargetable(team)` exige que l&apos;adversaire n&apos;ait plus
+  aucun kubb en jeu, ligne **ou** champ (`Team.standingCount`) — ce qui couvre a soi seul
+  la regle, puisque les kubbs de champ que `team` doit degager appartiennent justement a
+  l&apos;adversaire et comptent dans son total. Le viser trop tot reste une defaite
+  immediate.
+- **Tween orphelin (corrige avec la regle).** `Kubb.plantInField` lance un tween de
+  « pop » de 220ms sur le sprite ; `knockDown`/`plantInField` detruisaient ensuite ce
+  sprite **sans tuer le tween**, qui ecrivait alors sur un corps Matter detruit a la
+  frame suivante (`Cannot read properties of undefined (reading 'position')`). Les deux
+  appellent desormais `killTweensOf` avant de detruire, comme `reviveUp` le faisait deja
+  pour l&apos;ombre.
 - **Ricochet.** La recompense existante (redresse un kubb tombe apres un ricochet sur
   bande, voir plus haut) revient toujours a la ligne d&apos;origine, quel que soit le
   chemin emprunte pour tomber (directement, ou apres etre passe par l&apos;etat champ).
 
 `ai.ts` n&apos;a **aucun changement structurel** : `AiBoard.targets`/`kingTargetable`
 traitaient deja des points et un booleen generiques, fournis par l&apos;appelant — toute
-la logique nouvelle vit dans `MatchScene`/`Team`/`Kubb`. Le seul risque reel pour
-l&apos;IA est un nouveau regime geometrique : des cibles bien plus pres du roi (kubb de
-champ a 260px du centre contre 450px pour un kubb de ligne) et de distance de lancer plus
-courte (~640px), jamais exercees jusqu&apos;ici. `ai.ts::curvedKingDanger` (voir
-Meteo ci-dessus) est deja un balayage GEOMETRIQUE de la trajectoire reelle sur tout le
-cone d&apos;incertitude (erreur du niveau + deviation du jeu + pire cas de puissance),
-independant de la distance de la cible visee — verifie neanmoins de bout en bout plutot
-que suppose correct par analyse seule :
+la logique vit dans `MatchScene`/`Team`/`Kubb`. Mais remettre la regle a l&apos;endroit
+**renverse la geometrie** que l&apos;IA rencontre, ce qui vaut une reverification
+complete plutot qu&apos;une confiance dans celle d&apos;avant :
 
-1. **Simulation hors-navigateur** : 3672 tirs decides (`decideThrow`, `kingTargetable:
-   false`, cibles = kubbs de champ a 1/2/3/5 kubbs simultanes, sur les deux moities du
-   terrain, x 6 niveaux x 6 terrains x 17 etats de vent), chacun rejoue 60 fois avec le
-   VRAI tirage aleatoire du match (deviation de lancer supplementaire de
-   `Baton.launch`) — 220 320 trajectoires reelles verifiees via `simulateWindFlight`.
-   Zero suicide, zero tir invalide (angle/puissance non finis, position de lancer hors
-   `THROW_POSITIONS`).
-2. **Navigateur, vraie physique Matter** : lancer reel du joueur (drag simule via
-   `MatchScene.launch`) abattant un kubb rouge de ligne, transition `'baseline' ->
-   'field'` confirmee en jeu (position exacte, HUD `fieldKubbs` a jour), puis tour de
-   l&apos;IA reellement joue derriere — trajectoire du baton observee convergeant vers
-   son propre kubb de champ (pas la ligne bleue), roi jamais effleure, zero erreur
-   console sur l&apos;ensemble du scenario. Verifie separement (manipulation directe des
-   etats `Kubb`) : geometrie de replantation, redresse vers la ligne d&apos;origine,
-   priorite strictement propre a chaque equipe (un kubb de champ rouge ne bloque jamais
-   les tirs de bleu sur la ligne rouge), `isKingTargetable` refusant bien le roi tant
-   qu&apos;un kubb de champ reste a abattre.
+| | Regle inversee (avant) | Vraie regle (maintenant) |
+| --- | --- | --- |
+| Cibles « kubb de champ » de l&apos;IA | les SIENS, dans le camp bleu (y=900) | ceux de BLEUE, dans son propre camp (y=380) |
+| Distance de lancer | ~640px | ~120px |
+| Position du roi | **entre** le lanceur et la cible | **derriere** la cible |
+| Risque a couvrir | tir trop court qui s&apos;arrete sur le roi | tir trop long qui **depasse** la cible et continue jusqu&apos;au roi |
+
+Le cas du depassement n&apos;avait donc jamais ete exerce. `ai.ts::curvedKingDanger` (voir
+Meteo ci-dessus) est un balayage GEOMETRIQUE de la trajectoire reelle sur tout le cone
+d&apos;incertitude (erreur du niveau + deviation du jeu + pire cas de puissance),
+independant de la distance visee — verifie de bout en bout :
+
+1. **Simulation hors-navigateur** (sweep complet) : 4488 tirs decides (`decideThrow`,
+   `kingTargetable: false`, cibles = kubbs de champ adverses dans le camp de l&apos;IA, en
+   8 configurations de 1 a 5 kubbs — dont le cas critique d&apos;un kubb isole **pile dans
+   l&apos;axe du roi** — x 3 niveaux x **les 11 terrains** x 17 etats de vent), chacun
+   rejoue 60 fois avec le VRAI tirage aleatoire du match (deviation de lancer
+   supplementaire de `Baton.launch`) — **269 280 trajectoires reelles** verifiees via
+   `simulateWindFlight`. **Zero suicide, zero tir invalide** (angle/puissance non finis,
+   position de lancer hors `THROW_POSITIONS`).
+   - 18 tirs sur 4488 (0,4%) retombent sur le repli `safeThrow` — tous le meme cas :
+     kubb de champ **isole dans l&apos;axe du roi**, vent du sud (qui pousse encore le
+     baton vers le roi), IA **facile** (le plus large cone d&apos;erreur). L&apos;IA
+     prefere alors tirer volontairement a cote plutot que risquer le roi : elle perd le
+     lancer, mais ne se suicide jamais. Comportement conservateur voulu, sans effet sur
+     le joueur, qui degage son propre camp normalement.
+2. **Navigateur, vraie physique Matter** : kubb de ligne rouge abattu par Bleue →
+   replante a (360, **900**), c&apos;est-a-dire dans le camp de Bleue a 120px de sa ligne
+   de lancer ; `legalTargets('blue')` = ce seul kubb, `legalTargets('red')` = la ligne
+   bleue intacte ; HUD `fieldKubbs.blue = 1` et bandeau « Degagez les kubbs de champ de
+   votre camp » affiche ; **vrai lancer** de Bleue (`MatchScene.launch`, Matter reel) qui
+   le fait passer a `'out'`. Puis le scenario qui bloquait avant : tous les kubbs de ligne
+   rouges abattus → Bleue garde toujours une cible legale, alterne degagement / ligne sur
+   7 passes, finit a `redStandingCount = 0` et **`isKingTargetable('blue') = true`** — le
+   roi redevient accessible, l&apos;etat mort a disparu. Symetrie verifiee dans
+   l&apos;autre sens (kubb bleu replante a y=380 dans le camp rouge, cible prioritaire de
+   Rouge), puis **tour d&apos;IA reellement joue** derriere : roi jamais touche, zero
+   erreur console sur l&apos;ensemble du scenario.
 
 ---
 

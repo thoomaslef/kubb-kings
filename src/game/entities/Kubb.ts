@@ -9,9 +9,11 @@ import type { TeamId } from './Team';
  * - 'baseline' : encore sur sa ligne de fond d'origine, jamais touche.
  * - 'field' : "kubb de champ" (regle Kubbs de champ, cf. rules.ts
  *   FIELD_KUBB_INSET) — abattu une premiere fois puis replante par
- *   MatchScene dans le camp de son PROPRE lanceur (cible prioritaire au
- *   tour suivant de cette equipe, cf. MatchScene::legalTargets). Reste
- *   possede par la meme equipe, juste deplace.
+ *   MatchScene dans le camp ADVERSE, c'est-a-dire celui de l'equipe qui
+ *   vient de l'abattre : elle devra l'y degager en priorite avant de
+ *   pouvoir viser de nouveau la ligne de fond (cf.
+ *   MatchScene::legalTargets), comme au vrai Kubb. Reste possede par la
+ *   meme equipe, juste deplace.
  * - 'out' : definitivement tombe (deuxieme abattage, ou premier abattage
  *   quand la regle Kubbs de champ est desactivee) — quitte la simulation,
  *   reste couche au sol comme decor.
@@ -97,6 +99,9 @@ export class Kubb {
     this._status = 'out';
 
     const { x, y, rotation } = this.sprite;
+    // Le "pop" de plantInField peut encore tourner sur ce sprite : un tween
+    // survivant ecrirait sur un corps Matter detruit a la frame suivante.
+    scene.tweens.killTweensOf(this.sprite);
     this.sprite.destroy();
 
     const fallen = scene.add
@@ -143,6 +148,7 @@ export class Kubb {
     if (this._status !== 'baseline') return;
     this._status = 'field';
 
+    scene.tweens.killTweensOf(this.sprite);
     this.sprite.destroy();
     this.sprite = this.spawnBody(scene, x, y);
 

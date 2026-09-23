@@ -932,39 +932,47 @@ export class MatchScene extends Phaser.Scene {
 
   /**
    * Cibles legalement visables par `team` en ce moment (regle "Kubbs de
-   * champ", menu) : si l'equipe a encore des kubbs de champ a elle —
-   * replantes dans son propre camp suite a un abattage adverse, cf.
-   * fieldKubbSlot — ce sont EUX, et eux seuls, qui priment ; les kubbs de
-   * ligne adverses ne redeviennent des cibles legales qu'une fois tous
-   * ecartes. Regle desactivee (ou aucun kubb de champ pour l'instant) :
-   * simple liste des kubbs de ligne adverses encore debout, comportement
-   * identique a avant l'introduction de cette regle. Sert a la fois de
-   * liste de cibles pour l'IA (beginAiTurn) et de filtre de legalite pour
-   * onCollisionStart : les deux doivent toujours s'accorder.
+   * champ", menu). Un kubb abattu est replante dans le camp de l'ADVERSAIRE
+   * de son proprietaire (cf. fieldKubbSlot) : les kubbs de champ plantes
+   * dans le camp de `team` sont donc ceux de l'adversaire, et c'est a
+   * `team` — dans le camp de qui ils se dressent — de les degager, comme au
+   * vrai Kubb. Tant qu'il en reste un, ce sont EUX et eux seuls qui priment ;
+   * la ligne de fond adverse ne redevient visable qu'une fois tous ecartes.
+   * Regle desactivee (ou aucun kubb de champ pour l'instant) : simple liste
+   * des kubbs de ligne adverses encore debout, comportement identique a
+   * avant l'introduction de cette regle.
+   *
+   * Les deux branches ne listent que des kubbs ADVERSES : on ne vise jamais
+   * les siens. Sert a la fois de liste de cibles pour l'IA (beginAiTurn) et
+   * de filtre de legalite pour onCollisionStart : les deux doivent toujours
+   * s'accorder.
    */
   private legalTargets(team: TeamId): Kubb[] {
-    const ownField = this.teams[team].kubbs.filter((k) => k.isFieldKubb);
-    if (ownField.length > 0) return ownField;
-    return this.teams[OPPONENT[team]].kubbs.filter((k) => k.isAtBaseline);
+    const opponentKubbs = this.teams[OPPONENT[team]].kubbs;
+    const inOwnHalf = opponentKubbs.filter((k) => k.isFieldKubb);
+    if (inOwnHalf.length > 0) return inOwnHalf;
+    return opponentKubbs.filter((k) => k.isAtBaseline);
   }
 
   /**
-   * Le roi est-il une cible legale pour `team` en ce moment ? Il faut a la
-   * fois que l'adversaire n'ait plus aucun kubb en jeu (ligne ou champ, cf.
-   * Team::standingCount) ET que `team` elle-meme n'ait plus de kubb de
-   * champ a elle a abattre en priorite (regle "Kubbs de champ") — la
+   * Le roi est-il une cible legale pour `team` en ce moment ? Il faut que
+   * l'adversaire n'ait plus aucun kubb en jeu, ligne ou champ (cf.
+   * Team::standingCount) — ce qui couvre a soi seul la regle "Kubbs de
+   * champ", puisque les kubbs de champ que `team` doit degager appartiennent
+   * justement a l'adversaire et comptent donc dans son standingCount. Le
    * viser trop tot coute la partie, exactement comme avant cette regle.
    */
   private isKingTargetable(team: TeamId): boolean {
-    return this.teams[OPPONENT[team]].standingCount === 0 && !this.teams[team].kubbs.some((k) => k.isFieldKubb);
+    return this.teams[OPPONENT[team]].standingCount === 0;
   }
 
   /**
    * Position ou replanter un kubb de ligne abattu (regle "Kubbs de champ") :
-   * dans le camp de SON PROPRE lanceur (FIELD_KUBB_INSET, cote de
-   * TEAMS[team].direction), a la meme abscisse que sa position de ligne
-   * d'origine — chaque equipe n'ayant jamais deux kubbs au meme index, ses
-   * kubbs de champ ne se chevauchent jamais entre eux.
+   * dans le camp ADVERSE (FIELD_KUBB_INSET, cote de TEAMS[team].direction,
+   * qui est le sens dans lequel cette equipe lance), a la meme abscisse que
+   * sa position de ligne d'origine — chaque equipe n'ayant jamais deux kubbs
+   * au meme index, ses kubbs de champ ne se chevauchent jamais entre eux.
+   * C'est donc l'equipe d'en face qui devra le degager, cf. legalTargets.
    */
   private fieldKubbSlot(kubb: Kubb): { x: number; y: number } {
     const index = this.teams[kubb.team].kubbs.indexOf(kubb);
@@ -1039,11 +1047,11 @@ export class MatchScene extends Phaser.Scene {
 
       const kubb = this.asKubb(pair.bodyA) ?? this.asKubb(pair.bodyB);
       if (!kubb || !kubb.isInPlay) continue;
-      // Seule une cible legale (cf. legalTargets — un kubb de champ a soi en
-      // priorite, sinon un kubb de ligne adverse) declenche un effet ; tout
-      // le reste (ses propres kubbs de ligne, un kubb de ligne adverse
-      // encore protege par ses propres kubbs de champ non ecartes) rebondit
-      // sans effet, comme une bande.
+      // Seule une cible legale (cf. legalTargets — un kubb de champ adverse
+      // plante dans son propre camp en priorite, sinon un kubb de ligne
+      // adverse) declenche un effet ; tout le reste (ses propres kubbs, une
+      // ligne adverse encore protegee par des kubbs de champ non degages)
+      // rebondit sans effet, comme une bande.
       if (!this.legalTargets(this.activeTeam).includes(kubb)) {
         this.playBounce(speed);
         continue;
@@ -1055,10 +1063,10 @@ export class MatchScene extends Phaser.Scene {
       }
 
       const { x, y } = kubb.sprite;
-      // Un kubb de champ legalement touche sort definitivement du jeu. Un
-      // kubb de ligne adverse aussi, SAUF si la regle "Kubbs de champ" est
-      // active : il est alors replante dans le camp de son lanceur plutot
-      // que retire (cf. fieldKubbSlot).
+      // Un kubb de champ legalement touche sort definitivement du jeu (2e
+      // abattage). Un kubb de ligne adverse aussi, SAUF si la regle "Kubbs
+      // de champ" est active : il est alors replante dans le camp de son
+      // tombeur, qui devra le degager a son tour (cf. fieldKubbSlot).
       const planted = !kubb.isFieldKubb && this.fieldKubbsEnabled;
       if (planted) {
         const slot = this.fieldKubbSlot(kubb);
@@ -1568,9 +1576,11 @@ export class MatchScene extends Phaser.Scene {
         blue: this.teams.blue.standingCount,
         red: this.teams.red.standingCount
       },
+      // Indexe par le camp OU ils se dressent, pas par leur proprietaire :
+      // c'est ce que l'equipe de ce camp doit degager (cf. legalTargets).
       fieldKubbs: {
-        blue: this.teams.blue.kubbs.filter((k) => k.isFieldKubb).length,
-        red: this.teams.red.kubbs.filter((k) => k.isFieldKubb).length
+        blue: this.teams.red.kubbs.filter((k) => k.isFieldKubb).length,
+        red: this.teams.blue.kubbs.filter((k) => k.isFieldKubb).length
       },
       throwsLeft: { ...this.throwsLeft },
       timeLeftMs: this.timeLeftMs,
