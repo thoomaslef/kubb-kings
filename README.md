@@ -1430,6 +1430,89 @@ affiche « Liaison perdue ». Zero erreur console.
 > gardee ailleurs que dans un onglet — c&apos;est le travail d&apos;un vrai serveur,
 > pas du faux transport local.
 
+### Deux appareils differents : Supabase Realtime
+
+[`supabaseTransport.ts`](src/game/online/supabaseTransport.ts) est le premier vrai
+transport : deux joueurs sur deux appareils, par les canaux « broadcast » de
+Supabase Realtime.
+
+**Pourquoi Supabase**, alors que Cloudflare Durable Objects faisait aussi bien
+l&apos;affaire ? Pas pour le reseau : le debit du jeu est minuscule (un message par
+lancer, plus un battement toutes les 3 s), soit ~400 messages pour une partie de
+10 min — les 2 M mensuels du palier gratuit autorisent environ **5 000 parties par
+mois**, et la latence est invisible dans un jeu au tour par tour ou le lanceur fait
+autorite. Ce qui a tranche, c&apos;est la SUITE : classement, chat et page de profil
+demandent une base de donnees et de l&apos;authentification, que Supabase apporte
+dans le meme compte. Accessoirement, son mode broadcast ne demande **aucun code
+serveur** : le deploiement reste un simple site statique sur GitHub Pages.
+
+| | Transport local | Supabase |
+| --- | --- | --- |
+| Portee | deux onglets du meme navigateur | deux appareils quelconques |
+| Compte / serveur | aucun | un projet Supabase, zero code serveur |
+| Abonnement | immediat | **asynchrone** (voir ci-dessous) |
+| Role aujourd&apos;hui | developper et verifier hors ligne | jouer pour de vrai |
+
+Le choix se fait dans [`transportFactory.ts`](src/game/online/transportFactory.ts) :
+Supabase des qu&apos;il est configure, sinon le transport local. Celui-ci n&apos;est
+pas un lot de consolation — il fait tourner tout le mode en ligne sans reseau ni
+compte, ce qui reste le moyen le plus rapide de verifier le jeu.
+
+**La difficulte reelle n&apos;etait pas le reseau, c&apos;etait le temps.**
+`BroadcastChannel` est utilisable des sa creation ; un canal Supabase ne l&apos;est
+qu&apos;apres un aller-retour. Or `OnlineSession.join()` envoie son `join` **des sa
+construction** — donc systematiquement trop tot. Sans precaution, le tout premier
+message, celui qui declenche la partie, partait dans le vide et le salon attendait
+pour toujours. Le transport garde donc une **file d&apos;attente** et la vide des
+que le canal est abonne. C&apos;est la seule chose que ce fichier ajoute a la
+logique du jeu, et elle est entierement due a la nature du tuyau — exactement ce
+que l&apos;interface `Transport` est censee absorber.
+
+**Le SDK est charge a la demande** (`import()` dynamique) : un joueur qui ne touche
+jamais au mode en ligne ne telecharge pas une ligne de Supabase. Mesure : le bundle
+principal passe de 81,4 a **81,9 ko gzip** (+0,5), et le SDK forme un morceau
+separe de **58,9 ko gzip** charge seulement a l&apos;entree du salon.
+
+**Configuration** — deux variables lues *a la compilation* (cf.
+[`.env.example`](.env.example)) :
+
+```
+VITE_SUPABASE_URL=https://xxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=...
+```
+
+En local, un fichier `.env` (ignore par git). En production, deux secrets du depot
+GitHub, injectes par le workflow de deploiement. Ces valeurs sont **publiques par
+conception** : Vite les inscrit dans le bundle livre, n&apos;importe qui peut les y
+lire. Ce n&apos;est pas une negligence — la cle `anon` est faite pour vivre cote
+navigateur, et ce sont les regles d&apos;acces Supabase (RLS) qui protegeront les
+donnees, jamais le secret de la cle. On les garde hors du depot pour pouvoir les
+changer sans toucher au code.
+
+> **Consequence a connaitre.** Un deploiement **sans** ces secrets reussit quand
+> meme : le jeu retombe silencieusement sur le transport local. L&apos;interface le
+> dit (« deux onglets du MEME navigateur » au lieu de « votre adversaire peut etre
+> sur un autre appareil »), mais le build, lui, ne previendra pas.
+
+Une liaison qui n&apos;arrive pas a s&apos;etablir (projet injoignable, cle fausse)
+est signalee a l&apos;ecran plutot que laissee en attente indefinie. Une liaison qui
+lache APRES coup, elle, est deja couverte par le battement de coeur de la section
+precedente : le transport n&apos;a pas eu a s&apos;en occuper.
+
+**Verifie sans compte Supabase**, en remplacant le SDK par un faux qui reproduit ce
+qui compte (abonnement asynchrone, pas d&apos;echo a soi-meme, abonnement pouvant
+echouer) et en faisant tourner par-dessus la **vraie** `OnlineSession` — qui est
+pure, donc testable hors navigateur : un message emis 120 ms avant l&apos;abonnement
+arrive quand meme ; un canal ne se renvoie pas ses propres messages ; la poignee de
+main donne Bleue a l&apos;hote et Rouge a l&apos;invite avec un `MatchSetup`
+identique ; un lancer traverse avec son numero d&apos;ordre ; un depart est vu comme
+« parti » ; un abonnement refuse remonte comme une panne ; et apres fermeture plus
+rien ne circule.
+
+> **Ce qui n&apos;est PAS verifie**, et doit l&apos;etre une fois le projet cree :
+> une partie entre deux appareils reels. Le faux SDK prouve que notre adaptateur
+> respecte le contrat, pas que Supabase se comporte comme on le croit.
+
 ---
 
 ## Tournoi local

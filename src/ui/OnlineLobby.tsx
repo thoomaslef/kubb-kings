@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
-import { createLocalTransport, createRoomCode, isLocalTransportAvailable } from '../game/online/localTransport';
+import { createRoomCode } from '../game/online/localTransport';
+import { createMatchTransport, transportKind } from '../game/online/transportFactory';
 import { setCurrentSession } from '../game/online/currentSession';
 import { OnlineSession } from '../game/online/session';
 import { PROTOCOL_VERSION, type MatchSetup } from '../game/online/protocol';
@@ -49,6 +50,17 @@ export function OnlineLobby() {
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const sessionRef = useRef<OnlineSession | null>(null);
+  const kind = transportKind();
+
+  // Liaison impossible a etablir (projet injoignable, cle invalide) : sans
+  // cela le salon tournerait indefiniment sur « en attente de l'adversaire »
+  // alors que personne n'ecoute a l'autre bout.
+  const onTransportError = () => {
+    sessionRef.current = null;
+    setCurrentSession(null);
+    endOnline();
+    setError(t('online.connectionFailed'));
+  };
 
   // Le salon ne doit pas survivre a l'ecran : sans ca, un retour au menu
   // laisserait une session ouverte qui continuerait d'accueillir. Nettoyage
@@ -90,7 +102,13 @@ export function OnlineLobby() {
     setError(null);
     const code = createRoomCode();
     startOnline(code, 'host');
-    wire(OnlineSession.host(createLocalTransport(code), drawSetup(fieldPreset, windEnabled, fieldKubbsEnabled), `hote-${code}`));
+    wire(
+      OnlineSession.host(
+        createMatchTransport(code, onTransportError),
+        drawSetup(fieldPreset, windEnabled, fieldKubbsEnabled),
+        `hote-${code}`
+      )
+    );
   };
 
   const join = () => {
@@ -101,7 +119,7 @@ export function OnlineLobby() {
     }
     setError(null);
     startOnline(code, 'guest');
-    wire(OnlineSession.join(createLocalTransport(code), `invite-${code}`));
+    wire(OnlineSession.join(createMatchTransport(code, onTransportError), `invite-${code}`));
   };
 
   const back = () => {
@@ -112,7 +130,7 @@ export function OnlineLobby() {
     setScreen('menu');
   };
 
-  if (!isLocalTransportAvailable()) {
+  if (kind === 'aucun') {
     return (
       <div className="overlay overlay--solid">
         <div className="panel">
@@ -127,6 +145,11 @@ export function OnlineLobby() {
       </div>
     );
   }
+
+  // Dire la portee reelle du mode en ligne plutot que de la laisser
+  // decouvrir : avec le transport local, l'adversaire doit etre dans un autre
+  // onglet du MEME navigateur.
+  const hintKey = kind === 'supabase' ? 'online.anyDeviceHint' : 'online.sameBrowserHint';
 
   // Salon ouvert : on attend l'adversaire.
   if (online && online.status === 'attente') {
@@ -144,7 +167,7 @@ export function OnlineLobby() {
           ) : (
             <p className="panel__text">{t('online.joining', { code: online.roomCode })}</p>
           )}
-          <p className="footnote">{t('online.sameBrowserHint')}</p>
+          <p className="footnote">{t(hintKey)}</p>
           <div className="button-column">
             <button className="btn btn--ghost" onClick={back}>
               {t('online.cancel')}
@@ -160,7 +183,7 @@ export function OnlineLobby() {
       <div className="panel">
         <h2 className="panel__title">{t('online.title')}</h2>
         <p className="panel__text">{t('online.intro')}</p>
-        <p className="footnote">{t('online.sameBrowserHint')}</p>
+        <p className="footnote">{t(hintKey)}</p>
 
         <div className="button-column">
           <button className="btn" onClick={host}>

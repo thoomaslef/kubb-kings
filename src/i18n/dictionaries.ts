@@ -28,7 +28,10 @@ const fr: Record<string, string> = {
   'online.title': 'Partie privee en ligne',
   'online.intro': "Creez une partie et partagez le code, ou entrez celui qu'on vous a donne.",
   'online.sameBrowserHint':
-    "Pour l'instant, les deux joueurs doivent etre dans deux onglets du MEME navigateur : la partie ne passe pas encore d'un appareil a l'autre.",
+    "Ici, les deux joueurs doivent etre dans deux onglets du MEME navigateur : sans service en ligne configure, la partie ne passe pas d'un appareil a l'autre.",
+  'online.anyDeviceHint':
+    "Votre adversaire peut etre sur un autre appareil, ou l'ordinateur d'a cote : il lui suffit du code.",
+  'online.connectionFailed': "Service en ligne injoignable. Verifiez votre connexion, puis reessayez.",
   'online.create': 'Creer une partie',
   'online.join': 'Rejoindre',
   'online.codePlaceholder': 'Code a 4 lettres',
@@ -453,7 +456,9 @@ const en: Record<string, string> = {
   'online.title': 'Private online match',
   'online.intro': 'Create a match and share the code, or enter the one you were given.',
   'online.sameBrowserHint':
-    'For now both players must be in two tabs of the SAME browser: matches do not travel between devices yet.',
+    'Here both players must be in two tabs of the SAME browser: with no online service configured, matches do not travel between devices.',
+  'online.anyDeviceHint': 'Your opponent can be on another device, anywhere: all they need is the code.',
+  'online.connectionFailed': 'Online service unreachable. Check your connection, then try again.',
   'online.create': 'Create a match',
   'online.join': 'Join',
   'online.codePlaceholder': '4-letter code',

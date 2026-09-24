@@ -33,7 +33,15 @@ jobs:
       - run: npm ci
 
       # Verifie les types puis produit dist/ (voir le script "build").
+      #
+      # Les coordonnees Supabase sont lues A LA COMPILATION (Vite les inscrit
+      # dans le bundle). Sans ces secrets, le build reussit quand meme : le
+      # mode en ligne retombe simplement sur le transport local, deux onglets
+      # du meme navigateur. Cf. .env.example.
       - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - uses: actions/configure-pages@v5
 

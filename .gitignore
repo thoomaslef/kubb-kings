@@ -2,3 +2,7 @@ node_modules
 dist
 .vite
 *.local
+
+# Coordonnees Supabase locales (cf. .env.example).
+.env
+.env.local
