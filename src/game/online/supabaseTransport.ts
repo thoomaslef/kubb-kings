@@ -30,10 +30,21 @@ interface SupabaseConfig {
 /**
  * Coordonnees du projet, injectees a la compilation (cf. `.env.example`).
  *
+ * La cle attendue est celle destinee au navigateur : l'ancienne cle `anon`
+ * ou la nouvelle cle « publishable » (`sb_publishable_...`) qui la remplace —
+ * les deux se passent au meme endroit, le SDK ne fait pas la difference.
+ *
  * Ces deux valeurs sont PUBLIQUES par conception : Vite les inscrit dans le
  * bundle, et n'importe qui peut les lire dans le site livre. Ce n'est pas une
- * negligence — la cle `anon` est faite pour ca, et ce sont les regles d'acces
+ * negligence — cette cle est faite pour ca, et ce sont les regles d'acces
  * cote Supabase (RLS) qui protegent les donnees, jamais le secret de la cle.
+ *
+ * Consequence a connaitre, en revanche : sur un canal PUBLIC, quiconque a
+ * cette cle peut s'abonner a n'importe quel salon dont il devine le code. Le
+ * code de salon est donc le seul secret d'une partie privee — suffisant entre
+ * amis, insuffisant le jour ou un classement sera en jeu. Le remede existe
+ * chez Supabase (canaux prives + autorisation), il demande des comptes : il
+ * viendra avec eux.
  */
 export function supabaseConfig(): SupabaseConfig | null {
   const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim();

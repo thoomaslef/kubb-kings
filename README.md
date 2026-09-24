@@ -1481,13 +1481,27 @@ VITE_SUPABASE_URL=https://xxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=...
 ```
 
+La cle attendue est celle destinee au navigateur : l&apos;ancienne `anon` ou la
+nouvelle cle « publishable » (`sb_publishable_...`) qui la remplace — les deux vont
+au meme endroit, le SDK ne fait pas la difference.
+
 En local, un fichier `.env` (ignore par git). En production, deux secrets du depot
 GitHub, injectes par le workflow de deploiement. Ces valeurs sont **publiques par
 conception** : Vite les inscrit dans le bundle livre, n&apos;importe qui peut les y
-lire. Ce n&apos;est pas une negligence — la cle `anon` est faite pour vivre cote
+lire. Ce n&apos;est pas une negligence — cette cle est faite pour vivre cote
 navigateur, et ce sont les regles d&apos;acces Supabase (RLS) qui protegeront les
 donnees, jamais le secret de la cle. On les garde hors du depot pour pouvoir les
 changer sans toucher au code.
+
+> **Ce que « partie privee » veut dire exactement.** Sur un canal PUBLIC —
+> l&apos;option par defaut d&apos;un projet Supabase — quiconque possede cette cle
+> peut s&apos;abonner a n&apos;importe quel salon dont il devine le code. Un code de
+> 4 lettres, c&apos;est environ un million de combinaisons : le seul secret d&apos;une
+> partie est donc ce code. C&apos;est suffisant entre amis, et insuffisant le jour ou
+> un classement sera en jeu — un intrus pourrait injecter un lancer, le lanceur
+> faisant autorite. Le remede existe chez Supabase (canaux prives + autorisation),
+> mais il suppose des comptes joueurs : il viendra avec eux, a l&apos;etape
+> classement.
 
 > **Consequence a connaitre.** Un deploiement **sans** ces secrets reussit quand
 > meme : le jeu retombe silencieusement sur le transport local. L&apos;interface le
