@@ -1523,9 +1523,25 @@ identique ; un lancer traverse avec son numero d&apos;ordre ; un depart est vu c
 « parti » ; un abonnement refuse remonte comme une panne ; et apres fermeture plus
 rien ne circule.
 
-> **Ce qui n&apos;est PAS verifie**, et doit l&apos;etre une fois le projet cree :
-> une partie entre deux appareils reels. Le faux SDK prouve que notre adaptateur
-> respecte le contrat, pas que Supabase se comporte comme on le croit.
+**Verifie ensuite contre un vrai projet Supabase**, mais partiellement : le
+handshake du WebSocket temps reel repond **101 Switching Protocols** avec la cle
+publishable, sur l&apos;URL exacte que le client construit. Le projet, la cle et le
+point d&apos;entree vises par le code sont donc les bons.
+
+> **Ce qui n&apos;est PAS verifie**, et ne peut pas l&apos;etre depuis l&apos;atelier :
+> la partie complete entre deux navigateurs, par Supabase. L&apos;environnement de
+> developpement fait transiter le trafic par un proxy qui re-termine le TLS et
+> repart en HTTP/2 ; l&apos;upgrade WebSocket y est refuse par Cloudflare (erreur
+> 1101). Le MEME handshake force en HTTP/1.1 repond 101 — c&apos;est donc un
+> artefact de l&apos;atelier, pas du jeu, et aucun navigateur ordinaire ne passe par
+> la. Cette verification-la revient a deux vrais navigateurs.
+
+> **Effet de bord instructif.** Cet echec, lui, etait bien reel : le salon s&apos;est
+> ouvert, la connexion a echoue, l&apos;interface a affiche « Service en ligne
+> injoignable » et a referme le salon sans rien laisser trainer. Le chemin
+> d&apos;erreur a donc ete eprouve sur une vraie panne, pas sur une simulation. Un
+> joueur derriere un proxy d&apos;entreprise qui intercepte le TLS verrait
+> exactement ce message — ce qui est le bon comportement.
 
 ---
 
