@@ -26,7 +26,10 @@ export type AchievementId =
   | 'chirurgien'
   | 'remontada'
   | 'collectionneur'
-  | 'increvable';
+  | 'increvable'
+  | 'bapteme-du-feu'
+  | 'tombeur-de-geant'
+  | 'invaincu';
 
 export interface Achievement {
   id: AchievementId;
@@ -49,7 +52,10 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   { id: 'chirurgien', xp: 400, coins: 150 },
   { id: 'remontada', xp: 350, coins: 125 },
   { id: 'collectionneur', xp: 500, coins: 200 },
-  { id: 'increvable', xp: 600, coins: 250 }
+  { id: 'increvable', xp: 600, coins: 250 },
+  { id: 'bapteme-du-feu', xp: 200, coins: 75 },
+  { id: 'tombeur-de-geant', xp: 500, coins: 200 },
+  { id: 'invaincu', xp: 700, coins: 300 }
 ];
 
 /**
@@ -70,3 +76,13 @@ export const FIELD_KUBBS_CLEARED_TARGET = 3;
 
 /** "Remontada" : nombre de kubbs encore debout en dessous duquel la remontee compte. */
 export const COMEBACK_MAX_STANDING = 1;
+
+/**
+ * "Tombeur de geant" : de combien de niveaux l'adversaire en ligne doit nous
+ * depasser pour que la victoire compte. Un seul niveau d'ecart n'aurait rien
+ * d'un exploit ; trois, si.
+ */
+export const GIANT_LEVEL_GAP = 3;
+
+/** "Invaincu" : victoires en ligne consecutives a enchainer. */
+export const ONLINE_STREAK_TARGET = 3;

@@ -72,9 +72,12 @@ import {
   ACHIEVEMENTS,
   COMEBACK_MAX_STANDING,
   FIELD_KUBBS_CLEARED_TARGET,
+  GIANT_LEVEL_GAP,
   GRAZE_MAX_DISTANCE,
+  ONLINE_STREAK_TARGET,
   type AchievementId
 } from '../achievements';
+import { levelFromXp } from '../progression';
 
 /** La plus proche d'un ensemble de positions de lancer (voir THROW_POSITIONS). */
 function nearestThrowPosition(x: number, positions: readonly number[]): number {
@@ -1626,6 +1629,31 @@ export class MatchScene extends Phaser.Scene {
       const allTerrains = Object.keys(FIELD_PRESETS) as FieldPresetId[];
       if (allTerrains.every((id) => won.includes(id))) {
         this.tryUnlockAchievement('collectionneur', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 240 });
+      }
+    }
+    // Succes du mode en ligne (achievements.ts). Un match nul n'est ni une
+    // victoire ni une defaite : il ne touche pas a la serie.
+    if (this.mode === 'online' && result.winner !== 'draw') {
+      const won = result.winner === this.profileTeam;
+      gameStore.getState().recordOnlineWin(won);
+      if (won) {
+        // "Bapteme du feu" : la premiere victoire en ligne. Le succes n'etant
+        // decerne qu'une fois, aucun compteur n'est necessaire.
+        this.tryUnlockAchievement('bapteme-du-feu', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 290 });
+        // "Tombeur de geant" : l'adversaire nous depassait nettement. Son
+        // niveau vient de sa carte (declarative, cf. protocol.ts) ; le notre
+        // est lu AVANT les recompenses du jour, plus bas — c'est bien le
+        // niveau qu'on avait en entrant sur le terrain qui compte.
+        const opponentLevel = this.session?.opponentCard?.level ?? 0;
+        const ownLevel = levelFromXp(gameStore.getState().progression.totalXp).level;
+        if (opponentLevel - ownLevel >= GIANT_LEVEL_GAP) {
+          this.tryUnlockAchievement('tombeur-de-geant', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 340 });
+        }
+        // "Invaincu" : la serie vient d'etre allongee juste au-dessus, on la
+        // relit donc a jour (set() de Zustand est synchrone).
+        if (gameStore.getState().onlineWinStreak >= ONLINE_STREAK_TARGET) {
+          this.tryUnlockAchievement('invaincu', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 390 });
+        }
       }
     }
     // Succes "increvable" (achievements.ts) : derniere manche du mode Defi

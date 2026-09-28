@@ -5,9 +5,10 @@ import { createRoomCode } from '../game/online/localTransport';
 import { createMatchTransport, transportKind } from '../game/online/transportFactory';
 import { setCurrentSession } from '../game/online/currentSession';
 import { OnlineSession } from '../game/online/session';
-import { PROTOCOL_VERSION, type MatchSetup } from '../game/online/protocol';
+import { PROTOCOL_VERSION, type MatchSetup, type PlayerCard } from '../game/online/protocol';
 import { WIND_DIRECTIONS, type FieldPresetId } from '../game/rules';
 import type { BatonId } from '../game/batons';
+import { levelFromXp } from '../game/progression';
 import { useT } from '../i18n/useT';
 
 /**
@@ -55,6 +56,10 @@ export function OnlineLobby() {
   const windEnabled = useGameStore((s) => s.windEnabled);
   const fieldKubbsEnabled = useGameStore((s) => s.fieldKubbsEnabled);
   const batonId = useGameStore((s) => s.batonId);
+  const progression = useGameStore((s) => s.progression);
+  // Ce qu'on annonce de soi : pour l'instant le seul niveau, que l'adversaire
+  // n'a aucun autre moyen de connaitre (cf. succes "Tombeur de geant").
+  const card: PlayerCard = { level: levelFromXp(progression.totalXp).level };
 
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +134,8 @@ export function OnlineLobby() {
       OnlineSession.host(
         createMatchTransport(code, onTransportError),
         drawSetup(fieldPreset, windEnabled, fieldKubbsEnabled, batonId),
-        `hote-${code}`
+        `hote-${code}`,
+        card
       )
     );
   };
@@ -142,7 +148,7 @@ export function OnlineLobby() {
     }
     setError(null);
     startOnline(code, 'guest');
-    wire(OnlineSession.join(createMatchTransport(code, onTransportError), `invite-${code}`, batonId));
+    wire(OnlineSession.join(createMatchTransport(code, onTransportError), `invite-${code}`, batonId, card));
   };
 
   const back = () => {

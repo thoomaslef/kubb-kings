@@ -39,6 +39,21 @@ import type { MatchResult } from '../matchResult';
 export const PROTOCOL_VERSION = 1;
 
 /**
+ * Ce qu'un joueur dit de LUI a l'autre — par opposition a `MatchSetup`, qui
+ * decrit la partie. Un objet plutot qu'un simple nombre : c'est ici que
+ * viendront le pseudo et le classement, et la forme du message n'aura alors
+ * pas a changer.
+ *
+ * Volontairement declaratif, donc croyable sur parole : rien ici ne doit
+ * influer sur les REGLES. Le niveau ne sert qu'a decerner un succes cote
+ * adversaire ("Tombeur de geant") — mentir dessus ne ferait que s'en priver.
+ */
+export interface PlayerCard {
+  /** Niveau de progression (progression.ts) au moment de la rencontre. */
+  level: number;
+}
+
+/**
  * Part d'aleatoire d'un lancer, tiree par le LANCEUR et transmise telle
  * quelle : sans elle, l'adversaire verrait un baton partir droit sur une
  * cible que l'instantane declare pourtant manquee.

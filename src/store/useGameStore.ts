@@ -17,6 +17,7 @@ import { loadCurrency, saveCurrency } from '../game/currencyPersistence';
 import { loadOwnedItems, saveOwnedItems } from '../game/shopPersistence';
 import { loadUnlockedAchievements, saveUnlockedAchievements } from '../game/achievementsPersistence';
 import { loadTerrainWins, saveTerrainWins } from '../game/terrainWinsPersistence';
+import { loadOnlineStreak, saveOnlineStreak } from '../game/onlineStreakPersistence';
 import { getInitialLang, persistLang } from '../i18n/langPersistence';
 import type { Lang } from '../i18n/translate';
 
@@ -240,6 +241,11 @@ interface GameState {
    * partie a l'autre, pour "Collectionneur".
    */
   terrainWins: FieldPresetId[];
+  /**
+   * Victoires en ligne enchainees sans defaite, persistees
+   * (onlineStreakPersistence.ts) — pour "Invaincu".
+   */
+  onlineWinStreak: number;
 
   setScreen: (screen: Screen) => void;
   setPaused: (paused: boolean) => void;
@@ -322,6 +328,11 @@ interface GameState {
    * unlockAchievements/purchaseItem.
    */
   recordTerrainWin: (preset: FieldPresetId) => void;
+  /**
+   * Note l'issue d'une partie en ligne pour la serie d'"Invaincu". Un match
+   * nul n'est pas une defaite : il ne doit donc pas etre transmis ici.
+   */
+  recordOnlineWin: (won: boolean) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -352,6 +363,7 @@ export const useGameStore = create<GameState>((set) => ({
   unlockedAchievements: loadUnlockedAchievements(),
   lastAchievementsUnlocked: [],
   terrainWins: loadTerrainWins() as FieldPresetId[],
+  onlineWinStreak: loadOnlineStreak(),
 
   setScreen: (screen) => set({ screen }),
   setPaused: (paused) => set({ paused }),
@@ -445,6 +457,12 @@ export const useGameStore = create<GameState>((set) => ({
       const terrainWins = [...state.terrainWins, preset];
       saveTerrainWins(terrainWins);
       return { terrainWins };
+    }),
+  recordOnlineWin: (won) =>
+    set((state) => {
+      const onlineWinStreak = won ? state.onlineWinStreak + 1 : 0;
+      saveOnlineStreak(onlineWinStreak);
+      return { onlineWinStreak };
     })
 }));
 

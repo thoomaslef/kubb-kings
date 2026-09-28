@@ -835,9 +835,13 @@ tombe pendant la partie.
 | Remontada         | Gagner apres n&apos;avoir plus eu qu&apos;un seul kubb debout    | +350 XP · +125 🪙 |
 | Collectionneur    | Gagner au moins une fois sur chacun des 11 terrains              | +500 XP · +200 🪙 |
 | Increvable        | Terminer les 30 manches du mode Defi                             | +600 XP · +250 🪙 |
+| Bapteme du feu    | Gagner sa premiere partie en ligne                               | +200 XP · +75 🪙  |
+| Tombeur de geant  | Battre en ligne un joueur d&apos;au moins 3 niveaux de plus      | +500 XP · +200 🪙 |
+| Invaincu          | Enchainer 3 victoires en ligne sans une seule defaite            | +700 XP · +300 🪙 |
 
 Les seuils (`GRAZE_MAX_DISTANCE = 60`, `FIELD_KUBBS_CLEARED_TARGET = 3`,
-`COMEBACK_MAX_STANDING = 1`) sont nommes dans
+`COMEBACK_MAX_STANDING = 1`, `GIANT_LEVEL_GAP = 3`, `ONLINE_STREAK_TARGET = 3`)
+sont nommes dans
 [`src/game/achievements.ts`](src/game/achievements.ts) plutot qu&apos;en dur dans la
 scene : ce sont des reglages de succes, sans aucun effet sur les regles.
 
@@ -847,6 +851,29 @@ d&apos;une partie a l&apos;autre et a donc sa propre trace persistee
 (`terrainWinsPersistence.ts`, `terrainWins` dans le store, action idempotente
 `recordTerrainWin`). C&apos;est la brique dont un futur mode en ligne aura de toute
 facon besoin pour des succes a progression.
+
+**Les trois succes en ligne** sont arrives avec le mode en ligne, et posaient
+chacun une question differente :
+
+- **Bapteme du feu** ne demande rien de plus qu&apos;une victoire : un succes ne se
+  decernant qu&apos;une fois, la « premiere » se deduit d&apos;elle-meme, sans compteur.
+- **Invaincu** est le **deuxieme succes cumulatif** (`onlineStreakPersistence.ts`,
+  `onlineWinStreak`, `recordOnlineWin`). Une defaite remet la serie a zero ; un match
+  nul la laisse telle quelle — ce n&apos;est pas une defaite, et l&apos;effacer serait
+  une punition inventee.
+- **Tombeur de geant** demandait une information qu&apos;on n&apos;avait pas : le
+  niveau de l&apos;adversaire. D&apos;ou la **carte de joueur** (`PlayerCard`), echangee
+  dans la poignee de main a cote du projectile. Un objet, pas un simple nombre : le
+  pseudo et le classement viendront s&apos;y loger sans changer la forme des messages.
+  Elle est **declarative**, donc crue sur parole — et c&apos;est acceptable tant
+  qu&apos;elle ne touche pas aux REGLES : mentir sur son niveau ne fait que priver
+  l&apos;autre d&apos;un succes, ou se l&apos;offrir soi-meme entre amis. Le jour ou un
+  classement sera en jeu, cette information viendra du serveur, pas de l&apos;adversaire.
+
+> **Ecart de niveau lu AVANT les recompenses.** Le niveau du joueur est relu au
+> moment du verdict, avant que l&apos;XP de la partie ne soit accordee : c&apos;est
+> bien le niveau qu&apos;on avait en entrant sur le terrain qui compte, pas celui
+> qu&apos;on a en sortant.
 
 > **A trancher avant l&apos;en-ligne.** La notion de « mon camp » est desormais reglee
 > (`profileTeam`, section suivante), mais tout reste stocke en `localStorage` — donc ni

@@ -1,4 +1,4 @@
-import type { MatchRecord, MatchSetup, RecordedThrow } from './protocol';
+import type { MatchRecord, MatchSetup, PlayerCard, RecordedThrow } from './protocol';
 import type { BatonId } from '../batons';
 import type { TeamId } from '../entities/teamData';
 
@@ -29,9 +29,9 @@ export type OnlineMessage =
    * partie plutot que de l'imposer, faute de quoi un joueur perdrait l'objet
    * qu'il a achete des qu'il joue en ligne.
    */
-  | { kind: 'join'; playerId: string; batonId: BatonId }
+  | { kind: 'join'; playerId: string; batonId: BatonId; card: PlayerCard }
   /** L'hote accepte et impose les conditions de la partie. */
-  | { kind: 'welcome'; playerId: string; setup: MatchSetup; guestTeam: TeamId }
+  | { kind: 'welcome'; playerId: string; setup: MatchSetup; guestTeam: TeamId; card: PlayerCard }
   /** Un lancer joue, avec son resultat (l'auteur fait autorite). */
   | { kind: 'throw'; entry: RecordedThrow }
   /** Depart volontaire — a distinguer d'une coupure subie. */

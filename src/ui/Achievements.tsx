@@ -2,7 +2,9 @@ import { useGameStore } from '../store/useGameStore';
 import {
   ACHIEVEMENTS,
   FIELD_KUBBS_CLEARED_TARGET,
+  GIANT_LEVEL_GAP,
   GRAZE_MAX_DISTANCE,
+  ONLINE_STREAK_TARGET,
   type AchievementId
 } from '../game/achievements';
 import { FIELD_PRESETS } from '../game/rules';
@@ -15,6 +17,8 @@ function hintParams(id: AchievementId): Record<string, number> | undefined {
   if (id === 'nettoyeur') return { n: FIELD_KUBBS_CLEARED_TARGET };
   if (id === 'collectionneur') return { n: Object.keys(FIELD_PRESETS).length };
   if (id === 'increvable') return { n: LADDER.length };
+  if (id === 'tombeur-de-geant') return { n: GIANT_LEVEL_GAP };
+  if (id === 'invaincu') return { n: ONLINE_STREAK_TARGET };
   return undefined;
 }
 

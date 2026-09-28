@@ -1,4 +1,11 @@
-import { checkSeq, isCompatible, type MatchRecord, type MatchSetup, type RecordedThrow } from './protocol';
+import {
+  checkSeq,
+  isCompatible,
+  type MatchRecord,
+  type MatchSetup,
+  type PlayerCard,
+  type RecordedThrow
+} from './protocol';
 import type { OnlineMessage, Transport } from './transport';
 import type { TeamId } from '../entities/teamData';
 import type { BatonId } from '../batons';
@@ -89,6 +96,9 @@ export class OnlineSession {
    * un plateau vierge.
    */
   private pendingResync: MatchRecord | null = null;
+  /** Ce qu'on annonce de soi a l'autre (cf. protocol.ts::PlayerCard). */
+  private readonly card: PlayerCard;
+  private _opponentCard: PlayerCard | null = null;
 
   private readyListeners = new Set<Listener<void>>();
   private rematchAskedListeners = new Set<Listener<void>>();
@@ -97,11 +107,18 @@ export class OnlineSession {
   private throwListeners = new Set<Listener<RecordedThrow>>();
   private closeListeners = new Set<Listener<CloseReason>>();
 
-  private constructor(transport: Transport, role: SessionRole, playerId: string, setup: MatchSetup | null) {
+  private constructor(
+    transport: Transport,
+    role: SessionRole,
+    playerId: string,
+    setup: MatchSetup | null,
+    card: PlayerCard
+  ) {
     this.transport = transport;
     this.role = role;
     this.playerId = playerId;
     this._setup = setup;
+    this.card = card;
     this._localTeam = role === 'host' ? 'blue' : null;
     this.unsubscribe = transport.onMessage((message) => this.handle(message));
   }
@@ -111,18 +128,18 @@ export class OnlineSession {
    * Son propre projectile est deja dans `setup.batons` ; celui de l'invite y
    * sera inscrit a l'accueil.
    */
-  static host(transport: Transport, setup: MatchSetup, playerId: string): OnlineSession {
-    return new OnlineSession(transport, 'host', playerId, setup);
+  static host(transport: Transport, setup: MatchSetup, playerId: string, card: PlayerCard): OnlineSession {
+    return new OnlineSession(transport, 'host', playerId, setup, card);
   }
 
   /**
    * L'invite ne connait rien de la partie tant qu'il n'a pas ete accueilli —
-   * mais il annonce son projectile des sa presentation, pour que l'hote
-   * puisse l'inscrire dans les conditions plutot que de l'imposer.
+   * mais il annonce son projectile et sa carte des sa presentation, pour que
+   * l'hote puisse les integrer plutot que de les imposer.
    */
-  static join(transport: Transport, playerId: string, batonId: BatonId): OnlineSession {
-    const session = new OnlineSession(transport, 'guest', playerId, null);
-    transport.send({ kind: 'join', playerId, batonId });
+  static join(transport: Transport, playerId: string, batonId: BatonId, card: PlayerCard): OnlineSession {
+    const session = new OnlineSession(transport, 'guest', playerId, null, card);
+    transport.send({ kind: 'join', playerId, batonId, card });
     return session;
   }
 
@@ -138,6 +155,14 @@ export class OnlineSession {
   /** Camp tenu par CE joueur ; null tant que la partie n'est pas etablie. */
   get localTeam(): TeamId | null {
     return this._localTeam;
+  }
+
+  /**
+   * Ce que l'adversaire a declare de lui ; null avant la poignee de main.
+   * Declaratif, donc jamais utilise par les regles (cf. PlayerCard).
+   */
+  get opponentCard(): PlayerCard | null {
+    return this._opponentCard;
   }
 
   onReady(fn: Listener<void>): () => void {
@@ -258,11 +283,13 @@ export class OnlineSession {
           ...this._setup,
           batons: { ...this._setup.batons, [guestTeam]: message.batonId ?? 'base' }
         };
+        this._opponentCard = message.card ?? null;
         this.transport.send({
           kind: 'welcome',
           playerId: this.playerId,
           setup: this._setup,
-          guestTeam
+          guestTeam,
+          card: this.card
         });
         this.becomeReady();
         // 'join' alors que la partie tournait deja : l'invite revient apres
@@ -282,6 +309,7 @@ export class OnlineSession {
         }
         this._setup = message.setup;
         this._localTeam = message.guestTeam;
+        this._opponentCard = message.card ?? null;
         this.becomeReady();
         return;
       }
