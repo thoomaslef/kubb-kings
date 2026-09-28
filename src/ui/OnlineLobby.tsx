@@ -96,6 +96,20 @@ export function OnlineLobby() {
   const wire = (session: OnlineSession) => {
     sessionRef.current = session;
     setCurrentSession(session);
+    // Une revanche rejoue le meme terrain avec les memes projectiles, mais
+    // REDISTRIBUE le vent et le premier joueur : sans cela, celui que le
+    // tirage avait favorise le resterait indefiniment. Seul l'hote tire, ici
+    // comme pour la partie initiale.
+    session.provideRematchSetup(() => {
+      const previous = session.setup;
+      const drawn = drawSetup(
+        previous?.fieldPreset ?? fieldPreset,
+        windEnabled,
+        previous?.fieldKubbsEnabled ?? fieldKubbsEnabled,
+        batonId
+      );
+      return { ...drawn, batons: previous?.batons ?? drawn.batons };
+    });
     session.onReady(() => {
       patchOnline({ status: 'en-jeu', team: session.localTeam });
       setMode('online');

@@ -68,7 +68,22 @@ export interface OnlineState {
   team: TeamId | null;
   /** Renseigne quand la partie s'arrete autrement que par une fin normale. */
   endedBecause: string | null;
+  /** Ou en est la revanche, une fois la partie finie. */
+  rematch: RematchState;
 }
+
+/**
+ * Une revanche demande l'accord des DEUX : relancer sur sa seule decision
+ * laisserait l'autre devant son ecran de resultat pendant que la partie a
+ * repris sans lui.
+ */
+export type RematchState =
+  /** Personne n'a rien demande. */
+  | 'aucune'
+  /** On a demande, on attend l'adversaire. */
+  | 'demandee'
+  /** L'adversaire a demande, la balle est dans notre camp. */
+  | 'proposee';
 
 /** Progression de la run en cours, en mode 'defi' uniquement. */
 export interface RunState {
@@ -361,7 +376,7 @@ export const useGameStore = create<GameState>((set) => ({
     set((state) => (state.run ? { run: { ...state.run, sursisUsed: true } } : state)),
   startOnline: (roomCode, role) =>
     set({
-      online: { roomCode, role, status: 'attente', team: null, endedBecause: null },
+      online: { roomCode, role, status: 'attente', team: null, endedBecause: null, rematch: 'aucune' },
       // L'hote tient Bleue, l'invite Rouge — la session le confirmera, mais
       // l'interface doit deja savoir de quel cote se placer.
       profileTeam: role === 'host' ? 'blue' : 'red'

@@ -70,6 +70,18 @@ export class OnlineSession {
    */
   private recordProvider: (() => MatchRecord) | null = null;
   /**
+   * Conditions d'une revanche, tirees par l'hote. Fournies de l'exterieur : la
+   * session ne connait ni le vent ni les terrains, et ne doit pas les
+   * connaitre.
+   */
+  private rematchSetupProvider: (() => MatchSetup) | null = null;
+  /**
+   * Qui a deja demande la revanche. Tenu par l'HOTE seul, qui arbitre : il
+   * faut les deux accords avant de relancer, sinon l'un rejoue pendant que
+   * l'autre regarde encore son resultat.
+   */
+  private rematchWanted = { host: false, guest: false };
+  /**
    * Partie recue avant que la scene ne soit la pour l'entendre. Au retour
    * d'un joueur, l'hote renvoie la partie dans la foulee de l'accueil,
    * alors que la scene, elle, ne demarre qu'a la frame suivante : sans cette
@@ -79,6 +91,8 @@ export class OnlineSession {
   private pendingResync: MatchRecord | null = null;
 
   private readyListeners = new Set<Listener<void>>();
+  private rematchAskedListeners = new Set<Listener<void>>();
+  private rematchListeners = new Set<Listener<MatchSetup>>();
   private resyncListeners = new Set<Listener<MatchRecord>>();
   private throwListeners = new Set<Listener<RecordedThrow>>();
   private closeListeners = new Set<Listener<CloseReason>>();
@@ -150,6 +164,47 @@ export class OnlineSession {
       fn(record);
     }
     return () => this.resyncListeners.delete(fn);
+  }
+
+  /**
+   * L'adversaire a-t-il deja demande la revanche ?
+   *
+   * L'ETAT, pas l'evenement : la demande peut arriver alors que la scene de
+   * match tourne encore chez nous (l'adversaire atteint l'ecran de resultat
+   * une fraction de seconde avant), et l'annonce serait alors emise dans le
+   * vide. L'ecran de fin lit donc cet etat a son ouverture au lieu de compter
+   * sur un message qu'il n'etait peut-etre pas la pour entendre.
+   */
+  get opponentWantsRematch(): boolean {
+    return this.rematchWanted[this.role === 'host' ? 'guest' : 'host'];
+  }
+
+  /** Conditions d'une revanche (hote uniquement ; sans cela, pas de revanche possible). */
+  provideRematchSetup(provider: () => MatchSetup) {
+    this.rematchSetupProvider = provider;
+  }
+
+  /** L'ADVERSAIRE demande la revanche : a nous de repondre. */
+  onRematchAsked(fn: Listener<void>): () => void {
+    this.rematchAskedListeners.add(fn);
+    return () => this.rematchAskedListeners.delete(fn);
+  }
+
+  /** Les deux sont d'accord : la revanche commence, avec ces conditions. */
+  onRematch(fn: Listener<MatchSetup>): () => void {
+    this.rematchListeners.add(fn);
+    return () => this.rematchListeners.delete(fn);
+  }
+
+  /**
+   * Demande la revanche. Quand les deux l'ont fait, l'hote tire les nouvelles
+   * conditions et les deux repartent ensemble.
+   */
+  requestRematch() {
+    if (this._state !== 'ready') return;
+    this.rematchWanted[this.role] = true;
+    this.transport.send({ kind: 'rematch', playerId: this.playerId });
+    if (this.role === 'host') this.startRematchIfAgreed();
   }
 
   onRemoteThrow(fn: Listener<RecordedThrow>): () => void {
@@ -258,6 +313,20 @@ export class OnlineSession {
         return;
       }
 
+      case 'rematch': {
+        if (this._state !== 'ready') return;
+        this.rematchWanted[this.role === 'host' ? 'guest' : 'host'] = true;
+        for (const fn of [...this.rematchAskedListeners]) fn();
+        if (this.role === 'host') this.startRematchIfAgreed();
+        return;
+      }
+
+      case 'rematch-start': {
+        if (this.role !== 'guest') return;
+        this.beginRematch(message.setup);
+        return;
+      }
+
       case 'ping':
         // Le signe de vie a deja ete pris en compte plus haut.
         return;
@@ -265,6 +334,27 @@ export class OnlineSession {
       case 'leave':
         this.close('parti');
     }
+  }
+
+  /** Hote : ne relance que lorsque les DEUX ont demande. */
+  private startRematchIfAgreed() {
+    if (!this.rematchWanted.host || !this.rematchWanted.guest) return;
+    const setup = this.rematchSetupProvider?.();
+    if (!setup) return;
+    this.transport.send({ kind: 'rematch-start', playerId: this.playerId, setup });
+    this.beginRematch(setup);
+  }
+
+  /**
+   * Nouvelle partie sur la meme liaison : conditions remplacees et suite des
+   * coups remise a zero des deux cotes — sans ce reset, le premier lancer de
+   * la revanche serait pris pour un doublon.
+   */
+  private beginRematch(setup: MatchSetup) {
+    this._setup = setup;
+    this.expectedSeq = 0;
+    this.rematchWanted = { host: false, guest: false };
+    for (const fn of [...this.rematchListeners]) fn(setup);
   }
 
   private becomeReady() {

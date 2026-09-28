@@ -47,7 +47,20 @@ export type OnlineMessage =
    * renvoyee, il la rejoue pour se retrouver dans l'etat exact ou elle en
    * est (cf. MatchScene::replayRecord).
    */
-  | { kind: 'resync'; playerId: string; record: MatchRecord };
+  | { kind: 'resync'; playerId: string; record: MatchRecord }
+  /**
+   * « Je veux la revanche. » Une simple DEMANDE : relancer sur sa seule
+   * decision laisserait l'autre devant son ecran de resultat pendant que la
+   * partie a deja repris sans lui.
+   */
+  | { kind: 'rematch'; playerId: string }
+  /**
+   * Les deux ont demande : la revanche commence, avec de NOUVELLES conditions
+   * (le vent et le premier joueur sont retires au sort). C'est l'hote qui
+   * tranche, comme pour la partie initiale — un tirage de chaque cote
+   * donnerait deux parties differentes.
+   */
+  | { kind: 'rematch-start'; playerId: string; setup: MatchSetup };
 
 export interface Transport {
   send(message: OnlineMessage): void;

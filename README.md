@@ -1438,6 +1438,53 @@ affiche « Liaison perdue ». Zero erreur console.
 > gardee ailleurs que dans un onglet — c&apos;est le travail d&apos;un vrai serveur,
 > pas du faux transport local.
 
+### La revanche
+
+Une partie finie, les deux joueurs sont sur l&apos;ecran de resultat. « Rejouer » y
+etait absent : relancer la scene de son seul cote laisserait l&apos;adversaire sur
+une autre partie. Une revanche demande donc **l&apos;accord des deux**.
+
+- Chacun **demande** (`rematch`) ; rien ne part tant que les deux ne l&apos;ont pas
+  fait. Celui qui a demande voit « en attente de l&apos;adversaire », celui qui recoit
+  voit son bouton devenir « Accepter la revanche ».
+- L&apos;hote arbitre et tire les **nouvelles conditions** (`rematch-start`), comme
+  pour la partie initiale — un tirage de chaque cote donnerait deux parties
+  differentes. Meme terrain et memes projectiles, mais **vent et premier joueur
+  redistribues** : sans cela, celui que le tirage avait favorise le resterait.
+- La suite des coups **repart de zero** des deux cotes, sans quoi le premier lancer
+  de la revanche passerait pour un doublon (cf. `checkSeq`).
+
+Deux pieges, tous deux lies a l&apos;endroit ou la partie « vit » entre deux manches :
+
+1. **La scene de match est morte pendant l&apos;ecran de fin**, et avait rendu ses
+   abonnements. Sans les reprendre, aucune revanche n&apos;etait possible et un
+   adversaire qui partait a ce moment-la n&apos;etait jamais signale. C&apos;est
+   desormais `ResultScene` qui tient ces abonnements — elle est la seule chose
+   vivante entre deux parties. Au passage, **quitter depuis l&apos;ecran de fin
+   previent maintenant l&apos;adversaire** : sans ce mot d&apos;adieu il attendait une
+   revanche qui ne viendrait jamais.
+2. **Une demande pouvait arriver trop tot.** Le perdant atteint l&apos;ecran de fin
+   une fraction de seconde apres le gagnant ; si celui-ci demande aussitot, le
+   message arrive alors que la scene de match tourne encore en face, et
+   l&apos;annonce part dans le vide. La session garde donc l&apos;ETAT de la demande, et
+   l&apos;ecran de fin le LIT a son ouverture au lieu de compter sur un evenement
+   qu&apos;il n&apos;etait peut-etre pas la pour entendre.
+
+**Verifie avec deux onglets** : une partie menee jusqu&apos;au roi, puis une seule
+demande qui ne relance rien (les deux restent sur l&apos;ecran de fin), le demandeur
+en attente et l&apos;adversaire prevenu a l&apos;ecran ; l&apos;accord du second relance
+**des deux cotes** avec un plateau neuf, un compteur de coups a zero, des conditions
+identiques et un premier joueur redistribue ; et la revanche se joue vraiment — un
+lancer traverse et laisse les deux terrains identiques.
+
+> **Note d&apos;outillage, et correction.** J&apos;attribuais la lenteur des essais a
+> deux jeux Phaser dans un meme navigateur. La cause principale est ailleurs :
+> **Chromium ralentit tres fortement une page qui n&apos;est pas au premier plan**.
+> Un `delayedCall` de 750 ms de temps de jeu pouvait ainsi ne jamais sembler
+> arriver. Les drapeaux `--disable-background-timer-throttling` et consorts n&apos;y
+> suffisent pas ; seul un `bringToFront()` sur la page qu&apos;on attend la rend
+> pleinement vive. Les essais a deux onglets le font donc avant chaque attente.
+
 ### Deux appareils differents : Supabase Realtime
 
 [`supabaseTransport.ts`](src/game/online/supabaseTransport.ts) est le premier vrai

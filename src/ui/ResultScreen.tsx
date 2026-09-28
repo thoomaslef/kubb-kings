@@ -7,6 +7,7 @@ import { LADDER, setBestStageIfHigher } from '../game/roguelite';
 import { downloadBlob, shareCardBlob } from '../game/shareCard';
 import { translate, type Lang } from '../i18n/translate';
 import { useT } from '../i18n/useT';
+import { getCurrentSession } from '../game/online/currentSession';
 import type { MatchResult } from '../store/useGameStore';
 
 type ShareStatus = 'idle' | 'sharing' | 'shared' | 'downloaded' | 'error';
@@ -61,6 +62,8 @@ export function ResultScreen() {
   const lastAchievementsUnlocked = useGameStore((s) => s.lastAchievementsUnlocked);
   const isDefi = mode === 'defi';
   const isOnline = mode === 'online';
+  const online = useGameStore((s) => s.online);
+  const patchOnline = useGameStore((s) => s.patchOnline);
   // En ligne comme en solo, le joueur n'a qu'un camp : le titre se lit de son
   // point de vue ("Victoire") et non de celui d'un arbitre ("Bleue gagne").
   const soloLike = mode === 'solo' || isDefi || isOnline;
@@ -173,6 +176,13 @@ export function ResultScreen() {
     }
     downloadBlob(file, 'kubb-kings-resultat.png');
     setShareStatus('downloaded');
+  };
+
+  // Demander la revanche, sans la declencher : c'est la session qui tranche
+  // quand les deux camps sont d'accord (cf. online/session.ts).
+  const askRematch = () => {
+    getCurrentSession()?.requestRematch();
+    patchOnline({ rematch: 'demandee' });
   };
 
   const quitRun = () => {
@@ -301,12 +311,28 @@ export function ResultScreen() {
               </>
             )
           ) : isOnline ? (
-            // Pas de "Rejouer" en ligne : relancer la scene de son cote
-            // seulement laisserait l'adversaire sur une autre partie. Une
-            // revanche demande un aller-retour, elle viendra avec le reste.
-            <button className="btn btn--primary" onClick={quitRun}>
-              {t('result.menu')}
-            </button>
+            // Pas de "Rejouer" solitaire en ligne : relancer de son seul cote
+            // laisserait l'adversaire sur une autre partie. On DEMANDE donc la
+            // revanche, et elle ne part que lorsque les deux ont accepte.
+            <>
+              <button
+                className="btn btn--primary"
+                onClick={askRematch}
+                disabled={online?.rematch === 'demandee'}
+              >
+                {t(
+                  online?.rematch === 'demandee'
+                    ? 'online.rematchWaiting'
+                    : online?.rematch === 'proposee'
+                      ? 'online.rematchAccept'
+                      : 'online.rematch'
+                )}
+              </button>
+              {online?.rematch === 'proposee' && <p className="footnote">{t('online.rematchOffered')}</p>}
+              <button className="btn btn--ghost" onClick={quitRun}>
+                {t('result.menu')}
+              </button>
+            </>
           ) : (
             <>
               <button className="btn btn--primary" onClick={() => bridge.send('restart-match')}>
