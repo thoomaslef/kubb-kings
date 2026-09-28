@@ -1319,8 +1319,16 @@ Le mode `'online'` est jouable : **Menu -> En ligne**, on cree une partie (code 
 lettres) ou l&apos;on rejoint avec le code. L&apos;hote tient Bleue, l&apos;invite
 Rouge.
 
-- **L&apos;hote impose les conditions** (terrain, vent, Kubbs de champ, projectiles) :
-  les tirer de chaque cote donnerait deux parties differentes.
+- **L&apos;hote impose les conditions** (terrain, vent, Kubbs de champ) : les tirer de
+  chaque cote donnerait deux parties differentes.
+- **Chacun garde son projectile.** Le baton n&apos;est pas cosmetique — il change la
+  vitesse, la deviation et la forme du corps — et le forcer priverait un joueur de
+  l&apos;objet qu&apos;il a achete avec ses pieces. L&apos;hote inscrit le sien dans les
+  conditions ; l&apos;invite annonce le sien **en se presentant** (`join`), et l&apos;hote
+  l&apos;y ajoute avant de renvoyer l&apos;accueil. Aucun aller-retour de plus : le
+  choix voyage avec le message qui existait deja. Le projectile entre alors dans les
+  conditions et y RESTE, pour qu&apos;un joueur qui revient apres une coupure retrouve
+  la partie telle qu&apos;elle etait plutot que d&apos;en renegocier une.
 - **On ne joue que son tour.** La phase ne suffit pas a le savoir : apres notre lancer
   la scene repasse en `'aiming'` alors que c&apos;est a l&apos;adversaire. D&apos;ou
   `canAimNow()` cote scene, et un bandeau « L&apos;adversaire joue... » cote HUD.

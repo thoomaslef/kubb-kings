@@ -1,4 +1,5 @@
 import type { MatchRecord, MatchSetup, RecordedThrow } from './protocol';
+import type { BatonId } from '../batons';
 import type { TeamId } from '../entities/teamData';
 
 /**
@@ -21,8 +22,14 @@ import type { TeamId } from '../entities/teamData';
 
 /** Ce qui circule entre deux joueurs. Volontairement peu de cas. */
 export type OnlineMessage =
-  /** L'invite se presente. */
-  | { kind: 'join'; playerId: string }
+  /**
+   * L'invite se presente, en annoncant son projectile : le baton a un effet
+   * de jeu (vitesse, deviation, forme du corps), pas seulement cosmetique, et
+   * chacun doit jouer avec le sien. L'hote l'integre aux conditions de la
+   * partie plutot que de l'imposer, faute de quoi un joueur perdrait l'objet
+   * qu'il a achete des qu'il joue en ligne.
+   */
+  | { kind: 'join'; playerId: string; batonId: BatonId }
   /** L'hote accepte et impose les conditions de la partie. */
   | { kind: 'welcome'; playerId: string; setup: MatchSetup; guestTeam: TeamId }
   /** Un lancer joue, avec son resultat (l'auteur fait autorite). */

@@ -819,8 +819,16 @@ export class MatchScene extends Phaser.Scene {
     return this.matchRecord;
   }
 
-  /** Projectile reellement en jeu pour `team` : l'IA reste toujours sur le baton de base. */
+  /**
+   * Projectile reellement en jeu pour `team`.
+   *
+   * En ligne, chaque camp a le sien : les conditions de la partie font foi,
+   * sans quoi on inscrirait NOTRE baton des deux cotes de l'enregistrement.
+   * Hors ligne, l'IA reste toujours sur le baton de base.
+   */
   private batonIdForTeam(team: TeamId): BatonId {
+    const remote = this.session?.setup;
+    if (remote) return remote.batons[team];
     return this.isAiTeam(team) ? 'base' : this.batonId;
   }
 

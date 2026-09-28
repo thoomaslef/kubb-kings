@@ -7,6 +7,7 @@ import { setCurrentSession } from '../game/online/currentSession';
 import { OnlineSession } from '../game/online/session';
 import { PROTOCOL_VERSION, type MatchSetup } from '../game/online/protocol';
 import { WIND_DIRECTIONS, type FieldPresetId } from '../game/rules';
+import type { BatonId } from '../game/batons';
 import { useT } from '../i18n/useT';
 
 /**
@@ -17,7 +18,12 @@ import { useT } from '../i18n/useT';
  */
 
 /** Conditions de la partie, tirees par l'hote : lui seul decide, sinon les deux camps ne joueraient pas la meme. */
-function drawSetup(fieldPreset: FieldPresetId, windEnabled: boolean, fieldKubbsEnabled: boolean): MatchSetup {
+function drawSetup(
+  fieldPreset: FieldPresetId,
+  windEnabled: boolean,
+  fieldKubbsEnabled: boolean,
+  batonId: BatonId
+): MatchSetup {
   return {
     version: PROTOCOL_VERSION,
     fieldPreset,
@@ -28,9 +34,11 @@ function drawSetup(fieldPreset: FieldPresetId, windEnabled: boolean, fieldKubbsE
         }
       : null,
     fieldKubbsEnabled,
-    // Les deux joueurs partent avec le baton de base : echanger les choix de
-    // chacun demanderait un aller-retour de plus dans la poignee de main.
-    batons: { blue: 'base', red: 'base' },
+    // L'hote inscrit SON projectile ; celui de l'invite arrive avec sa
+    // presentation (cf. session.ts) et remplace cette valeur d'attente. Un
+    // baton a un effet de jeu reel : le forcer priverait chacun de l'objet
+    // qu'il a achete.
+    batons: { blue: batonId, red: 'base' },
     startingTeam: Math.random() < 0.5 ? 'blue' : 'red'
   };
 }
@@ -46,6 +54,7 @@ export function OnlineLobby() {
   const fieldPreset = useGameStore((s) => s.fieldPreset);
   const windEnabled = useGameStore((s) => s.windEnabled);
   const fieldKubbsEnabled = useGameStore((s) => s.fieldKubbsEnabled);
+  const batonId = useGameStore((s) => s.batonId);
 
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +114,7 @@ export function OnlineLobby() {
     wire(
       OnlineSession.host(
         createMatchTransport(code, onTransportError),
-        drawSetup(fieldPreset, windEnabled, fieldKubbsEnabled),
+        drawSetup(fieldPreset, windEnabled, fieldKubbsEnabled, batonId),
         `hote-${code}`
       )
     );
@@ -119,7 +128,7 @@ export function OnlineLobby() {
     }
     setError(null);
     startOnline(code, 'guest');
-    wire(OnlineSession.join(createMatchTransport(code, onTransportError), `invite-${code}`));
+    wire(OnlineSession.join(createMatchTransport(code, onTransportError), `invite-${code}`, batonId));
   };
 
   const back = () => {

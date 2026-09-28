@@ -1,6 +1,7 @@
 import { checkSeq, isCompatible, type MatchRecord, type MatchSetup, type RecordedThrow } from './protocol';
 import type { OnlineMessage, Transport } from './transport';
 import type { TeamId } from '../entities/teamData';
+import type { BatonId } from '../batons';
 
 /**
  * Une partie a deux, au-dessus d'un `Transport` quelconque.
@@ -91,15 +92,23 @@ export class OnlineSession {
     this.unsubscribe = transport.onMessage((message) => this.handle(message));
   }
 
-  /** L'hote impose les conditions : c'est lui qui a tire le vent et le terrain. */
+  /**
+   * L'hote impose les conditions : c'est lui qui a tire le vent et le terrain.
+   * Son propre projectile est deja dans `setup.batons` ; celui de l'invite y
+   * sera inscrit a l'accueil.
+   */
   static host(transport: Transport, setup: MatchSetup, playerId: string): OnlineSession {
     return new OnlineSession(transport, 'host', playerId, setup);
   }
 
-  /** L'invite ne connait rien de la partie tant qu'il n'a pas ete accueilli. */
-  static join(transport: Transport, playerId: string): OnlineSession {
+  /**
+   * L'invite ne connait rien de la partie tant qu'il n'a pas ete accueilli —
+   * mais il annonce son projectile des sa presentation, pour que l'hote
+   * puisse l'inscrire dans les conditions plutot que de l'imposer.
+   */
+  static join(transport: Transport, playerId: string, batonId: BatonId): OnlineSession {
     const session = new OnlineSession(transport, 'guest', playerId, null);
-    transport.send({ kind: 'join', playerId });
+    transport.send({ kind: 'join', playerId, batonId });
     return session;
   }
 
@@ -186,11 +195,19 @@ export class OnlineSession {
         // page) doit rester sans danger : on re-accueille, sans rien casser.
         if (this.role !== 'host' || !this._setup) return;
         const wasReady = this._state === 'ready';
+        const guestTeam: TeamId = 'red';
+        // Le projectile annonce par l'invite entre dans les conditions, et y
+        // RESTE : un invite qui revient apres une coupure doit retrouver la
+        // partie telle qu'elle etait, pas en negocier une nouvelle.
+        this._setup = {
+          ...this._setup,
+          batons: { ...this._setup.batons, [guestTeam]: message.batonId ?? 'base' }
+        };
         this.transport.send({
           kind: 'welcome',
           playerId: this.playerId,
           setup: this._setup,
-          guestTeam: 'red'
+          guestTeam
         });
         this.becomeReady();
         // 'join' alors que la partie tournait deja : l'invite revient apres
