@@ -35,13 +35,29 @@ jobs:
       # Verifie les types puis produit dist/ (voir le script "build").
       #
       # Les coordonnees Supabase sont lues A LA COMPILATION (Vite les inscrit
-      # dans le bundle). Sans ces secrets, le build reussit quand meme : le
-      # mode en ligne retombe simplement sur le transport local, deux onglets
-      # du meme navigateur. Cf. .env.example.
+      # dans le bundle). Sans elles, le build reussit quand meme : le mode en
+      # ligne retombe simplement sur le transport local, deux onglets du meme
+      # navigateur. Cf. .env.example.
+      #
+      # Variables d'abord, secrets en repli. Ces deux valeurs ne sont PAS
+      # sensibles (elles finissent dans le bundle livre, cf. .env.example), et
+      # une variable a l'avantage de rester relisible : une faute de frappe
+      # dans un secret, en ecriture seule, ne se voit jamais. Le repli evite
+      # simplement d'avoir a se souvenir de l'onglet ou on les a mises.
       - run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_ANON_KEY }}
+
+      # Dit tout de suite si les coordonnees sont passees : sans ce controle,
+      # un deploiement mal configure se decouvre en jouant, pas au build.
+      - name: Mode en ligne configure ?
+        run: |
+          if grep -rq "supabase.co" dist/assets/*.js; then
+            echo "OK : le bundle vise un projet Supabase (parties entre appareils)."
+          else
+            echo "::warning::Aucune coordonnee Supabase dans le bundle : le mode en ligne restera limite a deux onglets du meme navigateur. Renseignez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY (Settings -> Secrets and variables -> Actions -> Variables)."
+          fi
 
       - uses: actions/configure-pages@v5
 

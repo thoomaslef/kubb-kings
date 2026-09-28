@@ -1485,8 +1485,13 @@ La cle attendue est celle destinee au navigateur : l&apos;ancienne `anon` ou la
 nouvelle cle « publishable » (`sb_publishable_...`) qui la remplace — les deux vont
 au meme endroit, le SDK ne fait pas la difference.
 
-En local, un fichier `.env` (ignore par git). En production, deux secrets du depot
-GitHub, injectes par le workflow de deploiement. Ces valeurs sont **publiques par
+En local, un fichier `.env` (ignore par git). En production, deux **variables** du
+depot GitHub (`Settings -> Secrets and variables -> Actions`, onglet *Variables*),
+injectees par le workflow de deploiement — des variables plutot que des secrets
+parce que ces valeurs ne sont pas sensibles et qu&apos;une variable reste relisible :
+une faute de frappe dans un secret, en ecriture seule, ne se voit jamais. Le
+workflow accepte les secrets en repli, pour que l&apos;onglet choisi n&apos;ait pas
+d&apos;importance. Ces valeurs sont **publiques par
 conception** : Vite les inscrit dans le bundle livre, n&apos;importe qui peut les y
 lire. Ce n&apos;est pas une negligence — cette cle est faite pour vivre cote
 navigateur, et ce sont les regles d&apos;acces Supabase (RLS) qui protegeront les
@@ -1503,10 +1508,12 @@ changer sans toucher au code.
 > mais il suppose des comptes joueurs : il viendra avec eux, a l&apos;etape
 > classement.
 
-> **Consequence a connaitre.** Un deploiement **sans** ces secrets reussit quand
+> **Consequence a connaitre.** Un deploiement **sans** ces valeurs reussit quand
 > meme : le jeu retombe silencieusement sur le transport local. L&apos;interface le
 > dit (« deux onglets du MEME navigateur » au lieu de « votre adversaire peut etre
-> sur un autre appareil »), mais le build, lui, ne previendra pas.
+> sur un autre appareil »), mais on ne le decouvrait qu&apos;en jouant. Le workflow
+> inspecte donc le bundle produit et **emet un avertissement** quand aucune
+> coordonnee Supabase n&apos;y figure.
 
 Une liaison qui n&apos;arrive pas a s&apos;etablir (projet injoignable, cle fausse)
 est signalee a l&apos;ecran plutot que laissee en attente indefinie. Une liaison qui
