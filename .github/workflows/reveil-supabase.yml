@@ -1,0 +1,49 @@
+# Garde le projet Supabase eveille.
+#
+# Un projet du palier gratuit est mis en veille apres 7 jours sans activite.
+# Le jeu redevient alors injoignable le temps du reveil (10 a 30 secondes),
+# et le premier joueur de la semaine voit « Service en ligne injoignable » —
+# pour une partie entre amis, c'est une mauvaise premiere impression obtenue
+# sans rien faire de mal.
+#
+# On passe donc deux fois par semaine, ce qui laisse de la marge si une
+# execution est sautee. Ce n'est pas une garantie officielle : Supabase ne
+# documente pas ce qui compte exactement comme activite. C'est une mesure
+# raisonnable, pas une certitude — si le projet se met tout de meme en veille,
+# il se reveille tout seul a la premiere connexion.
+name: Reveil du projet Supabase
+
+on:
+  schedule:
+    # Lundi et jeudi, 06h17 UTC. Une minute decalee plutot que l'heure pile :
+    # GitHub etale mal les taches planifiees a heure ronde.
+    - cron: '17 6 * * 1,4'
+  workflow_dispatch:
+
+# Aucun acces au depot n'est necessaire : on ne fait qu'un appel sortant.
+permissions: {}
+
+jobs:
+  reveil:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Appeler le projet
+        env:
+          URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          CLE: ${{ vars.VITE_SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$URL" ]; then
+            echo "::notice::Aucun projet Supabase configure : rien a reveiller."
+            exit 0
+          fi
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
+            -H "apikey: $CLE" "${URL%/}/auth/v1/health")
+          echo "Reponse du projet : $code"
+          if [ "$code" = "200" ]; then
+            echo "Projet eveille."
+            exit 0
+          fi
+          # On avertit sans faire echouer : une panne passagere de Supabase
+          # n'est pas un probleme du depot, et un echec rouge recurrent
+          # finirait par ne plus etre lu.
+          echo "::warning::Le projet a repondu $code au lieu de 200."

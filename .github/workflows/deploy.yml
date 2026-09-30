@@ -32,6 +32,11 @@ jobs:
 
       - run: npm ci
 
+      # Le filet de securite AVANT le build : les modules purs (regles, bareme
+      # d'XP, protocole reseau, coherence du contenu) sont verifies ici, la ou
+      # le compilateur ne voit rien. Un echec arrete le deploiement.
+      - run: npm test
+
       # Verifie les types puis produit dist/ (voir le script "build").
       #
       # Les coordonnees Supabase sont lues A LA COMPILATION (Vite les inscrit

@@ -1697,6 +1697,78 @@ l&apos;information de jeu.
 
 ---
 
+## Filet de securite
+
+Pendant longtemps, la verification de ce projet etait entierement manuelle :
+des scripts jetables, lances a la main, perdus ensuite. Le typecheck passait,
+et rien ne voyait une regle inversee. Ce n'est plus le cas.
+
+### `npm test` — les modules purs, en une seconde
+
+Les regles, le bareme d'XP, le protocole reseau et la coherence du contenu
+sont ecrits dans des modules **purs** (ni Phaser, ni store, ni DOM). C'etait
+deja le cas avant — pour qu'un futur serveur puisse les relire — mais rien ne
+s'en servait. Vitest les couvre maintenant : **48 tests, moins d'une seconde**,
+lances par la CI avant chaque deploiement.
+
+Ce qu'ils attrapent, que le compilateur ne voit pas :
+
+| Fichier | Ce qui est verifie |
+| --- | --- |
+| [`online/protocol.test.ts`](src/game/online/protocol.test.ts) | `checkSeq` (doublon vs coup manquant), numerotation d'UNE seule suite pour les deux camps, compatibilite de version |
+| [`progression.test.ts`](src/game/progression.test.ts) | Le niveau ne recule jamais, chaque palier coute plus que le precedent, la serie est plafonnee, le total d'XP n'a aucun terme cache, le bonus « Etude rapide » ne double pas les succes |
+| [`contenu.test.ts`](src/game/contenu.test.ts) | Les tables et les unions restent alignees : chaque succes a sa recompense ET ses traductions, chaque terrain son nom, l'echelle du Defi ses 30 manches sans terrain repete dans un palier, et **le francais et l'anglais couvrent exactement les memes cles, avec les memes parametres `{n}`** |
+
+Le dernier point mérite d'etre souligne : ajouter du contenu demande de toucher
+a quatre ou cinq endroits a la fois (une union de types, une table, deux
+dictionnaires, parfois un ecran). Oublier l'un des cinq **compile
+parfaitement**. C'est l'erreur la plus facile a commettre ici, et c'est
+desormais la mieux couverte.
+
+> **Ces tests ont ete eprouves par mutation**, parce qu'un test incapable
+> d'echouer ne vaut rien : inverser `doublon`/`manquant` dans `checkSeq` fait
+> tomber 2 tests, supprimer une traduction anglaise en fait tomber 2, dupliquer
+> un terrain dans un palier du Defi en fait tomber 1. Le filet mord.
+
+### `npm run test:browser` — deux joueurs, une vraie partie
+
+Ce qu'aucun module pur ne peut couvrir : la physique Matter reelle,
+l'enchainement des scenes Phaser, et **deux joueurs qui s'echangent une
+partie**. Ces verifications vivent desormais dans
+[`tests/browser/`](tests/browser/) (elles etaient jetables), avec leur propre
+[mode d'emploi](tests/browser/README.md). Elles prennent plusieurs minutes et
+demandent un vrai Chromium : la CI ne les lance pas, on les lance avant de
+toucher aux regles ou au mode en ligne.
+
+**Et elles tournent contre le BUILD**, pas contre le serveur de developpement.
+La poignee de pilotage (`window.__kubb`) n'existait qu'en `DEV` : tout ce qui
+etait verifie l'etait donc sur un code que Vite ne produit pas a
+l'identique en production (minification, decoupage, substitution des variables
+d'environnement), et un defaut propre au jeu livre serait passe sous tous les
+radars. Elle s'active maintenant aussi avec `VITE_EXPOSE_TEST_HANDLE=1` — un
+drapeau que le deploiement ne met pas, donc absente du jeu publie (verifie :
+le bundle deploye ne contient pas la chaine).
+
+```bash
+VITE_EXPOSE_TEST_HANDLE=1 npm run build
+npm run preview &
+KUBB_URL=http://localhost:4173/kubb-kings/ npm run test:browser
+```
+
+**Resultat sur le build de production : 44 controles, zero erreur console** —
+partie de bout en bout (dont le coup decisif), rechargement puis reprise a
+l'identique, coupure silencieuse detectee et annoncee, revanche a deux accords,
+et les trois succes en ligne dont « Invaincu » qui traverse trois parties et la
+persistance.
+
+### Ce qui reste a la main
+
+Deux vrais appareils, sur un vrai reseau mobile, avec de vrais doigts. Aucun
+banc d'essai ne remplace ca : ces verifications prouvent que la logique est
+juste, pas que le jeu est agreable.
+
+---
+
 ## Solidite technique
 
 - **Error boundary** ([`src/ui/ErrorBoundary.tsx`](src/ui/ErrorBoundary.tsx)) : une erreur de

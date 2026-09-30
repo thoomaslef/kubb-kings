@@ -21,8 +21,19 @@ export function GameCanvas() {
       const game = bootGame(hostRef.current);
       gameRef.current = game;
 
-      // Poignee de debug en dev : window.__kubb.scene.getScene('MatchScene')
-      if (import.meta.env.DEV) {
+      // Poignee de pilotage : window.__kubb.scene.getScene('MatchScene').
+      //
+      // Presente en developpement, et dans un build explicitement marque
+      // VITE_EXPOSE_TEST_HANDLE=1. Ce second cas n'est pas un confort : sans
+      // lui, les verifications au navigateur ne peuvent tourner que contre le
+      // serveur de dev, donc jamais contre ce qui est REELLEMENT livre — or
+      // Vite ne produit pas le meme code des deux cotes (minification,
+      // decoupage, substitution des variables d'environnement). Un defaut
+      // propre a la production passerait alors sous tous les radars.
+      //
+      // Le build de deploiement, lui, ne met pas ce drapeau : la poignee
+      // n'existe pas dans le jeu publie.
+      if (import.meta.env.DEV || import.meta.env.VITE_EXPOSE_TEST_HANDLE === '1') {
         const w = window as unknown as { __kubb?: Phaser.Game; __kubbStoreApi?: typeof useGameStore };
         w.__kubb = game;
         w.__kubbStoreApi = useGameStore;
