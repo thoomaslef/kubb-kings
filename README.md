@@ -1708,7 +1708,7 @@ et rien ne voyait une regle inversee. Ce n'est plus le cas.
 Les regles, le bareme d'XP, le protocole reseau et la coherence du contenu
 sont ecrits dans des modules **purs** (ni Phaser, ni store, ni DOM). C'etait
 deja le cas avant — pour qu'un futur serveur puisse les relire — mais rien ne
-s'en servait. Vitest les couvre maintenant : **48 tests, moins d'une seconde**,
+s'en servait. Vitest les couvre maintenant : **79 tests, moins d'une seconde**,
 lances par la CI avant chaque deploiement.
 
 Ce qu'ils attrapent, que le compilateur ne voit pas :
@@ -1717,6 +1717,7 @@ Ce qu'ils attrapent, que le compilateur ne voit pas :
 | --- | --- |
 | [`online/protocol.test.ts`](src/game/online/protocol.test.ts) | `checkSeq` (doublon vs coup manquant), numerotation d'UNE seule suite pour les deux camps, compatibilite de version |
 | [`progression.test.ts`](src/game/progression.test.ts) | Le niveau ne recule jamais, chaque palier coute plus que le precedent, la serie est plafonnee, le total d'XP n'a aucun terme cache, le bonus « Etude rapide » ne double pas les succes |
+| [`matchEndAchievements.test.ts`](src/game/matchEndAchievements.test.ts) | Les huit succes de fin de partie, **chacun avec sa contre-epreuve** : un `if` trop permissif passerait un test qui ne verifie que le declenchement |
 | [`contenu.test.ts`](src/game/contenu.test.ts) | Les tables et les unions restent alignees : chaque succes a sa recompense ET ses traductions, chaque terrain son nom, l'echelle du Defi ses 30 manches sans terrain repete dans un palier, et **le francais et l'anglais couvrent exactement les memes cles, avec les memes parametres `{n}`** |
 
 Le dernier point mérite d'etre souligne : ajouter du contenu demande de toucher
@@ -1760,6 +1761,37 @@ partie de bout en bout (dont le coup decisif), rechargement puis reprise a
 l'identique, coupure silencieuse detectee et annoncee, revanche a deux accords,
 et les trois succes en ligne dont « Invaincu » qui traverse trois parties et la
 persistance.
+
+### Le premier remaniement sous filet
+
+`MatchScene` faisait 2 073 lignes — 18 % du code dans un fichier qui melange
+physique, regles, tour de l'IA, succes, synchronisation en ligne et HUD. Le
+decouper en entier serait un chantier ; en sortir ce qui est une **decision
+pure** ne l'est pas.
+
+Les huit succes de FIN de partie y formaient une cascade de `if` au milieu de
+la physique — et une cascade se relit mal : « victoire ET au moins un lancer ET
+aucun manque » se verifie a l'oeil, ou pas du tout. Ils vivent maintenant dans
+[`matchEndAchievements.ts`](src/game/matchEndAchievements.ts), qui repond a une
+seule question a partir d'un bilan, sans rien connaitre de Phaser ni du store.
+La scene ne fait plus que tenir les deux etats cumulatifs a jour et afficher
+les bandeaux.
+
+Les succes qui se gagnent PENDANT le jeu (double, ricochet, frolement,
+nettoyeur...) restent dans la scene : ils dependent d'evenements de collision,
+pas d'un bilan.
+
+Ce que ca change concretement : **31 tests la ou il n'y en avait aucun**,
+chacun avec sa contre-epreuve. Un adversaire sans carte ne « vaut » plus un
+geant ; rallonger le Defi ou ajouter un terrain repousse automatiquement le
+succes correspondant, sans toucher a ce code.
+
+> **Et le filet a servi immediatement.** En reecrivant Collectionneur j'avais
+> remplace « tous les terrains actuels sont gagnes » par « la liste en compte
+> assez » — equivalent aujourd'hui, faux le jour ou un terrain serait retire du
+> jeu, la trace laissee par l'ancien faisant croire la collection complete.
+> Corrige avant de commiter. Les 44 controles au navigateur, relances sur le
+> build apres remaniement, sont restes identiques.
 
 ### Ce qui reste a la main
 

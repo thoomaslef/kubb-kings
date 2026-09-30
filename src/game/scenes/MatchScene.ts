@@ -72,11 +72,10 @@ import {
   ACHIEVEMENTS,
   COMEBACK_MAX_STANDING,
   FIELD_KUBBS_CLEARED_TARGET,
-  GIANT_LEVEL_GAP,
   GRAZE_MAX_DISTANCE,
-  ONLINE_STREAK_TARGET,
   type AchievementId
 } from '../achievements';
+import { endOfMatchAchievements } from '../matchEndAchievements';
 import { levelFromXp } from '../progression';
 
 /** La plus proche d'un ensemble de positions de lancer (voir THROW_POSITIONS). */
@@ -1597,73 +1596,44 @@ export class MatchScene extends Phaser.Scene {
     this.aimGfx.clear();
     this.syncHud();
 
-    // Succes "sans-faute" (achievements.ts) : victoire de Bleue sans un seul
-    // lancer manque en partie normale (au moins un lancer effectue).
-    if (result.winner === this.profileTeam && this.profileThrowsMadeInMatch > 0 && !this.profileMissedThisMatch) {
-      this.tryUnlockAchievement('sans-faute', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 40 });
-    }
-    // Succes "victoire-parfaite" (achievements.ts) : victoire de Bleue sans
-    // avoir perdu un seul de ses propres kubbs de toute la partie. Bandeau
-    // decale plus haut que celui de "sans-faute" : les deux peuvent tomber
-    // sur la meme victoire.
-    if (result.winner === this.profileTeam && this.teams[this.profileTeam].downCount === 0) {
-      this.tryUnlockAchievement('victoire-parfaite', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 90 });
-    }
-    // Succes "chirurgien" (achievements.ts) : victoire de Bleue sans qu'un
-    // seul de ses batons ait touche une bande (au moins un lancer effectue).
-    if (result.winner === this.profileTeam && this.profileThrowsMadeInMatch > 0 && !this.profileTouchedWallThisMatch) {
-      this.tryUnlockAchievement('chirurgien', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 140 });
-    }
-    // Succes "remontada" (achievements.ts) : victoire de Bleue apres etre
-    // descendue a un seul kubb debout (ou aucun).
-    if (result.winner === this.profileTeam && this.profileWasCornered) {
-      this.tryUnlockAchievement('remontada', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 190 });
-    }
-    // Succes "collectionneur" (achievements.ts) : le seul succes cumulatif —
-    // une victoire sur chacun des terrains, d'une partie a l'autre. On note
-    // d'abord ce terrain, puis on relit la collection (set() de Zustand est
-    // synchrone, la victoire du jour est donc deja comptee).
-    if (result.winner === this.profileTeam) {
-      gameStore.getState().recordTerrainWin(this.fieldPreset);
-      const won = gameStore.getState().terrainWins;
-      const allTerrains = Object.keys(FIELD_PRESETS) as FieldPresetId[];
-      if (allTerrains.every((id) => won.includes(id))) {
-        this.tryUnlockAchievement('collectionneur', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 240 });
-      }
-    }
-    // Succes du mode en ligne (achievements.ts). Un match nul n'est ni une
-    // victoire ni une defaite : il ne touche pas a la serie.
-    if (this.mode === 'online' && result.winner !== 'draw') {
-      const won = result.winner === this.profileTeam;
-      gameStore.getState().recordOnlineWin(won);
-      if (won) {
-        // "Bapteme du feu" : la premiere victoire en ligne. Le succes n'etant
-        // decerne qu'une fois, aucun compteur n'est necessaire.
-        this.tryUnlockAchievement('bapteme-du-feu', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 290 });
-        // "Tombeur de geant" : l'adversaire nous depassait nettement. Son
-        // niveau vient de sa carte (declarative, cf. protocol.ts) ; le notre
-        // est lu AVANT les recompenses du jour, plus bas — c'est bien le
-        // niveau qu'on avait en entrant sur le terrain qui compte.
-        const opponentLevel = this.session?.opponentCard?.level ?? 0;
-        const ownLevel = levelFromXp(gameStore.getState().progression.totalXp).level;
-        if (opponentLevel - ownLevel >= GIANT_LEVEL_GAP) {
-          this.tryUnlockAchievement('tombeur-de-geant', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 340 });
-        }
-        // "Invaincu" : la serie vient d'etre allongee juste au-dessus, on la
-        // relit donc a jour (set() de Zustand est synchrone).
-        if (gameStore.getState().onlineWinStreak >= ONLINE_STREAK_TARGET) {
-          this.tryUnlockAchievement('invaincu', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y - 390 });
-        }
-      }
-    }
-    // Succes "increvable" (achievements.ts) : derniere manche du mode Defi
-    // remportee, soit l'echelle entiere franchie (meme calcul que
-    // ResultScreen : stagesCleared = stageIndex + 1 sur une victoire).
-    if (this.mode === 'defi' && result.winner === this.profileTeam) {
-      const stagesCleared = (gameStore.getState().run?.stageIndex ?? 0) + 1;
-      if (stagesCleared >= LADDER.length) {
-        this.tryUnlockAchievement('increvable', { x: FIELD_CENTER_X, y: FIELD_CENTER_Y + 60 });
-      }
+    // Succes de FIN de partie : la decision est sortie d'ici
+    // (matchEndAchievements.ts), ou chaque condition a son test. Ne restent
+    // ici que les deux ETATS CUMULATIFS a mettre a jour avant de decider, et
+    // l'affichage des bandeaux.
+    const won = result.winner === this.profileTeam;
+    // L'ordre compte : ces deux ecritures sont synchrones (Zustand), la
+    // decision qui suit lit donc bien la partie du jour incluse.
+    if (won) gameStore.getState().recordTerrainWin(this.fieldPreset);
+    if (this.mode === 'online' && result.winner !== 'draw') gameStore.getState().recordOnlineWin(won);
+
+    const store = gameStore.getState();
+    const earned = endOfMatchAchievements({
+      mode: this.mode,
+      won,
+      draw: result.winner === 'draw',
+      throwsMade: this.profileThrowsMadeInMatch,
+      missed: this.profileMissedThisMatch,
+      ownKubbsDown: this.teams[this.profileTeam].downCount,
+      touchedWall: this.profileTouchedWallThisMatch,
+      wasCornered: this.profileWasCornered,
+      // Terrains ACTUELS deja gagnes, pas simplement la longueur de la liste
+      // conservee : une trace laissee par un terrain retire du jeu ferait
+      // sinon croire la collection complete.
+      terrainsWon: (Object.keys(FIELD_PRESETS) as FieldPresetId[]).filter((id) => store.terrainWins.includes(id))
+        .length,
+      terrainsTotal: Object.keys(FIELD_PRESETS).length,
+      onlineWinStreak: store.onlineWinStreak,
+      // Niveau DECLARE par l'adversaire (protocol.ts::PlayerCard) ; le notre
+      // est lu avant les recompenses du jour, accordees plus bas.
+      opponentLevel: this.session?.opponentCard?.level ?? 0,
+      ownLevel: levelFromXp(store.progression.totalXp).level,
+      // Meme calcul que ResultScreen : sur une victoire, la manche en cours
+      // vient d'etre franchie.
+      stagesCleared: (store.run?.stageIndex ?? 0) + 1,
+      ladderLength: LADDER.length
+    });
+    for (const { id, offsetY } of earned) {
+      this.tryUnlockAchievement(id, { x: FIELD_CENTER_X, y: FIELD_CENTER_Y + offsetY });
     }
 
     // "Etude rapide"/"Bourse pleine" (Defi) : bonus sur les recompenses de la
