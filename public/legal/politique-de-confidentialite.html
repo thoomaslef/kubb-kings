@@ -38,6 +38,13 @@
       p {
         color: #d7e2dc;
       }
+      ul {
+        color: #d7e2dc;
+        padding-left: 20px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
       strong {
         color: #eef4ef;
       }
@@ -57,21 +64,82 @@
   <body>
     <main>
       <h1>Politique de confidentialite</h1>
-      <p class="updated">KUBB: Kings &mdash; derniere mise a jour : 09/09/2026</p>
+      <p class="updated">KUBB: Kings &mdash; derniere mise a jour : 01/10/2026</p>
 
       <p>
-        KUBB: Kings ne collecte, ne transmet et ne partage aucune donnee personnelle. Le jeu ne
-        fait appel a aucun serveur, aucun compte utilisateur, aucun outil d&rsquo;analyse
-        (analytics), aucun SDK tiers de suivi et aucune publicite.
+        KUBB: Kings ne demande aucun compte, n&rsquo;utilise aucun outil d&rsquo;analyse
+        (analytics), aucun SDK tiers de suivi et aucune publicite. Le jeu ne constitue aucun
+        profil de joueur.
+      </p>
+      <p>
+        Les modes <strong>solo, local, Defi et tournoi</strong> fonctionnent entierement hors
+        ligne : aucune connexion n&rsquo;est etablie. Le <strong>mode en ligne</strong>, lui, a
+        besoin d&rsquo;un service tiers pour relayer les coups entre les deux joueurs. Cette page
+        explique exactement ce qui y transite.
       </p>
 
-      <h2>Quelles donnees sont conservees ?</h2>
+      <h2>Donnees conservees sur votre appareil</h2>
       <p>
-        Les seules informations conservees &mdash; preferences de jeu (niveau, terrain, skin,
-        vent) et meilleure serie du mode Defi &mdash; restent stockees localement sur votre
-        appareil (stockage local du navigateur ou de l&rsquo;application). Elles ne quittent
-        jamais votre appareil et ne sont jamais transmises a l&rsquo;editeur ni a un tiers.
+        Vos preferences (langue, difficulte, terrain, projectile, skin, vent) et votre progression
+        (meilleure serie du mode Defi, succes debloques, serie de victoires en ligne) sont
+        stockees localement, dans le stockage du navigateur ou de l&rsquo;application. Elles ne
+        quittent jamais votre appareil et ne sont jamais transmises a l&rsquo;editeur ni a un
+        tiers.
       </p>
+
+      <h2>Mode en ligne : ce qui transite</h2>
+      <p>
+        Lorsque vous creez ou rejoignez un salon, le jeu ouvre une connexion temps reel vers
+        <strong>Supabase</strong>, qui sert uniquement de relais entre les deux joueurs. Y
+        transitent :
+      </p>
+      <ul>
+        <li>le code de salon, tire au hasard a la creation ;</li>
+        <li>les reglages de la partie (terrain, vent, projectiles, qui commence) ;</li>
+        <li>chaque lancer (visee, puissance, resultat) ;</li>
+        <li>
+          les messages techniques de la partie : signal de presence, abandon, reprise apres
+          coupure, demande de revanche ;
+        </li>
+        <li>votre niveau de progression, transmis a l&rsquo;adversaire pour affichage.</li>
+      </ul>
+      <p>
+        <strong>Aucun nom, aucun pseudonyme, aucun identifiant d&rsquo;appareil</strong>
+        n&rsquo;est transmis : les deux joueurs sont simplement designes par
+        &laquo;&nbsp;hote&nbsp;&raquo; et &laquo;&nbsp;invite&nbsp;&raquo;, suivis du code de
+        salon.
+      </p>
+      <p>
+        <strong>Rien n&rsquo;est enregistre sur le serveur.</strong> Les messages sont relayes en
+        direct puis perdus : le jeu n&rsquo;ecrit dans aucune base de donnees, ne cree aucun
+        compte et ne conserve aucun historique de partie.
+      </p>
+
+      <h2>Adresse IP</h2>
+      <p>
+        Comme pour toute connexion Internet, l&rsquo;adresse IP de votre appareil est
+        necessairement vue par le fournisseur du relais afin d&rsquo;acheminer les messages. Il
+        s&rsquo;agit d&rsquo;une donnee personnelle au sens du RGPD. L&rsquo;editeur n&rsquo;y a
+        pas acces et ne la conserve pas ; Supabase la traite au titre de son propre
+        fonctionnement technique.
+      </p>
+      <p>
+        Ce traitement repose sur l&rsquo;execution du service que vous demandez en lancant une
+        partie en ligne (article 6.1.b du RGPD). <strong>Le mode en ligne est facultatif</strong>
+        : si vous ne l&rsquo;utilisez pas, aucune connexion n&rsquo;est etablie.
+      </p>
+
+      <h2>Services tiers</h2>
+      <p>
+        <strong>GitHub, Inc.</strong> heberge la version web (GitHub Pages) : son serveur voit
+        votre adresse IP au telechargement de la page, comme tout site visite.
+      </p>
+      <p>
+        <strong>Supabase, Inc.</strong> fournit le relais du mode en ligne, et uniquement lui. Le
+        projet utilise est heberge dans la region Europe. Politique de confidentialite de
+        Supabase : <strong>supabase.com/privacy</strong>.
+      </p>
+      <p>Aucun autre tiers n&rsquo;intervient.</p>
 
       <h2>Permissions</h2>
       <p>
@@ -81,14 +149,24 @@
 
       <h2>Enfants</h2>
       <p>
-        Aucune donnee personnelle n&rsquo;etant collectee, le jeu convient a tous les ages, y
-        compris aux enfants.
+        Le jeu ne demande aucune information personnelle et ne constitue aucun profil. Le mode en
+        ligne met en relation deux joueurs qui se partagent un code : il n&rsquo;y a
+        <strong>ni chat, ni messagerie, ni contenu publie par les joueurs</strong>. Le jeu
+        convient donc a tous les ages. Le code de salon doit en revanche etre echange par un
+        moyen choisi par le joueur (de vive voix, message&hellip;) : ce moyen ne depend pas du
+        jeu.
       </p>
 
-      <h2>Suppression des donnees</h2>
+      <h2>Vos droits et la suppression des donnees</h2>
       <p>
         Desinstaller l&rsquo;application, ou vider les donnees de site dans votre navigateur,
-        supprime immediatement toutes les donnees locales mentionnees ci-dessus.
+        supprime immediatement toutes les donnees locales mentionnees ci-dessus. Le mode en ligne
+        ne conservant rien, il n&rsquo;y a rien a supprimer cote serveur.
+      </p>
+      <p>
+        L&rsquo;editeur ne conservant aucune donnee vous concernant, il n&rsquo;existe aucun
+        dossier a consulter, rectifier ou effacer. Pour toute question, ou pour exercer vos
+        droits, ecrivez a l&rsquo;adresse ci-dessous.
       </p>
 
       <h2>Modifications</h2>

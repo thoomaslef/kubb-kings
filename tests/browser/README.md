@@ -30,6 +30,7 @@ KUBB_URL=... node tests/browser/partie-en-ligne.mjs
 | Variable | Role | Defaut |
 | --- | --- | --- |
 | `KUBB_URL` | adresse du jeu | `http://localhost:5173/` |
+| `KUBB_LEGAL_URL` | racine des pages legales (`pages-legales.mjs`) | `legal` deduit de `KUBB_URL` |
 | `CHROMIUM_PATH` | binaire Chromium a piloter | celui de l'atelier |
 
 Le paquet installe est `playwright-core` : il ne telecharge aucun navigateur,
@@ -39,12 +40,13 @@ c'est `CHROMIUM_PATH` qui en designe un.
 
 | Fichier | Couvre |
 | --- | --- |
+| `pages-legales.mjs` | Les trois pages legales et l'ecran in-app : rendu reel, liens croises, **aucun debordement a 390 px**, et la divulgation du mode en ligne presente **dans les deux formes**. Ne lance aucune partie : quelques secondes |
 | `tir-d-ouverture.mjs` | Le tirage au sort ne designe que le premier joueur : kubbs ni affiches ni presents dans le monde physique, un lancer a pleine puissance n'abat rien, puis retour a la normale. **Seule verification en mode LOCAL** |
 | `partie-en-ligne.mjs` | Poignee de main, decor impose par l'hote, tour verrouille, propagation d'un lancer, **coup decisif** (celui qui, longtemps, ne partait pas) |
 | `coupure-et-reprise.mjs` | Rechargement puis reprise a l'identique, partie qui continue apres, **coupure silencieuse** detectee et annoncee |
 | `revanche-et-succes.mjs` | Revanche a deux accords, nouvelles conditions, compteur remis a zero, et les trois succes en ligne dont « Invaincu » qui traverse trois parties et la persistance |
 
-## Deux pieges appris a la dure
+## Pieges appris a la dure
 
 **Chromium ralentit tres fortement une page qui n'est pas au premier plan.**
 Un `delayedCall` de 750 ms de temps de JEU peut sembler ne jamais arriver. Les
@@ -65,6 +67,13 @@ appele pendant que la scene rejouait encore le coup adverse — le lancer
 s'evaporait sans bruit, et la verification echouait une fois sur quelques-unes.
 Si la page n'est jamais prete, l'erreur est franche et dit pourquoi, au lieu de
 laisser un echec inexplicable plus loin.
+
+**Un code HTTP 200 ne prouve pas qu'une page existe.** `vite preview`, comme
+tout serveur a repli SPA, renvoie `index.html` avec un 200 pour une URL
+inconnue. La verification des liens legaux controlait le statut : elle
+declarait valides des liens casses. Elle controle desormais le `<h1>`
+reellement servi. Trouve en cassant un lien expres — un controle qu'on n'a
+jamais vu echouer ne vaut rien.
 
 ## Transport local ou Supabase ?
 

@@ -176,19 +176,25 @@ Politique de confidentialite, CGU et mentions legales, en double forme :
 - **Ecran in-app** ([`src/ui/Legal.tsx`](src/ui/Legal.tsx)), accessible depuis un lien discret
   en bas du menu, pour la meme lisibilite depuis l&apos;application elle-meme.
 
-> **&#9888; A METTRE A JOUR — ces pages ne decrivent plus le jeu.** Elles affirment
-> que le jeu &laquo; ne fait appel a aucun serveur, aucun SDK tiers &raquo; et que les donnees
-> &laquo; ne quittent jamais votre appareil &raquo;. C&apos;etait vrai avant le mode en ligne.
-> Depuis, une partie en ligne ouvre une connexion vers un projet **Supabase** : les
-> coups y transitent, et l&apos;adresse IP du joueur est necessairement vue par
-> l&apos;hebergeur — ce qui est une donnee personnelle au sens du RGPD. Le texte publie
-> est donc devenu inexact, et c&apos;est une page publique engageant l&apos;editeur.
-> A reecrire avant toute diffusion plus large (cf. le fil de la conversation pour une
-> proposition de redaction).
+Les deux formes declarent le mode en ligne : le relais **Supabase**, ce qui y transite
+(code de salon, reglages, lancers, messages techniques, niveau de progression), le fait
+qu&apos;aucun nom ni identifiant d&apos;appareil n&apos;est transmis, qu&apos;aucune donnee
+n&apos;est stockee cote serveur, et que l&apos;adresse IP est necessairement vue par le
+fournisseur du relais — donnee personnelle au sens du RGPD, traitement fonde sur
+l&apos;execution du service demande (article 6.1.b).
 
-Hors mode en ligne, le constat reste vrai : aucun compte, aucun outil d&apos;analyse,
-aucune publicite — et tout ce qui est conserve (preferences, progression, succes,
-meilleure serie) reste en stockage local sur l&apos;appareil.
+> **Pourquoi c&apos;est verrouille par un test.** Le mode en ligne a ete livre alors que
+> ces pages affirmaient encore &laquo; aucun serveur &raquo; et &laquo; ne quittent jamais
+> votre appareil &raquo;. Rien ne l&apos;avait signale : un texte faux compile aussi bien
+> qu&apos;un texte vrai. [`src/ui/legal.test.ts`](src/ui/legal.test.ts) interdit desormais
+> le retour des denegations universelles et exige, tant que
+> [`supabaseTransport.ts`](src/game/online/supabaseTransport.ts) existe, que les faits
+> soient divulgues **dans les deux formes** — qui avaient deja diverge une fois.
+
+Hors mode en ligne, le constat reste vrai, et les textes le disent explicitement : solo,
+local, Defi et tournoi n&apos;ouvrent aucune connexion. Aucun compte, aucun outil
+d&apos;analyse, aucune publicite — et tout ce qui est conserve (preferences, progression,
+succes, meilleure serie) reste en stockage local sur l&apos;appareil.
 
 Identite editeur renseignee : Tommy Studio (Thomas Lefevre), entrepreneur individuel, Caen. A
 tenir a jour si elle change (statut, adresse, contact) — repetee dans les deux formes, a

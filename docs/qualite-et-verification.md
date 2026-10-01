@@ -17,8 +17,13 @@ et rien ne voyait une regle inversee. Ce n'est plus le cas.
 Les regles, le bareme d'XP, le protocole reseau et la coherence du contenu
 sont ecrits dans des modules **purs** (ni Phaser, ni store, ni DOM). C'etait
 deja le cas avant — pour qu'un futur serveur puisse les relire — mais rien ne
-s'en servait. Vitest les couvre maintenant : **79 tests, moins d'une seconde**,
+s'en servait. Vitest les couvre maintenant : **131 tests, moins d'une seconde**,
 lances par la CI avant chaque deploiement.
+
+Une suite y echappe volontairement : `ui/legal.test.ts` ne verifie pas une
+fonction mais un **texte**, lu par import `?raw`. Elle est ici parce qu'elle
+mord aussi vite que les autres, et parce qu'une phrase fausse dans une page
+publique coute plus cher qu'un bug.
 
 Ce qu'ils attrapent, que le compilateur ne voit pas :
 
@@ -28,6 +33,8 @@ Ce qu'ils attrapent, que le compilateur ne voit pas :
 | [`progression.test.ts`](../src/game/progression.test.ts) | Le niveau ne recule jamais, chaque palier coute plus que le precedent, la serie est plafonnee, le total d'XP n'a aucun terme cache, le bonus « Etude rapide » ne double pas les succes |
 | [`matchEndAchievements.test.ts`](../src/game/matchEndAchievements.test.ts) | Les huit succes de fin de partie, **chacun avec sa contre-epreuve** : un `if` trop permissif passerait un test qui ne verifie que le declenchement |
 | [`contenu.test.ts`](../src/game/contenu.test.ts) | Les tables et les unions restent alignees : chaque succes a sa recompense ET ses traductions, chaque terrain son nom, l'echelle du Defi ses 30 manches sans terrain repete dans un palier, et **le francais et l'anglais couvrent exactement les memes cles, avec les memes parametres `{n}`** |
+| [`rules.test.ts`](../src/game/rules.test.ts) | Tout terrain reste **traversable** par tout projectile, avec une marge reelle, et la hierarchie des terrains tient (Boue la plus lourde, Glace et Riviere plus longues que Classique) — ecrit apres que Boue s'etait reglee a une friction qui rendait la ligne adverse inatteignable |
+| [`ui/legal.test.ts`](../src/ui/legal.test.ts) | Les textes legaux ne nient plus toute transmission, et divulguent le relais, l'adresse IP, le caractere facultatif du mode en ligne et ce qui transite — **dans les deux formes a la fois** (page publique et ecran in-app) |
 
 Le dernier point mérite d'etre souligne : ajouter du contenu demande de toucher
 a quatre ou cinq endroits a la fois (une union de types, une table, deux
@@ -39,8 +46,22 @@ desormais la mieux couverte.
 > d'echouer ne vaut rien : inverser `doublon`/`manquant` dans `checkSeq` fait
 > tomber 2 tests, supprimer une traduction anglaise en fait tomber 2, dupliquer
 > un terrain dans un palier du Defi en fait tomber 1. Le filet mord.
+>
+> Les deux dernieres suites ont ete eprouvees de la meme facon : remettre la
+> friction de Boue a 2.2 fait tomber `rules.test.ts`, et restaurer les anciens
+> textes legaux fait tomber **7 tests** de `legal.test.ts` — dans les deux sens
+> a la fois (phrases interdites presentes, divulgations absentes).
 
 ### `npm run test:browser` — deux joueurs, une vraie partie
+
+Une verification de cette suite ne lance aucune partie : `pages-legales.mjs`
+ouvre les trois pages legales et l'ecran in-app dans un vrai navigateur, en
+390 px de large. Elle verifie ce qu'aucune lecture de source ne peut voir —
+liens croises qui resolvent, liste reellement stylee, aucun debordement
+horizontal, ecran in-app qui defile jusqu'au bout. Elle passe en premier
+parce qu'elle prend quelques secondes : echouer tout de suite sur un texte
+legal faux vaut mieux qu'apres plusieurs minutes de parties simulees.
+
 
 Ce qu'aucun module pur ne peut couvrir : la physique Matter reelle,
 l'enchainement des scenes Phaser, et **deux joueurs qui s'echangent une
