@@ -86,6 +86,33 @@ export class Kubb {
     return this._status === 'field';
   }
 
+  /**
+   * Tir d'ouverture : le kubb n'est pas encore en jeu.
+   *
+   * Il disparait de l'ecran ET du monde physique. Les deux, pas l'un sans
+   * l'autre : un bloc invisible mais toujours solide ferait rebondir le baton
+   * sur un obstacle que le joueur ne voit pas, ce qui serait pire que la regle
+   * qu'on corrige. Retirer le corps du monde est aussi la garantie la plus
+   * sure qu'aucune collision ne puisse etre signalee — il n'y a plus rien a
+   * percuter.
+   *
+   * L'IA, elle, jouait deja comme s'ils n'existaient pas : son tir
+   * d'approche ne connait que le roi (cf. ai.ts::ApproachBoard).
+   */
+  setHiddenForOpening(scene: Phaser.Scene, hidden: boolean) {
+    this.shadow.setVisible(!hidden);
+    // Un kubb deja tombe (bonus "Renfort" du mode Defi) n'a plus de corps :
+    // seul son decor au sol est a masquer.
+    this.fallenSprite?.setVisible(!hidden);
+    if (this._status === 'out') return;
+
+    this.sprite.setVisible(!hidden);
+    const body = this.sprite.body;
+    if (!body) return;
+    if (hidden) scene.matter.world.remove(body);
+    else scene.matter.world.add(body);
+  }
+
   /** Recale l'ombre sur le bloc. Appele a chaque frame par la scene, tant qu'il est en jeu. */
   syncShadow() {
     if (this._status === 'out') return;

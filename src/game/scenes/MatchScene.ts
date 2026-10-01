@@ -429,8 +429,16 @@ export class MatchScene extends Phaser.Scene {
 
     // En ligne, pas de tir d'ouverture : l'hote a deja tire au sort qui
     // commence (cf. MatchSetup.startingTeam et le commentaire qui l'explique).
-    if (remoteSetup) this.beginMatch(remoteSetup.startingTeam);
-    else this.beginOpeningThrow('blue');
+    if (remoteSetup) {
+      this.beginMatch(remoteSetup.startingTeam);
+    } else {
+      // Le tirage au sort ne designe QUE le premier joueur : les kubbs n'y
+      // participent pas. Ils quittent donc l'ecran et le monde physique le
+      // temps de l'ouverture — invisibles sans etre intangibles, le baton
+      // rebondirait sur des blocs qu'on ne voit pas.
+      this.showKubbs(false);
+      this.beginOpeningThrow('blue');
+    }
   }
 
   update(_time: number, delta: number) {
@@ -821,6 +829,12 @@ export class MatchScene extends Phaser.Scene {
     return this.matchRecord;
   }
 
+  /** Montre ou retire la ligne de kubbs des deux camps (cf. Kubb::setHiddenForOpening). */
+  private showKubbs(visible: boolean) {
+    this.teams.blue.setHiddenForOpening(this, !visible);
+    this.teams.red.setHiddenForOpening(this, !visible);
+  }
+
   /**
    * Projectile reellement en jeu pour `team`.
    *
@@ -1109,6 +1123,9 @@ export class MatchScene extends Phaser.Scene {
   /** Le tirage au sort est tranche : demarre la partie normale avec l'equipe gagnante. */
   private beginMatch(winner: TeamId) {
     this.matchStage = 'match';
+    // Fin du tirage : la ligne de kubbs entre en jeu (sans effet en ligne,
+    // ou elle n'en est jamais sortie).
+    this.showKubbs(true);
     this.activeTeam = winner;
     this.phase = 'aiming';
     this.aimAngle = this.forwardAngle();
@@ -1393,6 +1410,15 @@ export class MatchScene extends Phaser.Scene {
 
       const kubb = this.asKubb(pair.bodyA) ?? this.asKubb(pair.bodyB);
       if (!kubb || !kubb.isInPlay) continue;
+      // Pendant le tir d'ouverture, rien ne peut tomber : le tirage au sort
+      // ne fait que designer le premier joueur. Les corps sont deja retires
+      // du monde a ce moment-la, donc ce garde-fou ne devrait jamais servir —
+      // mais la regle doit etre ECRITE la ou elle s'applique, et non dependre
+      // d'un detail de mise en scene.
+      if (this.matchStage !== 'match') {
+        this.playBounce(speed);
+        continue;
+      }
       // Seule une cible legale (cf. legalTargets — un kubb de champ adverse
       // plante dans son propre camp en priorite, sinon un kubb de ligne
       // adverse) declenche un effet ; tout le reste (ses propres kubbs, une

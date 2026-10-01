@@ -26,6 +26,11 @@ export class Team {
     );
   }
 
+  /** Tir d'ouverture : toute la ligne sort de l'ecran et du monde physique (cf. Kubb). */
+  setHiddenForOpening(scene: Phaser.Scene, hidden: boolean) {
+    this.kubbs.forEach((kubb) => kubb.setHiddenForOpening(scene, hidden));
+  }
+
   /** Recale les ombres portees des kubbs encore debout. */
   syncShadows() {
     this.kubbs.forEach((kubb) => kubb.syncShadow());

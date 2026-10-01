@@ -39,6 +39,7 @@ c'est `CHROMIUM_PATH` qui en designe un.
 
 | Fichier | Couvre |
 | --- | --- |
+| `tir-d-ouverture.mjs` | Le tirage au sort ne designe que le premier joueur : kubbs ni affiches ni presents dans le monde physique, un lancer a pleine puissance n'abat rien, puis retour a la normale. **Seule verification en mode LOCAL** |
 | `partie-en-ligne.mjs` | Poignee de main, decor impose par l'hote, tour verrouille, propagation d'un lancer, **coup decisif** (celui qui, longtemps, ne partait pas) |
 | `coupure-et-reprise.mjs` | Rechargement puis reprise a l'identique, partie qui continue apres, **coupure silencieuse** detectee et annoncee |
 | `revanche-et-succes.mjs` | Revanche a deux accords, nouvelles conditions, compteur remis a zero, et les trois succes en ligne dont « Invaincu » qui traverse trois parties et la persistance |

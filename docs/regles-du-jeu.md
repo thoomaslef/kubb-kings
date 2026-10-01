@@ -78,6 +78,28 @@ si l&apos;adversaire le touche aussi, auquel cas on recommence entierement. Ces 
 comptent dans le total de 12 par equipe (`MatchScene.beginOpeningThrow` / `resolveOpeningThrow`
 / `beginMatch`), le roi ne tombe jamais et la partie ne se termine pas pendant ce tirage.
 
+**Les kubbs n&apos;y participent pas du tout** : ils ne sont ni affiches, ni presents dans le
+monde physique tant que dure le tirage, et reviennent quand la partie commence
+(`Kubb::setHiddenForOpening`). Les deux, pas l&apos;un sans l&apos;autre — un bloc invisible
+mais toujours solide ferait rebondir le baton sur un obstacle que le joueur ne voit pas,
+ce qui serait pire que la regle qu&apos;on corrige.
+
+> **Ce qui a ete corrige.** Jusqu&apos;ici, la branche &laquo; kubb &raquo; de
+> `onCollisionStart` n&apos;avait aucune garde sur l&apos;etape de la partie : seul le roi y
+> etait traite a part. Un baton d&apos;ouverture qui depassait largement le roi et atteignait
+> la ligne adverse avec assez de vitesse pouvait donc **abattre un kubb**, et meme declencher
+> des succes. Rare — il fallait une tres longue trajectoire — mais contraire a la regle, et
+> l&apos;avantage etait gratuit. L&apos;ecran y gagne aussi : la consigne affichee dit
+> &laquo; approchez le roi SANS le toucher &raquo;, et le terrain ne montre plus que le roi.
+>
+> La garde sur l&apos;etape a tout de meme ete ajoutee dans `onCollisionStart`, alors que les
+> corps retires du monde la rendent deja inutile : une regle doit etre **ecrite la ou elle
+> s&apos;applique**, pas dependre d&apos;un detail de mise en scene qui pourrait changer.
+
+> **Observation non corrigee.** Le chronometre de la partie tourne pendant le tirage.
+> Quelques secondes en pratique, mais ce sont des secondes prises sur les 4 minutes de jeu
+> alors que la partie n&apos;a pas commence. A trancher un jour, comme une regle.
+
 - **IA dediee.** `decideApproachThrow` (dans [`src/game/ai.ts`](../src/game/ai.ts)) balaie
   position x angle x puissance, simule la trajectoire COURBEE reelle (`simulateWindFlight`,
   pas une approximation en ligne droite) et retient le candidat le plus proche du roi dont
