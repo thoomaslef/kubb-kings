@@ -42,6 +42,7 @@ c'est `CHROMIUM_PATH` qui en designe un.
 | --- | --- |
 | `pages-legales.mjs` | Les trois pages legales et l'ecran in-app : rendu reel, liens croises, **aucun debordement a 390 px**, et la divulgation du mode en ligne presente **dans les deux formes**. Ne lance aucune partie : quelques secondes |
 | `menu-reglages.mjs` | La mise en page des groupes de choix du menu, **tout contenu debloque** : rien ne deborde, aucun libelle tronque, cibles tactiles >= 44 px — a 5 largeurs d'ecran et dans les deux langues. Ne lance aucune partie |
+| `mise-en-veille.mjs` | Le canevas revient a la bonne echelle apres une mise en veille, un changement d'orientation ou un conteneur qui bouge **pendant que la boucle Phaser est gelee**. Signale sur un vrai iPhone : apres verrouillage/deverrouillage, le jeu se retrouvait dans un petit rectangle centre |
 | `tir-d-ouverture.mjs` | Le tirage au sort ne designe que le premier joueur : kubbs ni affiches ni presents dans le monde physique, un lancer a pleine puissance n'abat rien, puis retour a la normale. **Seule verification en mode LOCAL** |
 | `partie-en-ligne.mjs` | Poignee de main, decor impose par l'hote, tour verrouille, propagation d'un lancer, **coup decisif** (celui qui, longtemps, ne partait pas) |
 | `coupure-et-reprise.mjs` | Rechargement puis reprise a l'identique, partie qui continue apres, **coupure silencieuse** detectee et annoncee |
@@ -68,6 +69,15 @@ appele pendant que la scene rejouait encore le coup adverse — le lancer
 s'evaporait sans bruit, et la verification echouait une fois sur quelques-unes.
 Si la page n'est jamais prete, l'erreur est franche et dit pourquoi, au lieu de
 laisser un echec inexplicable plus loin.
+
+**Chromium se rattrape la ou iOS ne se rattrape pas.** Le bug d'echelle
+apres veille a ete signale sur un vrai iPhone et n'est pas reproductible
+ici : au reveil, Chromium re-mesure tout seul. `mise-en-veille.mjs` ne
+cherche donc pas a rejouer le scenario d'iOS — il verifie l'INVARIANT
+(le canevas doit finir ajuste a son conteneur) dans le cas le plus severe,
+**boucle Phaser arretee**, pour qu'aucun mecanisme interne ne puisse
+masquer un filet absent. Sans le correctif, c'est la seule assertion qui
+tombe : les autres passent parce que Chromium s'en sort seul.
 
 **Un defaut de mise en page peut n'exister qu'une fois le jeu avance.**
 Les 11 terrains debordaient de leur cadre et se faisaient couper — mais sur
