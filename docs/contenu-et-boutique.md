@@ -25,7 +25,7 @@ differentes — voir plus bas ; "Nuit" n&apos;en ajoute aucun).
 | **Nuit**       | Aucun (identique a Classique) : juste l&apos;ambiance, palette sombre et lune — cf. plus bas | 26 |
 | **Ruines**     | Trois rochers en triangle ASYMETRIQUE (ni sur l&apos;axe, ni symetrique) : les deux lignes de lancer ne se valent pas — cf. plus bas | 28 |
 | **Verger**     | Quatre rochers en carre resserre pres du centre (~92px, contre ~155px pour Sable) : le passage central se joue de bien plus pres — cf. plus bas | 30 |
-| **Boue**       | Terrain entier a friction encore plus accrue que Sable et rebonds encore plus mous, sans obstacle ni penalite specifique a un projectile — cf. plus bas | 31 |
+| **Boue**       | Terrain entier a friction un peu plus forte que Sable et rebonds bien plus mous (aucun ricochet jouable), sans obstacle ni penalite specifique a un projectile — cf. plus bas | 31 |
 | **Riviere**    | Une bande horizontale qui REDUIT la friction (pas un rocher, pas une zone qui ralentit) : le baton en ressort plus vite qu&apos;un trajet normal — cf. plus bas | 33 |
 
 Seul "Classique" reste disponible d&apos;office : les 10 autres sont desormais des
@@ -152,7 +152,7 @@ nouveaux terrains — zero erreur console.
 
 **Boue** reprend exactement le mecanisme de Glace/Sable (`frictionMultiplier`/
 `restitutionMultiplier` scalaires sur tout le terrain, aucune nouvelle geometrie) avec
-des valeurs plus extremes (friction x2,2 contre x1,6 pour Sable, restitution x0,25
+des valeurs plus severes (friction x1,65 contre x1,6 pour Sable, restitution x0,25
 contre x0,35) et volontairement AUCUNE variante par forme de projectile
 (`frictionMultiplierBall`/`frictionMultiplierDisque` absentes) : un pur terrain
 "lourd", uniforme, sans le choix tactique boule-vs-baton de Sable ni obstacle. Meme
@@ -160,6 +160,36 @@ sweep standard (tous niveaux x tous etats de vent x 6 configurations de kubbs ad
 x kingTargetable vrai/faux, 612 tirs decides, 12&nbsp;240 trajectoires reelles) : zero
 suicide, zero tir invalide. Puis en navigateur reel : achat boutique, terrain visible
 au selecteur, lancer reel sans erreur console.
+
+> **Corrige apres coup : le terrain etait INJOUABLE.** La friction avait ete reglee a
+> x2,2, et personne ne s&apos;etait demande si la ligne adverse restait seulement
+> ATTEIGNABLE. Elle ne l&apos;etait pas : la portee utile d&apos;un baton a pleine
+> puissance tombait a **762 px pour 830 px a parcourir**, avec tous les projectiles
+> sans exception. Pas un terrain difficile : un terrain ou l&apos;on ne pouvait pas
+> marquer.
+>
+> Le sweep IA ne l&apos;avait pas vu parce qu&apos;il mesure ce que l&apos;IA DECIDE,
+> pas si la cible est a portee — et l&apos;IA visait surtout des kubbs de champ, bien
+> plus proches. Les parties de verification non plus : personne n&apos;avait joue une
+> manche entiere sur Boue en visant la ligne de fond.
+>
+> **Le plafond n&apos;est pas un gout, c&apos;est la geometrie.** Avec 830 px a
+> franchir, Sable (x1,6) demande deja 82 % de jauge au baton de base. Au-dela de
+> ~x1,65, les projectiles les plus faibles ne traversent plus le terrain. Un terrain
+> nettement plus lourd que Sable n&apos;est pas possible sans changer les dimensions du
+> jeu — la vraie identite de Boue est donc ailleurs : son rebond mort (x0,25) rend tout
+> ricochet sur bande injouable, ce que Sable permet encore.
+>
+> **L&apos;invariant est desormais verrouille par un test**
+> ([`rules.test.ts`](../src/game/rules.test.ts)) : tout terrain doit rester
+> traversable par tout projectile, avec une marge reelle — a l&apos;exception des
+> penalites tactiques assumees (la boule sur Sable), nommees une par une. Remettre
+> x2,2 fait tomber 4 tests, avec le message &laquo; boue avec base : 762 px de portee
+> utile pour 830 px a parcourir &raquo;.
+>
+> Apres correction, l&apos;IA sur Boue est redevenue indiscernable de Sable
+> (8 / 28 / 65 % de tirs au but selon le niveau, contre 8 / 29 / 65 %), zero suicide
+> sur 24&nbsp;000 trajectoires simulees sur quatre terrains.
 
 **Riviere** generalise le mecanisme de "Colline" a une geometrie differente — une
 bande horizontale (`RIVER_HALF_WIDTH` = 70px de chaque cote de `FIELD_CENTER_Y`, sur

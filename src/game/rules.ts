@@ -268,13 +268,38 @@ const SAND_FRICTION_MULTIPLIER_BALL = 2.8;
 const SAND_RESTITUTION_MULTIPLIER = 0.35;
 
 /**
- * "Boue" : encore plus de friction que Sable sur tout le terrain, mais
- * uniforme — pas de penalite specifique a la boule ni au disque (aucun
- * cactus non plus) : un pur terrain "lourd", il faut doser plus fort
- * partout, sans le choix tactique boule-vs-baton que propose Sable.
- * Rebond encore plus mou que Sable (la boue absorbe le choc).
+ * "Boue" : le terrain le plus lourd, mais uniforme — pas de penalite
+ * specifique a la boule ni au disque (aucun cactus non plus) : il faut
+ * doser plus fort partout, sans le choix tactique boule-vs-baton que
+ * propose Sable. Rebond encore plus mou que Sable (la boue absorbe le
+ * choc) : c'est la, plus que dans la friction, qu'est sa vraie identite —
+ * aucun ricochet sur bande n'y est jouable.
+ *
+ * ---------------------------------------------------------------------
+ * Pourquoi 1.65 et pas davantage
+ * ---------------------------------------------------------------------
+ * La valeur etait a 2.2, et le terrain en etait INJOUABLE : la portee
+ * utile d'un baton a pleine puissance tombait a 762 px pour 830 px entre
+ * le lanceur et la ligne adverse. Aucun projectile, aucun dosage ne
+ * permettait d'atteindre les kubbs adverses — le terrain n'etait pas
+ * difficile, il etait casse.
+ *
+ * Le plafond n'est pas un gout mais une contrainte de GEOMETRIE : avec
+ * 830 px a franchir, Sable (1.6) demande deja 82 % de jauge au baton de
+ * base. Au-dela de ~1.65, les projectiles les plus faibles ne traversent
+ * plus le terrain du tout. Un terrain nettement plus lourd que Sable n'est
+ * donc pas possible sans changer les dimensions du jeu.
+ *
+ * A 1.65 : tous les projectiles atteignent la ligne, le baton de base
+ * demande 84 % de jauge (contre 82 % sur Sable), et "Plume" — 1 etoile de
+ * puissance, 5 de precision — monte a 96 %. C'est coherent avec ce qu'il
+ * est : un outil de precision a courte portee, au maximum de ses moyens
+ * sur le terrain le plus lourd, mais qui y arrive.
+ *
+ * L'invariant est verrouille par un test (`rules.test.ts`) : tout terrain
+ * doit rester traversable, sauf les penalites tactiques assumees.
  */
-const MUD_FRICTION_MULTIPLIER = 2.2;
+const MUD_FRICTION_MULTIPLIER = 1.65;
 const MUD_RESTITUTION_MULTIPLIER = 0.25;
 
 // Libelles et indices : src/i18n/dictionaries.ts (terrain.<id>.label / .hint).
