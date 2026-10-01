@@ -41,6 +41,7 @@ c'est `CHROMIUM_PATH` qui en designe un.
 | Fichier | Couvre |
 | --- | --- |
 | `pages-legales.mjs` | Les trois pages legales et l'ecran in-app : rendu reel, liens croises, **aucun debordement a 390 px**, et la divulgation du mode en ligne presente **dans les deux formes**. Ne lance aucune partie : quelques secondes |
+| `menu-reglages.mjs` | La mise en page des groupes de choix du menu, **tout contenu debloque** : rien ne deborde, aucun libelle tronque, cibles tactiles >= 44 px — a 5 largeurs d'ecran et dans les deux langues. Ne lance aucune partie |
 | `tir-d-ouverture.mjs` | Le tirage au sort ne designe que le premier joueur : kubbs ni affiches ni presents dans le monde physique, un lancer a pleine puissance n'abat rien, puis retour a la normale. **Seule verification en mode LOCAL** |
 | `partie-en-ligne.mjs` | Poignee de main, decor impose par l'hote, tour verrouille, propagation d'un lancer, **coup decisif** (celui qui, longtemps, ne partait pas) |
 | `coupure-et-reprise.mjs` | Rechargement puis reprise a l'identique, partie qui continue apres, **coupure silencieuse** detectee et annoncee |
@@ -67,6 +68,14 @@ appele pendant que la scene rejouait encore le coup adverse — le lancer
 s'evaporait sans bruit, et la verification echouait une fois sur quelques-unes.
 Si la page n'est jamais prete, l'erreur est franche et dit pourquoi, au lieu de
 laisser un echec inexplicable plus loin.
+
+**Un defaut de mise en page peut n'exister qu'une fois le jeu avance.**
+Les 11 terrains debordaient de leur cadre et se faisaient couper — mais sur
+un profil neuf, un seul terrain est possede, et tout tient. Les
+verifications qui partent d'un profil vierge ne voyaient rien.
+`menu-reglages.mjs` ecrit donc d'abord `kubb-kings.shop.owned` avec tous les
+articles, puis recharge : c'est la seule facon de regarder le menu tel que
+le voit un joueur qui a joue.
 
 **Un code HTTP 200 ne prouve pas qu'une page existe.** `vite preview`, comme
 tout serveur a repli SPA, renvoie `index.html` avec un 200 pour une URL

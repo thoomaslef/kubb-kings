@@ -54,7 +54,16 @@ desormais la mieux couverte.
 
 ### `npm run test:browser` — deux joueurs, une vraie partie
 
-Une verification de cette suite ne lance aucune partie : `pages-legales.mjs`
+Deux verifications de cette suite ne lancent aucune partie. `menu-reglages.mjs`
+ouvre le menu **tout contenu debloque** — c'est la seule facon de voir ce que
+voit un joueur avance — et verifie qu'aucun groupe de choix ne deborde, qu'aucun
+libelle n'est tronque et que chaque pastille garde 44 px de cible tactile, a
+cinq largeurs d'ecran et dans les deux langues. Elle a ete ecrite apres coup :
+les 11 terrains etaient forces sur une seule ligne, il leur fallait 593 px dans
+un cadre de 310, et les cinq derniers etaient coupes au milieu d'un mot. Sur un
+profil neuf, un seul terrain est possede : rien ne se voyait.
+
+`pages-legales.mjs`
 ouvre les trois pages legales et l'ecran in-app dans un vrai navigateur, en
 390 px de large. Elle verifie ce qu'aucune lecture de source ne peut voir —
 liens croises qui resolvent, liste reellement stylee, aucun debordement

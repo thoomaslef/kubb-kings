@@ -280,7 +280,7 @@ body {
    pile de pastilles sans contexte (terrain ? meteo ? regle ?) ne se
    distingue qu'a l'aria-label, invisible a l'ecran. */
 .segmented-label {
-  margin: 18px 0 6px;
+  margin: 22px 0 8px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
@@ -292,25 +292,48 @@ body {
   margin-top: 0;
 }
 
+/* Un groupe de choix s'etale sur plusieurs lignes si besoin.
+   Sans `wrap`, tout etait force sur UNE ligne : les 11 terrains
+   demandaient 593 px dans un cadre de 310 px, et les derniers etaient
+   simplement coupes au milieu d'un mot — sans barre de defilement ni
+   rien pour signaler qu'il en restait. Le defaut ne se voyait qu'une
+   fois le contenu debloque, donc jamais sur un profil neuf. */
 .segmented {
   display: flex;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
+  flex-wrap: wrap;
+  gap: 6px;
+  /* Compense le retrait negatif de `.footnote--tight`, qui avait ete regle
+     pour coller a l'ancien cadre. Ajuster ici plutot que la-bas : cette
+     classe sert aussi a des ecrans sans groupe de choix. */
+  margin-bottom: 6px;
 }
 
 .segmented__item {
-  flex: 1;
-  padding: 9px 4px;
+  /* `grow` garde le comportement d'origine pour 2 ou 3 choix : ils
+     remplissent la largeur. `basis: auto` laisse les listes longues se
+     dimensionner sur leur texte avant de se replier. */
+  flex: 1 1 auto;
+  /* 44 px : la cible tactile minimale recommandee. Avant, la hauteur
+     dependait du texte et des retours a la ligne — elle allait de 33 a
+     63 px selon la pastille, sur un jeu qui se joue au doigt. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  /* Un fond, meme discret, sur chaque choix : sans lui, une liste repliee
+     sur trois lignes n'est qu'un nuage de mots, et rien ne dit ou commence
+     la zone cliquable. Le probleme ne se posait pas a deux choix, ou la
+     pastille doree suffisait a faire comprendre le reste. */
+  background: rgba(255, 255, 255, 0.055);
   border: 0;
-  border-radius: 8px;
-  background: transparent;
+  border-radius: 11px;
   color: var(--muted);
   font: inherit;
   font-size: 13px;
   font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
   cursor: pointer;
 }
 
