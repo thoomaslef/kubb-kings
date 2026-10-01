@@ -101,6 +101,32 @@ export const etat = (page) =>
   });
 
 /**
+ * Attend qu'une page soit REELLEMENT en etat de lancer : scene vivante, phase
+ * de visee, aucun baton en vol, et — en ligne — la main a ce camp.
+ *
+ * Sans cette attente, `lancer()` appelait `launch()` sur une scene qui rejouait
+ * encore le coup adverse : le lancer s'evaporait sans bruit, et la
+ * verification echouait une fois sur quelques-unes pour une raison qui n'avait
+ * rien a voir avec le jeu. Un banc d'essai qui crie au loup finit par ne plus
+ * etre lu.
+ */
+export async function attendreSonTour(page) {
+  await focus(page);
+  for (let i = 0; i < 200; i += 1) {
+    const pret = await page.evaluate(() => {
+      const s = window.__kubbStoreApi.getState();
+      const scene = window.__kubb?.scene?.getScene?.('MatchScene');
+      if (!scene || !scene.scene.isActive()) return false;
+      const aLaMain = s.mode !== 'online' || scene.activeTeam === s.profileTeam;
+      return scene.phase === 'aiming' && !scene.baton && aLaMain;
+    });
+    if (pret) return true;
+    await page.waitForTimeout(250);
+  }
+  return false;
+}
+
+/**
  * Joue un lancer et attend la fin du vol.
  *
  * `surLeRoi` vise le centre : toucher le roi avant d'avoir degage les kubbs
@@ -108,7 +134,10 @@ export const etat = (page) =>
  * une partie, et de choisir qui gagne.
  */
 export async function lancer(page, power, { surLeRoi = false } = {}) {
-  await focus(page);
+  if (!(await attendreSonTour(page))) {
+    // Echec franc plutot qu'un lancer perdu : on saura POURQUOI.
+    throw new Error("La page n'a jamais ete en etat de lancer (pas la main, ou coup adverse encore en cours).");
+  }
   await page.evaluate(
     ({ power, surLeRoi }) => {
       const scene = window.__kubb.scene.getScene('MatchScene');

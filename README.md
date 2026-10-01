@@ -1793,6 +1793,32 @@ succes correspondant, sans toucher a ce code.
 > Corrige avant de commiter. Les 44 controles au navigateur, relances sur le
 > build apres remaniement, sont restes identiques.
 
+### La montee de Vite, faite sous filet
+
+Le projet est passe de **Vite 5 a Vite 8** (donc de Rollup a Rolldown), avec
+`@vitejs/plugin-react` 6 et Vitest 5. C'est exactement le chantier pour lequel
+le filet avait ete pose : un outil de build qui change ne casse pas les types,
+il change ce qui SORT du build.
+
+Gains mesures : build **de ~10 s a moins de 2 s**, et le gros morceau du jeu de
+**1 532 ko a 1 250 ko** (333 ko gzip au lieu de 355).
+
+> **Node 22 devient necessaire** (Vitest 5 exige `^22.12`), d'ou la CI mise a
+> jour. Vite 8 s'accommoderait d'une 20.19+, mais la version exacte fournie par
+> l'image ne se decide pas depuis le depot.
+
+**Un seul ecart constate, et il ne venait pas de Vite.** Une des trois
+verifications au navigateur a echoue une fois : `lancer()` appelait `launch()`
+sans verifier que la page etait en etat de lancer, et le coup s'evaporait quand
+la scene rejouait encore celui de l'adversaire. Deux relances propres ont
+montre que Vite 8 n'y etait pour rien — mais un banc d'essai qui crie au loup
+finit par ne plus etre lu, alors `lancer()` attend desormais son tour
+explicitement et echoue franchement s'il ne vient jamais. 44 controles verts
+ensuite, sur le build Vite 8.
+
+> **Le defaut etait anterieur**, simplement jamais tombe. C'est la rancon d'un
+> filet qu'on n'avait pas : on ne sait pas depuis quand on a de la chance.
+
 ### Ce qui reste a la main
 
 Deux vrais appareils, sur un vrai reseau mobile, avec de vrais doigts. Aucun

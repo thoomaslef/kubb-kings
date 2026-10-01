@@ -57,6 +57,14 @@ precedent** (`attendreCoups`). Sinon le lancer part avec un mauvais numero
 d'ordre et desynchronise la partie — ce qui fait echouer la verification pour
 une raison qui n'a rien a voir avec le jeu.
 
+**Et ne jamais lancer sans avoir attendu d'etre en etat de le faire.**
+`lancer()` passe par `attendreSonTour()` : scene vivante, phase de visee,
+aucun baton en vol, et la main a ce camp. Sans cela, `launch()` pouvait etre
+appele pendant que la scene rejouait encore le coup adverse — le lancer
+s'evaporait sans bruit, et la verification echouait une fois sur quelques-unes.
+Si la page n'est jamais prete, l'erreur est franche et dit pourquoi, au lieu de
+laisser un echec inexplicable plus loin.
+
 ## Transport local ou Supabase ?
 
 Sans `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`, le jeu retombe sur le

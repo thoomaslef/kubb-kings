@@ -25,9 +25,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node 22 : exige par Vitest 5 (^22.12) et confortable pour Vite 8
+      # (^20.19 || >=22.12). Rester sur "20" marcherait tant que l'image en
+      # fournit une 20.19+, ce qui ne se decide pas ici.
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
