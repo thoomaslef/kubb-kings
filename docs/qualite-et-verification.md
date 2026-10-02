@@ -54,7 +54,15 @@ desormais la mieux couverte.
 
 ### `npm run test:browser` — deux joueurs, une vraie partie
 
-Deux verifications de cette suite ne lancent aucune partie. `menu-reglages.mjs`
+Trois verifications de cette suite ne lancent aucune partie, et tiennent donc en
+quelques secondes chacune.
+
+`choix-du-terrain.mjs` couvre l'ecran de selection du terrain : que le terrain
+clique soit bien celui que la partie utilise, que les quatre modes y passent et
+aboutissent au bon endroit, que le Defi n'y passe pas, et qu'un terrain verrouille
+reste visible sans etre selectionnable.
+
+`menu-reglages.mjs`
 ouvre le menu **tout contenu debloque** — c'est la seule facon de voir ce que
 voit un joueur avance — et verifie qu'aucun groupe de choix ne deborde, qu'aucun
 libelle n'est tronque et que chaque pastille garde 44 px de cible tactile, a

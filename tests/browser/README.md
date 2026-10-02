@@ -30,6 +30,16 @@ KUBB_URL=... node tests/browser/partie-en-ligne.mjs
 | Variable | Role | Defaut |
 | --- | --- | --- |
 | `KUBB_URL` | adresse du jeu | `http://localhost:5173/` |
+
+> **Pour les verifications EN LIGNE**, le build ne doit pas embarquer les
+> coordonnees Supabase, sinon le jeu tente une vraie connexion. Elles
+> viennent de DEUX endroits a neutraliser ensemble — le fichier `.env` et
+> l'environnement du conteneur :
+>
+> ```bash
+> mv .env .env.horsjeu
+> env -u VITE_SUPABASE_URL -u VITE_SUPABASE_ANON_KEY VITE_EXPOSE_TEST_HANDLE=1 npm run build
+> ```
 | `KUBB_LEGAL_URL` | racine des pages legales (`pages-legales.mjs`) | `legal` deduit de `KUBB_URL` |
 | `CHROMIUM_PATH` | binaire Chromium a piloter | celui de l'atelier |
 
@@ -43,6 +53,8 @@ c'est `CHROMIUM_PATH` qui en designe un.
 | `pages-legales.mjs` | Les trois pages legales et l'ecran in-app : rendu reel, liens croises, **aucun debordement a 390 px**, et la divulgation du mode en ligne presente **dans les deux formes**. Ne lance aucune partie : quelques secondes |
 | `menu-reglages.mjs` | La mise en page des groupes de choix du menu, **tout contenu debloque** : rien ne deborde, aucun libelle tronque, cibles tactiles >= 44 px — a 5 largeurs d'ecran et dans les deux langues. Ne lance aucune partie |
 | `mise-en-veille.mjs` | Le canevas revient a la bonne echelle apres une mise en veille, un changement d'orientation ou un conteneur qui bouge **pendant que la boucle Phaser est gelee**. Signale sur un vrai iPhone : apres verrouillage/deverrouillage, le jeu se retrouvait dans un petit rectangle centre |
+| `choix-du-terrain.mjs` | L'ecran de choix du terrain : le terrain retenu est bien celui que la partie utilise, les quatre modes y passent et aboutissent au bon endroit, le Defi non, un terrain verrouille reste visible mais non selectionnable, et la barre d'action reste a l'ecran malgre les onze terrains |
+| `kubb-redresse.mjs` | Un kubb redresse par la recompense du ricochet revient a la moitie de sa taille — **corps Matter compris**, pas seulement l'image — sans cumul, et pas sous la regle "Kubbs de champ" |
 | `tir-d-ouverture.mjs` | Le tirage au sort ne designe que le premier joueur : kubbs ni affiches ni presents dans le monde physique, un lancer a pleine puissance n'abat rien, puis retour a la normale. **Seule verification en mode LOCAL** |
 | `partie-en-ligne.mjs` | Poignee de main, decor impose par l'hote, tour verrouille, propagation d'un lancer, **coup decisif** (celui qui, longtemps, ne partait pas) |
 | `coupure-et-reprise.mjs` | Rechargement puis reprise a l'identique, partie qui continue apres, **coupure silencieuse** detectee et annoncee |
@@ -69,6 +81,20 @@ appele pendant que la scene rejouait encore le coup adverse — le lancer
 s'evaporait sans bruit, et la verification echouait une fois sur quelques-unes.
 Si la page n'est jamais prete, l'erreur est franche et dit pourquoi, au lieu de
 laisser un echec inexplicable plus loin.
+
+**Une reduction visuelle n'est pas une reduction.** `setScale` sur une
+image Matter redimensionne l'image ET son corps physique. Reduire en plus la
+`shape` appliquait donc la reduction deux fois : 9 px de cote au lieu de 18.
+C'est pour cela que `kubb-redresse.mjs` lit les `bounds` du corps Matter et
+pas l'echelle du sprite — les deux peuvent diverger, et c'est la hitbox qui
+decide si le joueur touche.
+
+**Depuis l'ecran de choix du terrain, le menu ne mene plus directement a une
+partie.** Les helpers `lancerDepuisLeMenu` / `passerLeChoixDuTerrain` du
+socle traversent cette etape. Le second echoue FRANCHEMENT si l'ecran
+n'apparait pas : une premiere version renvoyait `false` en silence, et
+l'appelant echouait bien plus loin sur « Le salon ne s'est pas ouvert », un
+message sans rapport avec la cause.
 
 **Chromium se rattrape la ou iOS ne se rattrape pas.** Le bug d'echelle
 apres veille a ete signale sur un vrai iPhone et n'est pas reproductible

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { KUBB_BODY } from '../physics/matterConfig';
-import { HITBOX } from '../rules';
+import { HITBOX, REVIVED_KUBB_SCALE } from '../rules';
 import { SHADOW, type KubbSkin } from '../theme';
 import type { TeamId } from './Team';
 
@@ -40,6 +40,13 @@ export class Kubb {
   /** Decor couche au sol pendant que le kubb est definitivement tombe — detruit a la redresse. */
   private fallenSprite: Phaser.GameObjects.Image | null = null;
   private _status: KubbStatus = 'baseline';
+  /**
+   * Cote du kubb, en fraction du cote normal. Vaut 1 partout, sauf apres un
+   * redressement recompense (cf. reviveUp) ou il tombe a
+   * REVIVED_KUBB_SCALE. Porte a la fois le rendu ET le corps Matter : une
+   * reduction qui ne toucherait que l'image mentirait au joueur.
+   */
+  private sizeScale = 1;
 
   constructor(scene: Phaser.Scene, x: number, y: number, team: TeamId, skin: KubbSkin) {
     this.team = team;
@@ -63,6 +70,10 @@ export class Kubb {
       shape: { type: 'rectangle', width: HITBOX.kubb, height: HITBOX.kubb }
     });
     sprite.setDepth(4);
+    // `setScale` sur une image Matter redimensionne l'image ET son corps :
+    // il ne faut donc PAS reduire aussi `shape` ci-dessus, sinon la
+    // reduction s'applique deux fois (mesure : 9 px de cote au lieu de 18).
+    sprite.setScale(this.sizeScale);
     sprite.setData('kubb', this);
     return sprite;
   }
@@ -135,15 +146,15 @@ export class Kubb {
       .image(x, y, `kubb-down-${this.team}-${this.skin}`)
       .setDepth(1)
       .setRotation(rotation)
-      .setScale(0.68, 1.05);
+      .setScale(0.68 * this.sizeScale, 1.05 * this.sizeScale);
     this.fallenSprite = fallen;
 
     // Le bloc part sur un cote au hasard et s'aplatit.
     scene.tweens.add({
       targets: fallen,
       rotation: rotation + Phaser.Math.FloatBetween(-Math.PI / 3, Math.PI / 3),
-      scaleX: 1,
-      scaleY: 0.94,
+      scaleX: this.sizeScale,
+      scaleY: 0.94 * this.sizeScale,
       duration: 260,
       ease: 'Back.easeOut'
     });
@@ -154,8 +165,8 @@ export class Kubb {
       targets: this.shadow,
       x: x + SHADOW.offsetX * 0.4,
       y: y + SHADOW.offsetY * 0.4,
-      scaleX: SHADOW.scale.kubb * 1.4,
-      scaleY: SHADOW.scale.kubb * 0.85,
+      scaleX: SHADOW.scale.kubb * this.sizeScale * 1.4,
+      scaleY: SHADOW.scale.kubb * this.sizeScale * 0.85,
       alpha: SHADOW.alpha * 0.6,
       duration: 260,
       ease: 'Quad.easeOut'
@@ -183,11 +194,13 @@ export class Kubb {
     this.shadow.setRotation(0);
 
     // Petit "pop" a l'arrivee : seul indice visuel, hors tween de chute
-    // (knockDown), que ce kubb vient d'etre replante ailleurs.
-    this.sprite.setScale(0.6);
+    // (knockDown), que ce kubb vient d'etre replante ailleurs. Il repart de
+    // `sizeScale`, pas de 1 : sinon un kubb reduit reprendrait sa taille
+    // normale en etant replante.
+    this.sprite.setScale(this.sizeScale * 0.6);
     scene.tweens.add({
       targets: this.sprite,
-      scale: 1,
+      scale: this.sizeScale,
       duration: 220,
       ease: 'Back.easeOut'
     });
@@ -198,10 +211,16 @@ export class Kubb {
    * fond d'origine (effet "ricochet sur bande avant l'impact") : reforme un
    * corps physique neuf, comme a la creation. Toujours vers la baseline,
    * qu'il soit tombe directement ou apres etre passe par 'field'.
+   *
+   * `reduit` : le kubb revient a REVIVED_KUBB_SCALE, donc plus difficile a
+   * abattre. L'affectation est une AFFECTATION, pas une multiplication :
+   * un kubb deja reduit qui se fait redresser une seconde fois reste a la
+   * meme taille (cf. rules.ts::REVIVED_KUBB_SCALE).
    */
-  reviveUp(scene: Phaser.Scene) {
+  reviveUp(scene: Phaser.Scene, reduit = false) {
     if (this._status !== 'out') return;
     this._status = 'baseline';
+    this.sizeScale = reduit ? REVIVED_KUBB_SCALE : 1;
 
     scene.tweens.killTweensOf(this.shadow);
     if (this.fallenSprite) {
@@ -214,7 +233,7 @@ export class Kubb {
     this.shadow.setDepth(2);
     this.shadow.setPosition(this.baselineX + SHADOW.offsetX, this.baselineY + SHADOW.offsetY);
     this.shadow.setRotation(0);
-    this.shadow.setScale(SHADOW.scale.kubb);
+    this.shadow.setScale(SHADOW.scale.kubb * this.sizeScale);
     this.shadow.setAlpha(SHADOW.alpha);
   }
 }

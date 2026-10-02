@@ -780,7 +780,10 @@ export class MatchScene extends Phaser.Scene {
       snapshot.kubbs[team].forEach((status, index) => {
         const kubb = this.teams[team].kubbs[index];
         if (kubb.status === status) return;
-        if (kubb.status === 'out') kubb.reviveUp(this);
+        // Meme regle de taille que `reviveLeftmostKubb`, et `fieldKubbsEnabled`
+        // vient du setup de l'hote (cf. create) : les deux joueurs
+        // reconstruisent donc le meme kubb, sans rien ajouter au protocole.
+        if (kubb.status === 'out') kubb.reviveUp(this, !this.fieldKubbsEnabled);
         if (status === 'out') {
           kubb.knockDown(this);
         } else if (status === 'field') {
@@ -1494,12 +1497,17 @@ export class MatchScene extends Phaser.Scene {
    * le premier kubb tombe de son propre camp, toujours le plus a gauche
    * (`kubbs` est range dans cet ordre, comme THROW_POSITIONS). Ne fait rien si
    * l'equipe n'a aucun kubb a terre.
+   *
+   * Le kubb revient en DEMI-TAILLE (cf. rules.ts::REVIVED_KUBB_SCALE), donc
+   * plus difficile a reabattre — sauf sous la regle "Kubbs de champ", qui
+   * fait deja revenir des kubbs en jeu : cumuler les deux desequilibrerait
+   * la manche.
    */
   private reviveLeftmostKubb(team: TeamId) {
     const fallen = this.teams[team].kubbs.find((k) => !k.isInPlay);
     if (!fallen) return;
 
-    fallen.reviveUp(this);
+    fallen.reviveUp(this, !this.fieldKubbsEnabled);
     this.juice.floatingText(
       fallen.sprite.x,
       fallen.sprite.y,

@@ -8,7 +8,8 @@ Terrains, projectiles, apparences, et l'economie qui les distribue.
 
 ## Terrains a obstacles
 
-Onze presets, choisis au menu, dans [`src/game/rules.ts`](../src/game/rules.ts)
+Onze presets, choisis sur leur propre ecran avant chaque partie
+([`src/ui/MapSelect.tsx`](../src/ui/MapSelect.tsx)), dans [`src/game/rules.ts`](../src/game/rules.ts)
 (`FIELD_PRESETS`) : le terrain (`FIELD`, l&apos;espacement des kubbs, les hitboxes) ne
 change jamais — seuls des rochers statiques s&apos;ajoutent, definis en decalage
 (dx, dy) depuis le centre (sauf "Colline", "Glace", "Sable", "Boue" et "Riviere",
@@ -29,6 +30,15 @@ differentes — voir plus bas ; "Nuit" n&apos;en ajoute aucun).
 | **Riviere**    | Une bande horizontale qui REDUIT la friction (pas un rocher, pas une zone qui ralentit) : le baton en ressort plus vite qu&apos;un trajet normal — cf. plus bas | 33 |
 
 Seul "Classique" reste disponible d&apos;office : les 10 autres sont desormais des
+> **Le terrain a son propre ecran depuis peu.** Il se reglait avant dans une liste du
+> menu, noyee parmi huit autres reglages et sans rien montrer de ce qu&apos;on
+> choisissait — alors que c&apos;est la decision qui change le plus une partie. Les
+> miniatures de [`FieldPreview.tsx`](../src/ui/FieldPreview.tsx) sont **derivees du
+> preset lui-meme** (obstacles, colline, riviere, couleur de sol) : un terrain ajoute,
+> ou un rocher deplace, voit sa miniature suivre toute seule. Une image figee aurait
+> menti des la premiere retouche d&apos;equilibrage — et le jeu n&apos;embarque de toute
+> facon aucun fichier d&apos;image.
+
 articles de boutique (`src/game/shop.ts`, categorie `'terrain'`) — niveau ET pieces
 necessaires pour les acheter, cf. section "Boutique" plus bas.
 

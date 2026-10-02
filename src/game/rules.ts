@@ -74,6 +74,21 @@ export function availableThrowPositions(standing: readonly boolean[]): readonly 
  */
 export const FIELD_KUBB_INSET = 260;
 
+/**
+ * Taille d'un kubb REDRESSE par la recompense du ricochet (cf.
+ * MatchScene::reviveLeftmostKubb) : moitie du cote normal, corps physique
+ * compris — sans quoi la reduction ne serait que decorative.
+ *
+ * Non cumulative : un kubb deja reduit, abattu puis redresse a nouveau,
+ * reste a cette taille. Diviser a chaque fois le rendrait vite impossible a
+ * toucher, et la partie pourrait ne plus se terminer.
+ *
+ * Ne s'applique PAS quand la regle "Kubbs de champ" est active : cette
+ * regle-la fait deja revenir les kubbs en jeu, cumuler les deux avantages
+ * desequilibrerait la manche.
+ */
+export const REVIVED_KUBB_SCALE = 0.5;
+
 /** Duree maximale d'une partie (4 min) pour tenir dans la fenetre 3-5 min. */
 export const MATCH_DURATION_MS = 4 * 60 * 1000;
 /** Nombre de lancers par equipe. Garde-fou si le timer n'est pas atteint. */

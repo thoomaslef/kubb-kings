@@ -65,6 +65,18 @@ reglages chiffres sont dans [`src/game/rules.ts`](../src/game/rules.ts).
   au joueur comme a l&apos;IA (meme code de collision). Verifie en navigateur (test direct de
   `Kubb.reviveUp`/`reviveLeftmostKubb`, puis 9 matchs avec tirs volontairement risques) :
   zero erreur, redresses effectivement observes en jeu reel.
+- **Le kubb ainsi redresse revient en DEMI-TAILLE** (`rules.ts::REVIVED_KUBB_SCALE`),
+  donc plus difficile a reabattre. La reduction porte sur le corps Matter, pas seulement
+  sur l&apos;image : une reduction decorative mentirait au joueur, qui viserait un petit
+  bloc avec la hitbox d&apos;un grand. Elle n&apos;est pas cumulative — un kubb deja reduit
+  reste a cette taille, sans quoi il deviendrait intouchable et la manche pourrait ne plus
+  se terminer. Elle ne s&apos;applique pas sous la regle &laquo; Kubbs de champ &raquo;, qui
+  fait deja revenir des kubbs en jeu.
+  &nbsp;
+  **L&apos;IA n&apos;en est pas informee**, deliberement : elle vise avec un rayon derive
+  de `HITBOX.kubb` (25 px contre 16 px reels). Mesure en simulation : elle perd de 8 a
+  23 points de reussite sur une cible reduite. Lui apprendre la vraie taille la ferait
+  viser plus juste, ce qui annulerait en partie la recompense.
 - **Fin de tour automatique** quand le baton est a l&apos;arret (ou apres 4 s de vol).
 
 ---

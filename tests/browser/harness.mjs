@@ -192,10 +192,42 @@ export async function attendreEcran(page, ecran, tours = 300) {
 }
 
 /** Cree un salon en ligne et renvoie son code. */
-export async function creerSalon(page) {
+/**
+ * Traverse l'ecran de choix du terrain (cf. MapSelect.tsx), intercale entre
+ * le menu et la partie depuis que le terrain a son propre ecran.
+ *
+ * Le terrain deja selectionne est conserve : les verifications qui ne
+ * portent pas sur le terrain n'ont pas a s'en soucier. Celles qui veulent
+ * un terrain precis cliquent la carte avant d'appeler ceci (cf.
+ * choix-du-terrain.mjs).
+ *
+ * L'ECHEC EST FRANC, et c'est delibere. Une premiere version renvoyait
+ * `false` en silence quand l'ecran n'arrivait pas : l'appelant continuait et
+ * echouait bien plus loin sur « Le salon ne s'est pas ouvert », message qui
+ * n'avait aucun rapport avec la cause. Le delai est genereux parce qu'une
+ * page en arriere-plan est fortement ralentie par Chromium — deux joueurs
+ * partagent un meme contexte dans les verifications en ligne.
+ */
+export async function passerLeChoixDuTerrain(page, delaiMs = 20000) {
+  try {
+    await page.waitForSelector('.map-grid', { timeout: delaiMs });
+  } catch {
+    const ecran = (await etat(page))?.screen;
+    throw new Error(`L'ecran de choix du terrain n'est pas apparu (ecran courant : ${ecran}).`);
+  }
+  await page.locator('.map-actions .btn--primary').first().click();
+  await page.waitForFunction(() => !document.querySelector('.map-grid'), null, { timeout: delaiMs });
+}
+
+/** Depuis le menu : choisit un mode et traverse le choix du terrain. */
+export async function lancerDepuisLeMenu(page, motifDuBouton) {
   await focus(page);
-  await page.locator('button', { hasText: /En ligne/i }).first().click();
-  await page.waitForTimeout(400);
+  await page.locator('button', { hasText: motifDuBouton }).first().click();
+  await passerLeChoixDuTerrain(page);
+}
+
+export async function creerSalon(page) {
+  await lancerDepuisLeMenu(page, /En ligne/i);
   await page.locator('button', { hasText: /Creer une partie/i }).first().click();
   await page.waitForTimeout(600);
   const code = (await etat(page)).online?.roomCode;
@@ -205,9 +237,7 @@ export async function creerSalon(page) {
 
 /** Rejoint un salon par son code et attend d'etre en match. */
 export async function rejoindreSalon(page, code) {
-  await focus(page);
-  await page.locator('button', { hasText: /En ligne/i }).first().click();
-  await page.waitForTimeout(400);
+  await lancerDepuisLeMenu(page, /En ligne/i);
   await page.locator('input').first().fill(code);
   await page.locator('button', { hasText: /^Rejoindre$/i }).first().click();
   return attendreEcran(page, 'match', 120);

@@ -37,7 +37,8 @@ export type Screen =
   | 'progression'
   | 'legal'
   | 'about'
-  | 'online';
+  | 'online'
+  | 'map-select';
 
 /** Phase du tour courant, pilotee par MatchScene. */
 export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';
@@ -50,6 +51,16 @@ export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';
  * 'defi' = roguelite solo (cf. `run` ci-dessous et `src/game/roguelite.ts`).
  */
 export type GameMode = 'local' | '2v2' | 'solo' | 'defi' | 'online';
+
+/**
+ * Ce que le joueur veut lancer, retenu pendant qu'il choisit son terrain.
+ *
+ * Le choix du terrain s'intercale entre le menu et le depart de la partie :
+ * l'ecran de selection doit donc savoir ou aller une fois le terrain
+ * retenu. 'defi' n'y figure pas — le mode Defi impose ses terrains manche
+ * par manche (cf. roguelite.ts::LADDER).
+ */
+export type MatchIntent = 'solo' | 'local' | '2v2' | 'online' | 'tournament';
 
 /** Ou en est la partie en ligne (cf. src/game/online/session.ts). */
 export type OnlineStatus =
@@ -247,7 +258,15 @@ interface GameState {
    */
   onlineWinStreak: number;
 
+  /**
+   * Intention retenue pendant le choix du terrain, null hors de cet ecran.
+   * Cf. `openMapSelect`.
+   */
+  mapIntent: MatchIntent | null;
+
   setScreen: (screen: Screen) => void;
+  /** Ouvre le choix de terrain en memorisant ce qu'il faudra lancer ensuite. */
+  openMapSelect: (intent: MatchIntent) => void;
   setPaused: (paused: boolean) => void;
   patchHud: (patch: Partial<HudState>) => void;
   resetHud: () => void;
@@ -365,7 +384,10 @@ export const useGameStore = create<GameState>((set) => ({
   terrainWins: loadTerrainWins() as FieldPresetId[],
   onlineWinStreak: loadOnlineStreak(),
 
+  mapIntent: null,
+
   setScreen: (screen) => set({ screen }),
+  openMapSelect: (intent) => set({ mapIntent: intent, screen: 'map-select' }),
   setPaused: (paused) => set({ paused }),
   patchHud: (patch) => set((state) => ({ hud: { ...state.hud, ...patch } })),
   resetHud: () => set({ hud: initialHud(), result: null, paused: false }),

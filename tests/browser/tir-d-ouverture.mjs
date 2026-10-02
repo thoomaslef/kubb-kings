@@ -9,7 +9,16 @@
  * Seule verification a couvrir le mode LOCAL (les autres sont toutes en
  * ligne, ou le tir d'ouverture n'existe pas).
  */
-import { attendreEcran, conclure, etat, focus, lancer, lancerNavigateur, ouvrirJeu, surveiller } from './harness.mjs';
+import {
+  attendreEcran,
+  conclure,
+  etat,
+  lancer,
+  lancerDepuisLeMenu,
+  lancerNavigateur,
+  ouvrirJeu,
+  surveiller
+} from './harness.mjs';
 
 const navigateur = await lancerNavigateur();
 const contexte = await navigateur.newContext({ viewport: { width: 420, height: 900 } });
@@ -36,8 +45,7 @@ const kubbs = (p) =>
   });
 
 // ---- Partie locale contre l'IA : il y a donc un tir d'ouverture.
-await focus(page);
-await page.locator('button', { hasText: /Solo/i }).first().click();
+await lancerDepuisLeMenu(page, /Solo/i);
 await attendreEcran(page, 'match');
 await page.waitForTimeout(1200);
 

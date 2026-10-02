@@ -54,9 +54,18 @@ const fr: Record<string, string> = {
   'online.rematchWaiting': "Revanche demandee — en attente de l'adversaire...",
   'online.rematchAccept': 'Accepter la revanche',
   'online.rematchOffered': "Votre adversaire demande la revanche.",
+
+  // --- Choix du terrain (MapSelect.tsx), intercale avant chaque partie.
+  'map.title': 'Choisissez le terrain',
+  'map.intro': "Chaque terrain change le jeu : obstacles, glisse du baton, rebond sur les bandes.",
+  'map.play': 'Jouer',
+  'map.continueOnline': 'Continuer vers la partie en ligne',
+  'map.continueTournament': 'Continuer vers le tournoi',
+  'map.back': 'Retour',
+  'map.lockedAtLevel': 'Niveau {level}',
+  'map.yourLevel': 'Vous etes niveau {level}.',
   'menu.bestStage.one': 'Meilleure serie : {stage}/{total} manche franchie',
   'menu.bestStage.many': 'Meilleure serie : {stage}/{total} manches franchies',
-  'menu.terrainAria': 'Terrain',
   'menu.windAria': 'Meteo',
   'menu.windOff': 'Sans vent',
   'menu.windOn': 'Avec vent',
@@ -169,7 +178,6 @@ const fr: Record<string, string> = {
   'menu.effectAria': 'Effet de lancer',
   'menu.coinsAria': '{n} pieces',
   'menu.nextBatonUnlock': '🔒 Prochain baton : {name} — niveau {level}',
-  'menu.nextTerrainUnlock': '🔒 Prochain terrain : {name} — niveau {level}',
 
   // ---- Succes (achievements.ts) — Phase 4 de la progression
   'achievement.unlocked': 'SUCCES DEBLOQUE :',
@@ -491,9 +499,18 @@ const en: Record<string, string> = {
   'online.rematchWaiting': 'Rematch requested — waiting for your opponent...',
   'online.rematchAccept': 'Accept the rematch',
   'online.rematchOffered': 'Your opponent wants a rematch.',
+
+  // --- Field selection (MapSelect.tsx), shown before every match.
+  'map.title': 'Choose the field',
+  'map.intro': 'Every field changes the game: obstacles, how far the baton slides, how it bounces off the sides.',
+  'map.play': 'Play',
+  'map.continueOnline': 'Continue to the online match',
+  'map.continueTournament': 'Continue to the tournament',
+  'map.back': 'Back',
+  'map.lockedAtLevel': 'Level {level}',
+  'map.yourLevel': 'You are level {level}.',
   'menu.bestStage.one': 'Best streak: {stage}/{total} stage cleared',
   'menu.bestStage.many': 'Best streak: {stage}/{total} stages cleared',
-  'menu.terrainAria': 'Field',
   'menu.windAria': 'Weather',
   'menu.windOff': 'No wind',
   'menu.windOn': 'With wind',
@@ -606,7 +623,6 @@ const en: Record<string, string> = {
   'menu.effectAria': 'Throw effect',
   'menu.coinsAria': '{n} coins',
   'menu.nextBatonUnlock': '🔒 Next baton: {name} — level {level}',
-  'menu.nextTerrainUnlock': '🔒 Next field: {name} — level {level}',
 
   // ---- Achievements (achievements.ts) — progression Phase 4
   'achievement.unlocked': 'ACHIEVEMENT UNLOCKED:',

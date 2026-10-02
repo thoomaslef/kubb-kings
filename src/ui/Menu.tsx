@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { AI_PROFILES, type Difficulty } from '../game/ai';
-import { FIELD_PRESETS, type FieldPresetId } from '../game/rules';
 import { BATONS, BATON_IDS } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { KUBB_SKINS, KING_SKINS } from '../game/theme';
@@ -13,7 +12,6 @@ import { useT } from '../i18n/useT';
 import type { Lang } from '../i18n/translate';
 
 const LEVELS = Object.keys(AI_PROFILES) as Difficulty[];
-const PRESETS = Object.keys(FIELD_PRESETS) as FieldPresetId[];
 const LANGS: Lang[] = ['fr', 'en'];
 const LANG_AUTONYM: Record<Lang, string> = { fr: 'Français', en: 'English' };
 
@@ -27,8 +25,6 @@ export function Menu() {
   const setScreen = useGameStore((s) => s.setScreen);
   const difficulty = useGameStore((s) => s.difficulty);
   const setDifficulty = useGameStore((s) => s.setDifficulty);
-  const fieldPreset = useGameStore((s) => s.fieldPreset);
-  const setFieldPreset = useGameStore((s) => s.setFieldPreset);
   const kubbSkin = useGameStore((s) => s.kubbSkin);
   const setKubbSkin = useGameStore((s) => s.setKubbSkin);
   const kingSkin = useGameStore((s) => s.kingSkin);
@@ -42,6 +38,7 @@ export function Menu() {
   const lang = useGameStore((s) => s.lang);
   const setLang = useGameStore((s) => s.setLang);
   const setMode = useGameStore((s) => s.setMode);
+  const openMapSelect = useGameStore((s) => s.openMapSelect);
   const online = useGameStore((s) => s.online);
   const endOnline = useGameStore((s) => s.endOnline);
   const startRun = useGameStore((s) => s.startRun);
@@ -58,7 +55,6 @@ export function Menu() {
   const availableKingSkins = KING_SKINS.filter((skin) => isShopRefOwned('king', skin, ownedItems));
   const availableBatons = BATON_IDS.filter((id) => isShopRefOwned('baton', id, ownedItems));
   const availableEffects = THROW_EFFECT_IDS.filter((id) => isShopRefOwned('trail', id, ownedItems));
-  const availablePresets = PRESETS.filter((id) => isShopRefOwned('terrain', id, ownedItems));
 
   // Prochain article de boutique a venir dans cette categorie, pour motiver
   // la progression (le niveau ouvre juste le DROIT d'acheter, cf. shop.ts) —
@@ -66,16 +62,14 @@ export function Menu() {
   const nextInCategory = (category: ShopCategory) =>
     SHOP_ITEMS.filter((it) => it.category === category && it.minLevel > level).sort((a, b) => a.minLevel - b.minLevel)[0];
   const nextBaton = nextInCategory('baton');
-  const nextTerrain = nextInCategory('terrain');
 
   // Lue une seule fois au montage : elle ne peut changer que pendant une run,
   // ecran que ce composant n'affiche jamais.
   const [bestStage] = useState(getBestStage);
 
-  const play = (mode: 'solo' | 'local' | '2v2') => {
-    setMode(mode);
-    bridge.send('start-match');
-  };
+  // Le terrain se choisit maintenant sur son propre ecran, juste avant la
+  // partie (cf. MapSelect.tsx) : le menu n'enchaine plus directement.
+  const play = (mode: 'solo' | 'local' | '2v2') => openMapSelect(mode);
 
   const playDefi = () => {
     setMode('defi');
@@ -160,10 +154,10 @@ export function Menu() {
           <button className="btn" onClick={playDefi}>
             {t('menu.defi', { n: LADDER.length })}
           </button>
-          <button className="btn" onClick={() => setScreen('tournament-setup')}>
+          <button className="btn" onClick={() => openMapSelect('tournament')}>
             {t('menu.tournament')}
           </button>
-          <button className="btn" onClick={() => setScreen('online')}>
+          <button className="btn" onClick={() => openMapSelect('online')}>
             {t('menu.online')}
           </button>
           {bestStage > 0 && (
@@ -172,26 +166,6 @@ export function Menu() {
                 stage: bestStage,
                 total: LADDER.length
               })}
-            </p>
-          )}
-
-          <p className="segmented-label">{t('menu.terrainAria')}</p>
-          <div className="segmented" role="group" aria-label={t('menu.terrainAria')}>
-            {availablePresets.map((id) => (
-              <button
-                key={id}
-                className={`segmented__item${id === fieldPreset ? ' segmented__item--on' : ''}`}
-                aria-pressed={id === fieldPreset}
-                onClick={() => setFieldPreset(id)}
-              >
-                {t(`terrain.${id}.label`)}
-              </button>
-            ))}
-          </div>
-          <p className="footnote footnote--tight">{t(`terrain.${fieldPreset}.hint`)}</p>
-          {nextTerrain && (
-            <p className="footnote footnote--tight footnote--locked">
-              {t('menu.nextTerrainUnlock', { name: t(`terrain.${nextTerrain.refId}.label`), level: nextTerrain.minLevel })}
             </p>
           )}
 
