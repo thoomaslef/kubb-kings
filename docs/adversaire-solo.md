@@ -24,6 +24,52 @@ la partie, gacher un tour ne coute qu'un tour. Verifie sur des centaines de tour
 conditions reelles (rebonds de bande compris), a chaque etape du calibrage : zero roi
 renverse trop tot.
 
+> **Mais renoncer trop souvent coute aussi cher que fauter.** Ce controle appliquait par
+> temps calme une marge calibree pour le vent (60 px autour d'un roi qui n'en fait que 27).
+> Consequence mesuree : le kubb **central** — celui que la ligne droite ne peut viser qu'en
+> passant par le roi — survivait dans **200 manches sur 200** au niveau difficile. L'IA
+> plafonnait a 4 kubbs sur 5, toujours, et ne pouvait donc jamais gagner une manche. Elle
+> gachait 44 % de ses tirs en tirs de repli.
+>
+> La marge est desormais differenciee : 60 px sous le vent, 28 px par temps calme, ou la
+> trajectoire est une droite (`KING_STILL_SAFETY_MARGIN`). Elle reste large devant les
+> 27 px de contact reel, parce que le jeu tourne sous Matter et non sous le modele de
+> l'IA — c'est cet ecart-la qu'elle doit couvrir, et c'est pourquoi il a fallu le verifier
+> **en navigateur** : une simulation qui juge son propre modele se donne raison toute
+> seule ([`tests/browser/ia-roi.mjs`](../tests/browser/ia-roi.mjs)).
+
+### Ce que l'IA sait faire, mesure sur une manche entiere
+
+La precision par tir isole ne dit rien du ressenti : ce qui compte est de savoir si l'IA
+peut **finir** une manche. Nettoyage d'une ligne de 5 kubbs, 400 manches par niveau, dans
+la limite des 12 lancers :
+
+| Niveau    | Lancers moyens | Tirs gaches | Renoncements | Lignes non nettoyees |
+| --------- | -------------: | ----------: | -----------: | -------------------: |
+| Facile    | 12,0 &rarr; **11,8** | 85 % &rarr; **77 %** | 500 &rarr; **0** | 100 % &rarr; **89 %** |
+| Moyen     | 11,9 &rarr; **9,7**  | 77 % &rarr; **52 %** | 205 &rarr; **0** | 96 % &rarr; **21 %** |
+| Difficile | 12,0 &rarr; **8,1**  | 68 % &rarr; **39 %** | 1621 &rarr; **0** | 100 % &rarr; **4 %** |
+
+Avant : **aucun** niveau ne pouvait nettoyer une ligne, et le niveau par defaut (Moyen)
+echouait 96 fois sur 100. Le niveau difficile renoncait le PLUS (1621 tirs de repli) —
+il abattait vite les quatre kubbs lateraux, puis restait bloque sur le central jusqu'a
+epuisement de ses lancers.
+
+Deux corrections ont produit ce tableau : la marge de securite ci-dessus, et un nouveau
+calibrage des trois niveaux, choisi sur cette courbe mesuree (erreur de visee contre
+kubbs abattus sur 12 lancers) plutot que sur une intuition :
+
+| Erreur de visee | Kubbs abattus / 5 | Lignes nettoyees |
+| --------------: | ----------------: | ---------------: |
+| 5,5&deg;        | 3,5               | 31 %             |
+| 4,5&deg;        | 4,0               | 50 %             |
+| 3,5&deg;        | 4,6               | 73 %             |
+| 2,8&deg;        | 4,9               | 93 %             |
+| 2,2&deg;        | 5,0               | 100 %            |
+
+D'ou : Facile 12&deg; &rarr; 5,5&deg;, Moyen 7&deg; &rarr; 3,5&deg;, Difficile
+3,5&deg; &rarr; 2,8&deg; (dosage : 0,45 &rarr; 0,30 / 0,24 &rarr; 0,15 / inchange).
+
 ### Ce que le calibrage a appris
 
 Les valeurs des trois niveaux sortent d'un balayage parametre par parametre sur des

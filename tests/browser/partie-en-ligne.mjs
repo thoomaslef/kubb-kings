@@ -10,12 +10,11 @@ import {
   attendreCoups,
   attendreEcran,
   conclure,
-  creerSalon,
+  ouvrirPartieEnLigne,
   etat,
   lancer,
   lancerNavigateur,
   ouvrirJeu,
-  rejoindreSalon,
   surveiller
 } from './harness.mjs';
 
@@ -30,9 +29,9 @@ surveiller('invite', invite, erreurs);
 await ouvrirJeu(hote);
 await ouvrirJeu(invite);
 
-const code = await creerSalon(hote);
+const { code, enMatch } = await ouvrirPartieEnLigne(hote, invite);
 console.log('salon :', code);
-resultats.partieLancee = await rejoindreSalon(invite, code);
+resultats.partieLancee = enMatch;
 
 const h0 = await etat(hote);
 const g0 = await etat(invite);

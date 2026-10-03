@@ -22,8 +22,15 @@
 import { lancerNavigateur, focus, surveiller } from './harness.mjs';
 
 const BASE = process.env.KUBB_URL ?? 'http://localhost:4173/kubb-kings/';
-/** Laisse au chien de garde (1 s) le temps d'agir. */
-const DELAI_RATTRAPAGE = 1800;
+/**
+ * Delai maximal laisse au chien de garde (qui tourne a la seconde).
+ *
+ * C'etait une attente FIXE de 1800 ms, et c'etait faux : si l'evenement
+ * tombe juste apres un tic, le suivant n'arrive qu'a 1999 ms et la mesure
+ * se faisait avant. Echec intermittent, environ une fois sur cinq. On
+ * attend desormais la CONDITION, pas une duree.
+ */
+const DELAI_RATTRAPAGE = 6000;
 
 const navigateur = await lancerNavigateur();
 const contexte = await navigateur.newContext({ viewport: { width: 390, height: 844 } });
@@ -55,6 +62,18 @@ const hauteurHote = (pourcent) =>
     document.querySelector('.app').style.height = p;
   }, pourcent);
 
+/** Attend que le canevas soit ajuste, ou rend la derniere mesure vue. */
+async function attendreAjuste(delaiMs = DELAI_RATTRAPAGE) {
+  const fin = Date.now() + delaiMs;
+  let derniere = await mesurer();
+  while (Date.now() < fin) {
+    if (derniere.ajuste) return derniere;
+    await page.waitForTimeout(200);
+    derniere = await mesurer();
+  }
+  return derniere;
+}
+
 const resultats = {};
 console.log('depart                     :', JSON.stringify(await mesurer()));
 resultats.ajusteAuDemarrage = (await mesurer()).ajuste;
@@ -69,14 +88,12 @@ console.log('gelee + hote retreci       :', JSON.stringify(casse));
 // On veut vraiment avoir casse quelque chose, sinon le test ne prouve rien.
 resultats.leGelCasseBienLEchelle = !casse.ajuste;
 
-await page.waitForTimeout(DELAI_RATTRAPAGE);
-const rattrape = await mesurer();
+const rattrape = await attendreAjuste();
 console.log('rattrape, boucle arretee   :', JSON.stringify(rattrape));
 resultats.rattrapeSansLaBoucle = rattrape.ajuste;
 
 await hauteurHote('100%');
-await page.waitForTimeout(DELAI_RATTRAPAGE);
-const restaure = await mesurer();
+const restaure = await attendreAjuste();
 console.log('hote restaure              :', JSON.stringify(restaure));
 resultats.revientAlaTailleDorigine = restaure.ajuste && restaure.canvas === '390x693';
 
@@ -89,21 +106,18 @@ await page.waitForTimeout(300);
 await cdp.send('Page.setWebLifecycleState', { state: 'active' });
 await page.setViewportSize({ width: 390, height: 844 });
 await focus(page);
-await page.waitForTimeout(DELAI_RATTRAPAGE);
-const apresVeille = await mesurer();
+const apresVeille = await attendreAjuste();
 console.log('apres aller-retour de veille:', JSON.stringify(apresVeille));
 resultats.ajusteApresVeille = apresVeille.ajuste;
 
 // ---- 3. Bascule d'orientation : l'autre moment ou iOS rebat la mise en page.
 await page.setViewportSize({ width: 844, height: 390 });
-await page.waitForTimeout(DELAI_RATTRAPAGE);
-const paysage = await mesurer();
+const paysage = await attendreAjuste();
 console.log('en paysage                 :', JSON.stringify(paysage));
 resultats.ajusteEnPaysage = paysage.ajuste;
 
 await page.setViewportSize({ width: 390, height: 844 });
-await page.waitForTimeout(DELAI_RATTRAPAGE);
-const portrait = await mesurer();
+const portrait = await attendreAjuste();
 console.log('retour en portrait         :', JSON.stringify(portrait));
 resultats.ajusteDeRetourEnPortrait = portrait.ajuste;
 

@@ -9,7 +9,7 @@
 import {
   attendreCoups,
   conclure,
-  creerSalon,
+  ouvrirPartieEnLigne,
   etat,
   focus,
   lancer,
@@ -30,8 +30,8 @@ surveiller('invite', invite, erreurs);
 await ouvrirJeu(hote);
 await ouvrirJeu(invite);
 
-const code = await creerSalon(hote);
-resultats.partieLancee = await rejoindreSalon(invite, code);
+const { code, enMatch } = await ouvrirPartieEnLigne(hote, invite);
+resultats.partieLancee = enMatch;
 
 // ---- Deux lancers, pour que la partie ait une histoire a rejouer.
 for (const n of [1, 2]) {

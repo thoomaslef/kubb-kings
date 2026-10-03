@@ -55,6 +55,7 @@ c'est `CHROMIUM_PATH` qui en designe un.
 | `mise-en-veille.mjs` | Le canevas revient a la bonne echelle apres une mise en veille, un changement d'orientation ou un conteneur qui bouge **pendant que la boucle Phaser est gelee**. Signale sur un vrai iPhone : apres verrouillage/deverrouillage, le jeu se retrouvait dans un petit rectangle centre |
 | `choix-du-terrain.mjs` | L'ecran de choix du terrain : le terrain retenu est bien celui que la partie utilise, les quatre modes y passent et aboutissent au bon endroit, le Defi non, un terrain verrouille reste visible mais non selectionnable, et la barre d'action reste a l'ecran malgre les onze terrains |
 | `kubb-redresse.mjs` | Un kubb redresse par la recompense du ricochet revient a la moitie de sa taille — **corps Matter compris**, pas seulement l'image — sans cumul, et pas sous la regle "Kubbs de champ" |
+| `ia-roi.mjs` | L'IA ne renverse jamais le roi tant qu'il est protege, **sous la vraie physique Matter** : son controle anti-suicide simule son propre modele de vol, une verification headless le comparerait donc a lui-meme |
 | `tir-d-ouverture.mjs` | Le tirage au sort ne designe que le premier joueur : kubbs ni affiches ni presents dans le monde physique, un lancer a pleine puissance n'abat rien, puis retour a la normale. **Seule verification en mode LOCAL** |
 | `partie-en-ligne.mjs` | Poignee de main, decor impose par l'hote, tour verrouille, propagation d'un lancer, **coup decisif** (celui qui, longtemps, ne partait pas) |
 | `coupure-et-reprise.mjs` | Rechargement puis reprise a l'identique, partie qui continue apres, **coupure silencieuse** detectee et annoncee |
@@ -81,6 +82,25 @@ appele pendant que la scene rejouait encore le coup adverse — le lancer
 s'evaporait sans bruit, et la verification echouait une fois sur quelques-unes.
 Si la page n'est jamais prete, l'erreur est franche et dit pourquoi, au lieu de
 laisser un echec inexplicable plus loin.
+
+**En ligne, attendre UN SEUL des deux joueurs ne suffit pas.** Pendant que
+l'invite rejoint, la page de l'hote passe en arriere-plan et Chromium la
+ralentit : elle pouvait n'avoir pas encore traite le `join` quand la
+verification lisait deja sa scene. L'echec arrivait alors sous la forme
+« Cannot read properties of undefined (reading 'blue') », qui ne designe
+rien — et une fois sur trois seulement. `ouvrirPartieEnLigne` attend
+desormais les deux cotes. Defaut trouve en relancant la suite, confirme
+present AVANT le changement en cours, et verifie corrige sur quatre essais
+consecutifs.
+
+**Une simulation qui juge son propre modele se donne raison toute seule.**
+Le controle anti-suicide de l'IA (`curvedKingDanger`) simule la trajectoire
+avec `simulateWindFlight` — le modele de l'IA, pas Matter, qui fait tourner
+le jeu. Toute verification headless de ce controle compare donc le modele a
+lui-meme. C'est pour cela qu'abaisser la marge de securite de 60 a 28 px a
+exige `ia-roi.mjs` : de vraies parties, avec les vrais rebonds. Le test a
+ete eprouve en supprimant la marge — l'IA se suicide alors aux trois
+niveaux des la premiere partie.
 
 **Une reduction visuelle n'est pas une reduction.** `setScale` sur une
 image Matter redimensionne l'image ET son corps physique. Reduire en plus la

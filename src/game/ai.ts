@@ -71,20 +71,29 @@ export interface AiProfile {
  * envisages au depart — piocher un coup au hasard plutot que le meilleur, et
  * ignorer son cone d'incertitude — se sont reveles strictement sans effet sur
  * le resultat, et ont ete retires plutot que gardes pour la forme.
+ *
+ * RECALIBRES depuis, sur une metrique differente : non plus la precision d'un
+ * tir isole, mais la capacite a FINIR une manche. L'ancien jeu de valeurs
+ * (12 / 7 / 3.5 deg) ne permettait a AUCUN niveau de nettoyer une ligne de
+ * 5 kubbs dans la limite des 12 lancers — le niveau par defaut echouait
+ * 96 fois sur 100. Les nouvelles valeurs sortent du balayage « erreur de
+ * visee contre kubbs abattus » documente dans docs/adversaire-solo.md :
+ * 89 % / 21 % / 4 % de manches non terminees, soit une echelle qui se sent
+ * vraiment. `ai.test.ts` verrouille l'ordre des trois niveaux.
  */
 export const AI_PROFILES: Record<Difficulty, AiProfile> = {
   facile: {
-    aimErrorDeg: 12,
-    powerErrorRatio: 0.45,
+    aimErrorDeg: 5.5,
+    powerErrorRatio: 0.3,
     thinkMs: 500
   },
   moyen: {
-    aimErrorDeg: 7,
-    powerErrorRatio: 0.24,
+    aimErrorDeg: 3.5,
+    powerErrorRatio: 0.15,
     thinkMs: 650
   },
   difficile: {
-    aimErrorDeg: 3.5,
+    aimErrorDeg: 2.8,
     powerErrorRatio: 0.03,
     thinkMs: 850
   }
@@ -431,6 +440,25 @@ const KING_WIND_SAFETY_STEPS = 151;
  * mesure avec cette marge, aux 2 forces de vent et aux 8 directions.
  */
 const KING_WIND_SAFETY_MARGIN = 60;
+/**
+ * Marge equivalente SANS vent, nettement plus faible — et c'est le point.
+ *
+ * KING_WIND_SAFETY_MARGIN absorbe la derive eolienne, qui n'existe pas ici :
+ * sans vent, la trajectoire est une droite decelerant par friction, et le
+ * controle simule le meme modele que celui qui a servi a viser. Appliquer la
+ * marge "vent" par temps calme coutait tres cher — mesure avant ce
+ * changement : 44 % des tirs de l'IA etaient des renoncements, et le kubb
+ * CENTRAL survivait dans 200 manches sur 200 au niveau difficile, la ligne
+ * droite qui le vise passant par le roi. L'IA plafonnait donc a 4 kubbs sur
+ * 5, toujours, et ne pouvait jamais gagner une manche.
+ *
+ * Reste large devant les 27 px de contact reel (KING_HIT_RADIUS) : le jeu
+ * tourne sous Matter, pas sous simulateWindFlight, et cet ecart de modele
+ * est ce que cette marge doit couvrir. Valeur verifiee en navigateur sur de
+ * vraies parties, pas seulement en simulation — une simulation qui juge son
+ * propre modele se donne raison toute seule.
+ */
+const KING_STILL_SAFETY_MARGIN = 28;
 
 /**
  * Le tir (origine, angle, puissance) risque-t-il de froler le roi en
@@ -480,13 +508,18 @@ function curvedKingDanger(
   const powerHigh = Math.min(1, power * (1 + profile.powerErrorRatio));
   const powerLow = Math.max(AIM.minPower, power * (1 - profile.powerErrorRatio));
 
+  // Sans vent, rien ne courbe la trajectoire : la marge "vent" n'a plus
+  // d'objet (cf. KING_STILL_SAFETY_MARGIN).
+  const sansVent = windAccel.x === 0 && windAccel.y === 0;
+  const seuil = KING_HIT_RADIUS + (sansVent ? KING_STILL_SAFETY_MARGIN : KING_WIND_SAFETY_MARGIN);
+
   for (const safetyPower of [powerLow, powerHigh]) {
     for (let s = 0; s < KING_WIND_SAFETY_STEPS; s += 1) {
       const offset = ((2 * s) / (KING_WIND_SAFETY_STEPS - 1) - 1) * maxOffset;
       const path = simulateWindFlight(origin, angle + offset * DEG, safetyPower, windAccel, hasHill, frictionMultiplier, hasRiver);
       for (const step of path) {
         const dist = Math.hypot(step.x - king.x, step.y - king.y);
-        if (dist <= KING_HIT_RADIUS + KING_WIND_SAFETY_MARGIN) return true;
+        if (dist <= seuil) return true;
       }
     }
   }

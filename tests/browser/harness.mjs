@@ -243,6 +243,26 @@ export async function rejoindreSalon(page, code) {
   return attendreEcran(page, 'match', 120);
 }
 
+/**
+ * Ouvre un salon, y fait entrer l'invite, et attend que LES DEUX soient en
+ * match.
+ *
+ * Attendre le seul invite ne suffit pas, et c'etait un vrai defaut : pendant
+ * qu'il rejoint, la page de l'hote passe en arriere-plan (c'est `focus` sur
+ * l'invite qui l'y met) et Chromium la ralentit fortement — elle pouvait
+ * n'avoir pas encore traite le `join` quand la verification lisait deja sa
+ * scene. L'echec arrivait alors sous la forme « Cannot read properties of
+ * undefined (reading 'blue') », qui ne designe rien, et une fois sur trois
+ * seulement. `attendreEcran` remet l'hote au premier plan avant d'attendre,
+ * ce qui le reveille.
+ */
+export async function ouvrirPartieEnLigne(hote, invite) {
+  const code = await creerSalon(hote);
+  const inviteEnMatch = await rejoindreSalon(invite, code);
+  const hoteEnMatch = await attendreEcran(hote, 'match', 120);
+  return { code, enMatch: inviteEnMatch && hoteEnMatch };
+}
+
 /** Collecte les erreurs JS d'une page : une verification verte avec une exception ne vaut rien. */
 export function surveiller(nom, page, erreurs) {
   page.on('pageerror', (e) => {

@@ -10,13 +10,12 @@ import {
   attendreCoups,
   attendreEcran,
   conclure,
-  creerSalon,
+  ouvrirPartieEnLigne,
   etat,
   focus,
   lancer,
   lancerNavigateur,
   ouvrirJeu,
-  rejoindreSalon,
   surveiller,
   coups
 } from './harness.mjs';
@@ -38,8 +37,8 @@ await ouvrirJeu(hote, { xp: 0 });
 await ouvrirJeu(invite, { xp: 6000 });
 resultats.hoteVierge = (await etat(hote)).succes.length === 0;
 
-const code = await creerSalon(hote);
-resultats.partieLancee = await rejoindreSalon(invite, code);
+const { enMatch } = await ouvrirPartieEnLigne(hote, invite);
+resultats.partieLancee = enMatch;
 
 const carte = await hote.evaluate(() => window.__kubb.scene.getScene('MatchScene').session?.opponentCard ?? null);
 console.log("carte de l'adversaire :", JSON.stringify(carte));
