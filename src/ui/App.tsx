@@ -19,6 +19,7 @@ import { OnlineLobby } from './OnlineLobby';
 import { MapSelect } from './MapSelect';
 import { About } from './About';
 import { Boot } from './Boot';
+import { Chat } from './Chat';
 
 /**
  * Coquille React : le canvas Phaser est toujours monte,
@@ -55,6 +56,7 @@ export function App() {
         <>
           <HUD />
           <Tutorial />
+          <Chat />
         </>
       )}
       {screen === 'result' && <ResultScreen />}

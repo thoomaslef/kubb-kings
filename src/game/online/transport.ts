@@ -60,7 +60,18 @@ export type OnlineMessage =
    * tranche, comme pour la partie initiale — un tirage de chaque cote
    * donnerait deux parties differentes.
    */
-  | { kind: 'rematch-start'; playerId: string; setup: MatchSetup };
+  | { kind: 'rematch-start'; playerId: string; setup: MatchSetup }
+  /**
+   * Un message de tchat. Le seul contenu LIBRE du protocole : tout le reste
+   * est produit par le jeu, celui-ci est tape par un humain.
+   *
+   * Son texte est donc assaini des DEUX cotes (cf. chat.ts) — a l'envoi
+   * comme a la reception. Le canal est public, le code de salon en est le
+   * seul secret : rien ne garantit qu'un message vienne de notre propre
+   * interface, et un emetteur qui se conforme n'est pas une hypothese sur
+   * laquelle on peut batir.
+   */
+  | { kind: 'chat'; playerId: string; text: string };
 
 export interface Transport {
   send(message: OnlineMessage): void;

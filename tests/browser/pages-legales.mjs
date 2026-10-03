@@ -43,6 +43,9 @@ for (const nom of PAGES) {
     titre: document.querySelector("h1")?.textContent?.trim() ?? "",
     sections: document.querySelectorAll("h2").length,
     puces: document.querySelectorAll("li").length,
+    // Le TEXTE des puces, pas leur nombre : c'est ce qui est enumere qui
+    // compte, pas combien.
+    textePuces: [...document.querySelectorAll("li")].map((li) => li.textContent).join(" | "),
     liens: [...document.querySelectorAll("a")].map((a) =>
       a.getAttribute("href"),
     ),
@@ -132,7 +135,18 @@ const resultats = {
   politiqueNommeLIP: politique?.texte.includes("adresse IP") ?? false,
   politiqueDitFacultatif: politique?.texte.includes("facultatif") ?? false,
   // Les cinq elements qui transitent, enumeres et donc reellement rendus.
-  politiqueEnumereCeQuiTransite: politique?.puces === 5,
+  // Compter les puces etait fragile et ne prouvait rien : la liste est passee
+  // de 5 a 6 elements en gagnant le tchat, et la verification a echoue sans
+  // qu'aucune information ait manque au joueur. On verifie donc CE QUI est
+  // enumere.
+  politiqueEnumereCeQuiTransite: [
+    "code de salon",
+    "reglages de la partie",
+    "lancer",
+    "messages techniques",
+    "niveau de progression",
+    "tchat"
+  ].every((attendu) => (politique?.textePuces ?? "").includes(attendu)),
   listeStylee: politique?.retraitListe === "20px",
   cguDecritLeSalon: vues["cgu"]?.texte.includes("code de salon") ?? false,
   mentionsCitentLeRelais:

@@ -354,6 +354,139 @@ body {
   opacity: 0.8;
 }
 
+/* ---------- Tchat de la partie en ligne (Chat.tsx) ---------- */
+
+/* Replie par defaut : le terrain compte plus que la conversation. */
+.chat-bulle {
+  position: absolute;
+  right: 12px;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: #101f18;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chat-bulle__pastille {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 20px;
+  padding: 2px 5px;
+  border-radius: 10px;
+  background: var(--gold);
+  color: #2a1e04;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chat {
+  position: absolute;
+  right: 12px;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  /* Jamais plus de la moitie de l'ecran : on joue d'abord. */
+  max-height: min(46%, 340px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  /* Opaque, pas `--panel` : ce panneau se superpose au TERRAIN, et les 6 %
+     de transparence de la couleur de panneau suffisaient a faire remonter
+     l'herbe et le bandeau de tour derriere les bulles. */
+  background: #101f18;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.chat__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat__titre {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.chat__fermer {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.chat__messages {
+  flex: 1;
+  padding: 8px 12px;
+  overflow-y: auto;
+}
+
+.chat__vide {
+  margin: 8px 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.chat__message {
+  max-width: 85%;
+  margin: 0 0 6px;
+  padding: 7px 11px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 14px;
+  /* Un mot sans espace ne doit pas pouvoir elargir le panneau. */
+  overflow-wrap: anywhere;
+}
+
+.chat__message--moi {
+  margin-left: auto;
+  background: rgba(242, 193, 78, 0.18);
+}
+
+.chat__saisie {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.chat__saisie input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.chat__saisie .btn {
+  width: auto;
+  min-height: 44px;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
 /* ---------- Choix du terrain (MapSelect.tsx) ---------- */
 
 /* Grille auto-ajustee : 2 colonnes sur un telephone etroit, 3 des que la

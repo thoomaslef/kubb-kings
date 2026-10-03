@@ -77,6 +77,7 @@ import {
 } from '../achievements';
 import { endOfMatchAchievements } from '../matchEndAchievements';
 import { levelFromXp } from '../progression';
+import { fitCameraToDesign } from '../renderScale';
 
 /** La plus proche d'un ensemble de positions de lancer (voir THROW_POSITIONS). */
 function nearestThrowPosition(x: number, positions: readonly number[]): number {
@@ -277,6 +278,7 @@ export class MatchScene extends Phaser.Scene {
   }
 
   create() {
+    fitCameraToDesign(this);
     this.phase = 'aiming';
     this.matchStage = 'opening';
     this.openingResults = {};

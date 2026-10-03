@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DESIGN_WIDTH, DESIGN_HEIGHT } from './rules';
+import { gameSize } from './renderScale';
 import { matterWorldConfig } from './physics/matterConfig';
 import { BootScene } from './scenes/BootScene';
 import { MenuScene } from './scenes/MenuScene';
@@ -16,8 +16,10 @@ export function createGameConfig(parent: HTMLElement): Phaser.Types.Core.GameCon
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
-      width: DESIGN_WIDTH,
-      height: DESIGN_HEIGHT
+      // Pixels de RENDU, pas de design : voir renderScale.ts. Chaque scene
+      // ramene ensuite sa camera aux coordonnees de design, pour que la
+      // physique et l'IA continuent de raisonner dans les memes unites.
+      ...gameSize()
     },
     physics: {
       default: 'matter',

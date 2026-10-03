@@ -35,6 +35,7 @@ Ce qu'ils attrapent, que le compilateur ne voit pas :
 | [`contenu.test.ts`](../src/game/contenu.test.ts) | Les tables et les unions restent alignees : chaque succes a sa recompense ET ses traductions, chaque terrain son nom, l'echelle du Defi ses 30 manches sans terrain repete dans un palier, et **le francais et l'anglais couvrent exactement les memes cles, avec les memes parametres `{n}`** |
 | [`rules.test.ts`](../src/game/rules.test.ts) | Tout terrain reste **traversable** par tout projectile, avec une marge reelle, et la hierarchie des terrains tient (Boue la plus lourde, Glace et Riviere plus longues que Classique) — ecrit apres que Boue s'etait reglee a une friction qui rendait la ligne adverse inatteignable |
 | [`ai.test.ts`](../src/game/ai.test.ts) | L'echelle de difficulte reste ordonnee, et surtout : le kubb **central** reste atteignable a tous les niveaux. Ecrit apres que l'IA s'est revelee incapable de l'abattre — il survivait dans 200 manches sur 200, elle renoncait au lieu de fauter, et aucun invariant ne surveillait les refus |
+| [`online/chat.test.ts`](../src/game/online/chat.test.ts) | Les regles sur le texte du tchat : longueur plafonnee, caracteres de controle et marques de direction d'ecriture retires, cadence d'envoi, journal borne. Le seul contenu du jeu qu'un humain redige, donc le seul a devoir se defendre de ce qu'on lui envoie |
 | [`ui/legal.test.ts`](../src/ui/legal.test.ts) | Les textes legaux ne nient plus toute transmission, et divulguent le relais, l'adresse IP, le caractere facultatif du mode en ligne et ce qui transite — **dans les deux formes a la fois** (page publique et ecran in-app) |
 
 Le dernier point mérite d'etre souligne : ajouter du contenu demande de toucher
@@ -201,9 +202,32 @@ Le jeu et son habillage sont separes, et chacun a son fichier de reglage :
 | [`src/game/rules.ts`](../src/game/rules.ts)   | Seuil d&apos;impact, deviation, vitesse max, duree, lancers, terrain, hitboxes, vent |
 | [`src/game/theme.ts`](../src/game/theme.ts)   | Palette, ombres portees, cadre du terrain, skins de blocs                    |
 | [`src/game/juice.ts`](../src/game/juice.ts)   | Intensite des secousses, du ralenti, de la trainee, des vibrations           |
+| [`src/game/renderScale.ts`](../src/game/renderScale.ts) | Resolution de rendu : taille du jeu et zoom camera (voir ci-dessous) |
 
 **Les hitboxes sont independantes des textures** (`HITBOX` dans `rules.ts`) : on peut
 redessiner une piece sans deplacer une seule collision.
+
+### Le jeu dessinait a 720p et etirait
+
+Mesure sur un ecran de telephone courant (390 pt de large, 3 pixels physiques par
+point) : le jeu dessinait dans un tampon de **720 x 1280** etire sur **1170 x 2080**
+pixels physiques, soit un agrandissement de **1,63x** applique en permanence a tout
+l&apos;affichage. C&apos;etait la premiere cause de flou, bien avant la qualite des
+textures.
+
+[`renderScale.ts`](../src/game/renderScale.ts) cree desormais le jeu en
+`design x facteur` et fait zoomer la camera de chaque scene du **meme** facteur. La
+zone visible revient donc exactement a la taille de design : les coordonnees du monde
+ne bougent pas d&apos;un pixel, et toute la physique, les hitboxes et le calibrage de
+l&apos;IA restent valides sans retouche. Apres : etirement **0,81** (sous 1, donc
+surechantillonne).
+
+> Le piege evident de ce sujet : `scale.setZoom()` ne fait PAS ce travail. Verifie a
+> chaud — il laisse le tampon a 720 x 1280 et ne change que l&apos;affichage.
+
+Le facteur est plafonne a 2 : a 3, un telephone demanderait 2160 x 3840 (8,3 Mpx par
+image), de quoi faire tomber le framerate pour un gain que l&apos;oeil ne distingue
+plus guere.
 
 **Le feedback n&apos;a aucun effet sur les regles.** Toutes les methodes de `Juice`
 peuvent etre retirees sans changer l&apos;issue d&apos;une partie :

@@ -56,6 +56,7 @@ c'est `CHROMIUM_PATH` qui en designe un.
 | `choix-du-terrain.mjs` | L'ecran de choix du terrain : le terrain retenu est bien celui que la partie utilise, les quatre modes y passent et aboutissent au bon endroit, le Defi non, un terrain verrouille reste visible mais non selectionnable, et la barre d'action reste a l'ecran malgre les onze terrains |
 | `kubb-redresse.mjs` | Un kubb redresse par la recompense du ricochet revient a la moitie de sa taille — **corps Matter compris**, pas seulement l'image — sans cumul, et pas sous la regle "Kubbs de champ" |
 | `ia-roi.mjs` | L'IA ne renverse jamais le roi tant qu'il est protege, **sous la vraie physique Matter** : son controle anti-suicide simule son propre modele de vol, une verification headless le comparerait donc a lui-meme |
+| `tchat.mjs` | Un message part d'un appareil et arrive sur l'autre, les garde-fous tiennent sur le chemin REEL (longueur plafonnee a la reception, sauts de ligne neutralises, cadence), et rien ne survit a la partie. Comprend un message **depose directement sur le canal**, sans passer par l'interface — seul moyen d'eprouver l'assainissement a la reception |
 | `tir-d-ouverture.mjs` | Le tirage au sort ne designe que le premier joueur : kubbs ni affiches ni presents dans le monde physique, un lancer a pleine puissance n'abat rien, puis retour a la normale. **Seule verification en mode LOCAL** |
 | `partie-en-ligne.mjs` | Poignee de main, decor impose par l'hote, tour verrouille, propagation d'un lancer, **coup decisif** (celui qui, longtemps, ne partait pas) |
 | `coupure-et-reprise.mjs` | Rechargement puis reprise a l'identique, partie qui continue apres, **coupure silencieuse** detectee et annoncee |
@@ -82,6 +83,21 @@ appele pendant que la scene rejouait encore le coup adverse — le lancer
 s'evaporait sans bruit, et la verification echouait une fois sur quelques-unes.
 Si la page n'est jamais prete, l'erreur est franche et dit pourquoi, au lieu de
 laisser un echec inexplicable plus loin.
+
+**Un garde-fou ne se teste pas en passant par l'interface qui l'applique
+deja.** Le tchat est assaini a l'envoi ET a la reception. Tant que la
+verification n'envoyait que depuis le champ de saisie, retirer le nettoyage
+cote reception ne faisait echouer AUCUNE assertion : le texte arrivait deja
+propre. `tchat.mjs` depose donc aussi un message brut directement sur le
+`BroadcastChannel` du salon, comme le ferait un pair qui ne se conforme pas
+— c'est la situation que ce nettoyage existe pour couvrir.
+
+**Une rafale pilotee depuis Playwright n'est pas une rafale.** Cinq
+`fill` + `click` prenaient **7,7 s**, soit 1,5 s entre messages — bien
+au-dela de la limite de cadence. Les cinq passaient legitimement et la
+verification concluait a tort que le garde-fou ne servait a rien. La rafale
+se joue desormais DANS la page, en un seul tour de boucle : 5 ms, un seul
+message passe.
 
 **En ligne, attendre UN SEUL des deux joueurs ne suffit pas.** Pendant que
 l'invite rejoint, la page de l'hote passe en arriere-plan et Chromium la

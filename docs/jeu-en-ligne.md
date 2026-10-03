@@ -194,6 +194,43 @@ tot termine la partie **des deux cotes avec le meme resultat**. Zero erreur cons
 > etat** (`screen === 'result'`), jamais un delai en temps reel — sinon elles
 > concluent a tort qu&apos;une transition ne se produit pas.
 
+### Le tchat
+
+Une partie en ligne comporte un tchat en **texte libre**. C'est le seul contenu du jeu
+qu'un humain redige : tout le reste (lancers, reglages, messages techniques) est produit
+par le jeu. Cette difference commande tout le reste.
+
+Le message `chat` du protocole est le seul a transporter une chaine arbitraire. Elle
+arrive par un canal **public** dont le code de salon est l'unique secret : rien ne
+garantit qu'un message vienne de l'interface de ce jeu. Les regles de
+[`online/chat.ts`](../src/game/online/chat.ts) sont donc appliquees **des deux cotes**,
+a l'envoi comme a la reception :
+
+| Regle | Pourquoi |
+| --- | --- |
+| Longueur plafonnee a 160 caracteres | Assez pour une phrase, trop court pour un pave |
+| Caracteres de controle et retours a la ligne retires | Un `\n` suffirait a faire passer une bulle pour plusieurs |
+| Marques de direction d'ecriture retirees (U+202E et voisines) | Elles permettent d'ecrire une chose et d'en afficher une autre |
+| Suites d'espaces ramenees a un seul | Elles servent a pousser le texte hors du cadre |
+| Cadence minimale de 800 ms entre deux envois | Empeche de noyer l'autre joueur ; un refus ne repousse pas la prochaine autorisation, sinon insister se punirait soi-meme |
+| Journal borne a 50 messages | Une partie peut durer, la memoire non |
+
+**Rien n'est conserve.** Les messages vivent dans l'etat du composant React, disparaissent
+avec la partie, et ne sont ecrits ni sur l'appareil ni sur le relais — qui ne fait que
+retransmettre (`supabaseTransport.ts` n'utilise ni table, ni storage). Consequence assumee
+et ecrite noir sur blanc dans les pages legales : il n'y a **ni moderation, ni historique,
+ni signalement possible**, puisqu'il ne reste rien a produire.
+
+> **Ce que ce choix a coute ailleurs.** Les textes legaux promettaient a trois endroits
+> « ni chat, ni messagerie, ni contenu publie par les joueurs » — et dans la politique de
+> confidentialite, c'etait precisement ce qui justifiait « convient a tous les ages ».
+> Livrer le tchat sans les reecrire aurait reproduit exactement la faute corrigee deux
+> jours plus tot. Les trois textes decrivent desormais le tchat pour ce qu'il est, et la
+> section « Enfants » recommande qu'un adulte soit informe plutot que d'affirmer une
+> innocuite qui n'est plus garantie. [`legal.test.ts`](../src/ui/legal.test.ts) exige que
+> le mot « tchat », « texte libre » et « modere » figurent dans les trois pages tant que
+> [`chat.ts`](../src/game/online/chat.ts) existe.
+
 ### Quand la liaison lache
 
 Avec le faux transport local, une coupure n&apos;existe pas : les deux onglets vivent

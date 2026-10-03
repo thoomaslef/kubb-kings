@@ -4,6 +4,7 @@ import cguSource from "../../public/legal/cgu.html?raw";
 import mentionsSource from "../../public/legal/mentions-legales.html?raw";
 import ecranSource from "./Legal.tsx?raw";
 import transportSource from "../game/online/supabaseTransport.ts?raw";
+import chatSource from "../game/online/chat.ts?raw";
 
 /**
  * Les textes legaux doivent dire la verite sur le reseau.
@@ -119,6 +120,10 @@ describe("le reseau reellement present est divulgue", () => {
     "code de salon",
     "niveau de progression",
     "facultatif",
+    // Le tchat est le SEUL contenu que le joueur redige lui-meme : taire son
+    // existence, ou laisser croire qu'il est modere, serait le mensonge le
+    // plus couteux de ces pages.
+    "tchat",
   ];
 
   it.each([POLITIQUE, ECRAN])(
@@ -162,6 +167,26 @@ describe("le reseau reellement present est divulgue", () => {
     const cgu = texteJoueur(CGU);
     expect(cgu).toContain("en ligne");
     expect(cgu).toContain("code de salon");
+  });
+
+  it("le tchat est annonce pour ce qu'il est : libre, non modere, non conserve", () => {
+    // Le code embarque un tchat (chat.ts) : tant qu'il existe, ces trois
+    // caracteres doivent etre ecrits noir sur blanc. Promettre une
+    // moderation qui n'existe pas serait pire que de se taire.
+    expect(chatSource, "chat.ts n'existe plus : ce test n'a plus d'objet").toContain("sanitizeChatText");
+    for (const chemin of [POLITIQUE, ECRAN, CGU]) {
+      const texte = texteJoueur(chemin);
+      expect(texte, `${chemin} ne parle pas du tchat`).toContain("tchat");
+      expect(texte, `${chemin} ne dit pas qu'il est libre`).toContain("texte libre");
+      expect(texte, `${chemin} ne dit pas qu'il n'est pas modere`).toContain("modere");
+    }
+  });
+
+  it("aucune page ne promet plus l'absence de tchat", () => {
+    for (const chemin of DOCUMENTS_JOUEUR) {
+      expect(texteJoueur(chemin), chemin).not.toContain("ni chat");
+      expect(texteJoueur(chemin), chemin).not.toContain("ni messagerie");
+    }
   });
 
   it("les mentions legales citent le relais parmi les hebergeurs", () => {

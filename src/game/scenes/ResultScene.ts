@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { bridge } from '../GameBridge';
 import { gameStore, type MatchResult } from '../../store/useGameStore';
 import { getCurrentSession, setCurrentSession } from '../online/currentSession';
+import { fitCameraToDesign } from '../renderScale';
 
 /**
  * Scene "vide" : l'ecran de fin visible est rendu par React.
@@ -18,6 +19,7 @@ export class ResultScene extends Phaser.Scene {
   }
 
   create(result: MatchResult) {
+    fitCameraToDesign(this);
     gameStore.getState().setResult(result);
     gameStore.getState().setScreen('result');
 

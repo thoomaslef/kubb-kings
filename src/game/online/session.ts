@@ -9,6 +9,7 @@ import {
 import type { OnlineMessage, Transport } from './transport';
 import type { TeamId } from '../entities/teamData';
 import type { BatonId } from '../batons';
+import { CHAT_MIN_INTERVAL_MS, ChatRateLimiter, sanitizeChatText } from './chat';
 
 /**
  * Une partie a deux, au-dessus d'un `Transport` quelconque.
@@ -106,6 +107,13 @@ export class OnlineSession {
   private resyncListeners = new Set<Listener<MatchRecord>>();
   private throwListeners = new Set<Listener<RecordedThrow>>();
   private closeListeners = new Set<Listener<CloseReason>>();
+  private chatListeners = new Set<Listener<string>>();
+  /**
+   * Cadence nos propres envois. Le cadenceur de l'ADVERSAIRE ne nous protege
+   * de rien : il tourne chez lui, et rien ne dit que son message vient de
+   * notre interface.
+   */
+  private readonly chatLimiter = new ChatRateLimiter(CHAT_MIN_INTERVAL_MS);
 
   private constructor(
     transport: Transport,
@@ -237,6 +245,27 @@ export class OnlineSession {
     return () => this.throwListeners.delete(fn);
   }
 
+  /**
+   * Envoie un message de tchat. Renvoie le texte REELLEMENT envoye, ou null
+   * s'il n'a pas pu l'etre (vide apres nettoyage, cadence trop rapide, ou
+   * session fermee) — l'appelant sait ainsi s'il doit vider son champ de
+   * saisie, sans avoir a rejouer les memes regles de son cote.
+   */
+  sendChat(raw: string, now = Date.now()): string | null {
+    if (this._state !== 'ready') return null;
+    const texte = sanitizeChatText(raw);
+    if (!texte) return null;
+    if (!this.chatLimiter.accept(now)) return null;
+    this.transport.send({ kind: 'chat', playerId: this.playerId, text: texte });
+    return texte;
+  }
+
+  /** Un message de l'adversaire vient d'arriver, deja assaini. */
+  onChat(fn: Listener<string>): () => void {
+    this.chatListeners.add(fn);
+    return () => this.chatListeners.delete(fn);
+  }
+
   onClosed(fn: Listener<CloseReason>): () => void {
     this.closeListeners.add(fn);
     return () => this.closeListeners.delete(fn);
@@ -352,6 +381,16 @@ export class OnlineSession {
       case 'rematch-start': {
         if (this.role !== 'guest') return;
         this.beginRematch(message.setup);
+        return;
+      }
+
+      case 'chat': {
+        // Assaini A LA RECEPTION aussi : le message arrive d'un canal public
+        // et n'a pas forcement ete produit par notre interface. Un message
+        // vide apres nettoyage est ignore plutot qu'affiche.
+        const texte = sanitizeChatText(message.text);
+        if (!texte) return;
+        this.chatListeners.forEach((fn) => fn(texte));
         return;
       }
 

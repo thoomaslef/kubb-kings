@@ -64,6 +64,14 @@ const fr: Record<string, string> = {
   'map.back': 'Retour',
   'map.lockedAtLevel': 'Niveau {level}',
   'map.yourLevel': 'Vous etes niveau {level}.',
+
+  // --- Tchat de la partie en ligne (Chat.tsx).
+  'chat.title': 'Tchat',
+  'chat.open': 'Ouvrir le tchat',
+  'chat.close': 'Fermer le tchat',
+  'chat.empty': "Ecrivez a votre adversaire. Rien n'est conserve apres la partie.",
+  'chat.placeholder': 'Votre message',
+  'chat.send': 'Envoyer',
   'menu.bestStage.one': 'Meilleure serie : {stage}/{total} manche franchie',
   'menu.bestStage.many': 'Meilleure serie : {stage}/{total} manches franchies',
   'menu.windAria': 'Meteo',
@@ -509,6 +517,14 @@ const en: Record<string, string> = {
   'map.back': 'Back',
   'map.lockedAtLevel': 'Level {level}',
   'map.yourLevel': 'You are level {level}.',
+
+  // --- Online match chat (Chat.tsx).
+  'chat.title': 'Chat',
+  'chat.open': 'Open chat',
+  'chat.close': 'Close chat',
+  'chat.empty': 'Write to your opponent. Nothing is kept after the match.',
+  'chat.placeholder': 'Your message',
+  'chat.send': 'Send',
   'menu.bestStage.one': 'Best streak: {stage}/{total} stage cleared',
   'menu.bestStage.many': 'Best streak: {stage}/{total} stages cleared',
   'menu.windAria': 'Weather',

@@ -42,8 +42,9 @@ export function Legal() {
         <p className="panel__text">
           En partie en ligne, le jeu ouvre une connexion temps reel vers Supabase, qui sert
           uniquement de relais. Y transitent le code de salon, les reglages de la partie, chaque
-          lancer, les messages techniques (presence, abandon, reprise, revanche) et votre niveau
-          de progression, transmis a l&apos;adversaire pour affichage. Aucun nom, aucun
+          lancer, les messages techniques (presence, abandon, reprise, revanche), votre niveau
+          de progression transmis a l&apos;adversaire pour affichage, et les messages de tchat
+          que vous ecrivez. Aucun nom, aucun
           pseudonyme, aucun identifiant d&apos;appareil n&apos;est transmis : les joueurs sont
           designes par &laquo; hote &raquo; et &laquo; invite &raquo; suivis du code de salon.
         </p>
@@ -60,9 +61,22 @@ export function Legal() {
           connexion n&apos;est etablie.
         </p>
         <p className="panel__text">
-          Il n&apos;y a ni chat, ni messagerie, ni contenu publie par les joueurs : le jeu
-          convient a tous les ages. Le jeu ne demande aucune permission (localisation, contacts,
-          photos, microphone&hellip;).
+          Une partie en ligne comporte un <strong>tchat en texte libre</strong>. Les messages y
+          sont retransmis en direct puis perdus : ils ne sont ni enregistres, ni moderes, ni
+          consultables par l&apos;editeur. Le tchat n&apos;existe qu&apos;entre deux joueurs qui
+          se sont volontairement partage un code de salon — il n&apos;y a ni salon public, ni
+          mise en relation avec des inconnus. Chacun repond de ce qu&apos;il ecrit ; quitter la
+          partie ferme immediatement la liaison.
+        </p>
+        <p className="panel__text">
+          Les modes solo, local, Defi et tournoi ne comportent aucun echange et conviennent a
+          tous les ages. Pour un enfant, nous recommandons que le code de salon ne soit partage
+          qu&apos;avec des personnes connues de lui, et qu&apos;un adulte soit informe de
+          l&apos;usage du mode en ligne.
+        </p>
+        <p className="panel__text">
+          Le jeu ne demande aucune permission (localisation, contacts, photos,
+          microphone&hellip;).
         </p>
         <p className="panel__text">
           Contact pour toute question relative a cette politique, ou pour exercer vos droits :{' '}
