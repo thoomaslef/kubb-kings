@@ -15,6 +15,7 @@ import { Obstacle } from '../entities/Obstacle';
 import { BATON_BODY, WALL_BODY } from '../physics/matterConfig';
 import { Juice } from '../juice';
 import { PALETTE, BORDER_WIDTH } from '../theme';
+import { echelleSprite, fitCameraToDesign } from '../renderScale';
 import { AI_PROFILES, AI_TEAM, decideApproachThrow, decideThrow, type AiProfile } from '../ai';
 import {
   BOURSE_PLEINE_COINS_MULTIPLIER,
@@ -77,7 +78,6 @@ import {
 } from '../achievements';
 import { endOfMatchAchievements } from '../matchEndAchievements';
 import { levelFromXp } from '../progression';
-import { fitCameraToDesign } from '../renderScale';
 
 /** La plus proche d'un ensemble de positions de lancer (voir THROW_POSITIONS). */
 function nearestThrowPosition(x: number, positions: readonly number[]): number {
@@ -279,6 +279,7 @@ export class MatchScene extends Phaser.Scene {
 
   create() {
     fitCameraToDesign(this);
+    this.appliquerVignette();
     this.phase = 'aiming';
     this.matchStage = 'opening';
     this.openingResults = {};
@@ -910,12 +911,7 @@ export class MatchScene extends Phaser.Scene {
     this.activeTeam = this.throwsLeft[next] > 0 ? next : this.activeTeam;
 
     if (this.activeTeam !== previous) {
-      this.juice.turnBanner(
-        this.turnLabel(this.activeTeam),
-        TEAMS[this.activeTeam].color,
-        FIELD_CENTER_Y,
-        this.scale.width
-      );
+      this.juice.turnBanner(this.turnLabel(this.activeTeam), TEAMS[this.activeTeam].color, FIELD_CENTER_Y);
     }
 
     this.phase = 'aiming';
@@ -946,7 +942,7 @@ export class MatchScene extends Phaser.Scene {
     // Rouge tire apres bleu : un bandeau de passage, comme un vrai changement
     // de tour, pour que ce soit clair sur un meme appareil (1v1/2v2 local).
     if (team === 'red') {
-      this.juice.turnBanner(this.turnLabel('red'), TEAMS.red.color, FIELD_CENTER_Y, this.scale.width);
+      this.juice.turnBanner(this.turnLabel('red'), TEAMS.red.color, FIELD_CENTER_Y);
     }
 
     if (this.isAiTeam(team)) this.beginAiOpeningTurn();
@@ -1134,7 +1130,7 @@ export class MatchScene extends Phaser.Scene {
     this.activeTeam = winner;
     this.phase = 'aiming';
     this.aimAngle = this.forwardAngle();
-    this.juice.turnBanner(this.turnLabel(winner), TEAMS[winner].color, FIELD_CENTER_Y, this.scale.width);
+    this.juice.turnBanner(this.turnLabel(winner), TEAMS[winner].color, FIELD_CENTER_Y);
     this.drawAim();
     this.syncHud();
 
@@ -1818,7 +1814,13 @@ export class MatchScene extends Phaser.Scene {
     // 'grass' sauf sur Glace/Sable (FieldPreset.groundTexture), qui remplacent
     // la pelouse sur tout le terrain plutot que d'ajouter un element par-dessus.
     const ground = FIELD_PRESETS[this.fieldPreset].groundTexture;
-    this.add.tileSprite(FIELD.x, FIELD.y, FIELD.width, FIELD.height, ground).setOrigin(0, 0).setDepth(0);
+    this.add
+      .tileSprite(FIELD.x, FIELD.y, FIELD.width, FIELD.height, ground)
+      .setOrigin(0, 0)
+      .setDepth(0)
+      // La tuile est generee a la resolution de l'ecran : sans ceci, le motif
+      // de l'herbe serait repete deux fois plus gros sur un ecran dense.
+      .setTileScale(echelleSprite());
 
     const g = this.add.graphics().setDepth(0);
 
@@ -1933,6 +1935,27 @@ export class MatchScene extends Phaser.Scene {
   }
 
   /** Assombrit les bords : donne du volume a une vue de dessus tres plate. */
+  /**
+   * Vignette de la camera : les coins s'assombrissent, le centre du terrain
+   * ressort.
+   *
+   * Vrai post-traitement WebGL, en plus de celle dessinee au trait dans le
+   * cadre du terrain (drawVignette) — qui reste, et qui n'est pas un double
+   * emploi : elle borde le TERRAIN, celle-ci couvre tout l'ecran, et c'est
+   * elle qui disparait si le navigateur n'offre pas WebGL. Le jeu garde donc
+   * toujours une vignette, jamais deux fois la meme.
+   *
+   * Cout mesure dans l'atelier, qui rend en LOGICIEL (sans GPU) a 1440x2560,
+   * donc dans le pire cas imaginable : 3,21 -> 2,92 images par seconde, soit
+   * 9 %. Sur un telephone, ou cette passe plein ecran est exactement ce pour
+   * quoi un GPU est fait, c'est sans commune mesure.
+   */
+  private appliquerVignette() {
+    // `postFX` n'existe pas en rendu Canvas : Phaser.AUTO peut y tomber sur
+    // un materiel ou un navigateur sans WebGL.
+    this.cameras.main.postFX?.addVignette(0.5, 0.5, 0.72, 0.42);
+  }
+
   private drawVignette(g: Phaser.GameObjects.Graphics) {
     const steps = 24;
     for (let i = 0; i < steps; i += 1) {
@@ -1992,7 +2015,7 @@ export class MatchScene extends Phaser.Scene {
   private createThrowers() {
     const make = (id: TeamId) => {
       const pos = throwerPosition(id);
-      return this.add.image(pos.x, pos.y, `thrower-${id}`).setDepth(2);
+      return this.add.image(pos.x, pos.y, `thrower-${id}`).setDepth(2).setScale(echelleSprite());
     };
     this.throwerSprites = { blue: make('blue'), red: make('red') };
   }
@@ -2056,6 +2079,8 @@ export class MatchScene extends Phaser.Scene {
     const announce = canTarget && !this.kingAnnounced[this.activeTeam];
     if (announce) this.kingAnnounced[this.activeTeam] = true;
     this.juice.setKingTargetable(canTarget, FIELD_CENTER_X, FIELD_CENTER_Y, announce);
+    // Et le roi lui-meme s'allume : l'anneau au sol dit OU, le halo dit QUOI.
+    this.king.setTargetGlow(canTarget);
   }
 
   private handleLeave() {

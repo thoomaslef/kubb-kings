@@ -73,6 +73,33 @@ les 11 terrains etaient forces sur une seule ligne, il leur fallait 593 px dans
 un cadre de 310, et les cinq derniers etaient coupes au milieu d'un mot. Sur un
 profil neuf, un seul terrain est possede : rien ne se voyait.
 
+`resolution-ecran.mjs`
+est la seule a tourner a **`deviceScaleFactor` 3**, comme un telephone, et elle
+existe a cause d'un angle mort : toutes les autres tournent au reglage par
+defaut de Playwright, c'est-a-dire 1, et a 1 le facteur de rendu vaut 1 — tout
+le code ecrit pour la haute resolution y est donc inerte. Trois defauts bien
+reels sont passes de cette facon : le bandeau de passage de tour ecrivait son
+texte hors du cadre visible, la chute du roi ramenait le zoom a 1 et divisait
+donc le terrain par deux **definitivement**, et les textes flottants n'etaient
+plus bornes. Elle mesure deux choses : la **nettete** (combien de pixels
+physiques couvre un pixel de texture — 1,625 avant, 0,81 apres) et la
+**non-regression physique**, parce que compenser la resolution des textures par
+l'echelle des sprites redimensionne aussi les corps Matter, et seulement sur
+les ecrans denses, c'est-a-dire ceux des joueurs.
+
+> Eprouvee par mutation, et deux de ses verifications ne mordaient pas du
+> premier coup :
+>
+> - la nettete etait calculee depuis le facteur *attendu* au lieu de la taille
+>   reelle des textures : elle mesurait une intention, pas un resultat ;
+> - le bandeau recevait sa largeur de la verification elle-meme, qui ne testait
+>   donc que son centrage interne. Le parametre a disparu de `turnBanner` —
+>   la seule largeur correcte etant celle du terrain, plus personne ne peut se
+>   tromper en l'appelant.
+>
+> Remettre l'etat livre avant correction fait tomber 6 de ses points, retirer
+> la compensation du corps Matter en fait tomber 4.
+
 `pages-legales.mjs`
 ouvre les trois pages legales et l'ecran in-app dans un vrai navigateur, en
 390 px de large. Elle verifie ce qu'aucune lecture de source ne peut voir —
@@ -202,7 +229,8 @@ Le jeu et son habillage sont separes, et chacun a son fichier de reglage :
 | [`src/game/rules.ts`](../src/game/rules.ts)   | Seuil d&apos;impact, deviation, vitesse max, duree, lancers, terrain, hitboxes, vent |
 | [`src/game/theme.ts`](../src/game/theme.ts)   | Palette, ombres portees, cadre du terrain, skins de blocs                    |
 | [`src/game/juice.ts`](../src/game/juice.ts)   | Intensite des secousses, du ralenti, de la trainee, des vibrations           |
-| [`src/game/renderScale.ts`](../src/game/renderScale.ts) | Resolution de rendu : taille du jeu et zoom camera (voir ci-dessous) |
+| [`src/game/renderScale.ts`](../src/game/renderScale.ts) | Resolution de rendu : taille du jeu, zoom camera, echelle d&apos;affichage des sprites (voir ci-dessous) |
+| [`src/game/pinceau.ts`](../src/game/pinceau.ts) | Le dessin des textures : degrades, disques a bord doux, ombres floues |
 
 **Les hitboxes sont independantes des textures** (`HITBOX` dans `rules.ts`) : on peut
 redessiner une piece sans deplacer une seule collision.
@@ -215,12 +243,11 @@ pixels physiques, soit un agrandissement de **1,63x** applique en permanence a t
 l&apos;affichage. C&apos;etait la premiere cause de flou, bien avant la qualite des
 textures.
 
-[`renderScale.ts`](../src/game/renderScale.ts) cree desormais le jeu en
-`design x facteur` et fait zoomer la camera de chaque scene du **meme** facteur. La
-zone visible revient donc exactement a la taille de design : les coordonnees du monde
-ne bougent pas d&apos;un pixel, et toute la physique, les hitboxes et le calibrage de
-l&apos;IA restent valides sans retouche. Apres : etirement **0,81** (sous 1, donc
-surechantillonne).
+[`renderScale.ts`](../src/game/renderScale.ts) cree le jeu en `design x facteur` et
+fait zoomer la camera de chaque scene du **meme** facteur. La zone visible revient
+donc exactement a la taille de design : les coordonnees du monde ne bougent pas
+d&apos;un pixel, et toute la physique, les hitboxes et le calibrage de l&apos;IA
+restent valides sans retouche.
 
 > Le piege evident de ce sujet : `scale.setZoom()` ne fait PAS ce travail. Verifie a
 > chaud — il laisse le tampon a 720 x 1280 et ne change que l&apos;affichage.
@@ -228,6 +255,59 @@ surechantillonne).
 Le facteur est plafonne a 2 : a 3, un telephone demanderait 2160 x 3840 (8,3 Mpx par
 image), de quoi faire tomber le framerate pour un gain que l&apos;oeil ne distingue
 plus guere.
+
+#### La moitie qui manquait : les textures
+
+Agrandir le tampon ne suffisait pas, et le croire etait une erreur de mesure. Les
+textures du jeu sont generees par code au demarrage ([`BootScene`](../src/game/scenes/BootScene.ts)),
+a la taille de **design** — et le zoom de la camera les agrandissait donc d&apos;autant.
+Mesure a DPR 3 : **1,625 pixel physique par pixel de texture**, exactement la meme
+valeur qu&apos;avant le passage au tampon haute resolution. Le gain etait reel pour
+tout ce qui est dessine a la volee (traits de visee, HUD) et **nul** pour chaque
+piece du jeu.
+
+Les textures sont desormais dessinees sur une `CanvasTexture` de `facteur` fois la
+taille, et chaque sprite compense par son echelle d&apos;affichage
+(`echelleSprite` / `appliquerEchelleMatter`). Apres : **0,81 pixel physique par
+pixel de texture**, c&apos;est-a-dire surechantillonne.
+
+> **Le piege de la compensation**, et la raison d&apos;etre de `appliquerEchelleMatter` :
+> sur une image Matter, `setScale` redimensionne l&apos;image **et son corps physique**
+> (comme `setDisplaySize`, qui passe par le meme setter). Compenser naivement la
+> resolution aurait donc divise toutes les hitboxes par deux — et **seulement sur les
+> ecrans denses**, c&apos;est-a-dire ceux des joueurs, jamais ceux des verifications.
+> Le corps recoit donc en retour le facteur que `setScale` lui a pris.
+> `resolution-ecran.mjs` mesure les hitboxes a DPR 1 et a DPR 3 : retirer cette
+> correction fait tomber quatre de ses points.
+
+#### Pourquoi Canvas plutot que `Phaser.Graphics`
+
+`Graphics` ne sait pas faire de degrade. Toutes les rondeurs du jeu etaient obtenues
+en empilant quatorze cercles concentriques dont les alphas s&apos;additionnent, et une
+ombre floue etait tout simplement hors de portee. [`pinceau.ts`](../src/game/pinceau.ts)
+reprend la meme API (`fillStyle` + `fillCircle`, `lineStyle` + `strokeCircle`...) sur
+un contexte Canvas 2D, ce qui a permis de reporter chaque dessin tel quel, puis
+d&apos;ajouter ce qui manquait : degrades lineaires et radiaux, disque a bord doux en
+une seule passe, et vraies ombres portees. Le roi, les boules et les blocs sont
+modeles par des degrades au lieu d&apos;etre empiles en aplats.
+
+#### Post-traitement WebGL
+
+Deux effets, tous deux silencieusement absents si le navigateur n&apos;offre pas WebGL
+(le jeu reste complet sans eux) :
+
+- **le halo du roi** quand il devient une cible legale ([`King.ts`](../src/game/entities/King.ts)) :
+  un vrai `preFX.addGlow`, qui epouse la silhouette couronne comprise — ce qu&apos;aucun
+  anneau pre-dessine ne peut faire. Il s&apos;ajoute a l&apos;anneau pulsant au sol, qui
+  reste le signal principal : l&apos;anneau dit OU, le halo dit QUOI ;
+- **la vignette de camera**, en plus de celle tracee dans le cadre du terrain — l&apos;une
+  borde le terrain, l&apos;autre couvre l&apos;ecran.
+
+Cout mesure dans l&apos;atelier, qui rend en **logiciel** (sans GPU) a 1440 x 2560, donc
+dans le pire cas imaginable : 3,59 images par seconde a vide, 3,21 avec le halo,
+2,92 avec la vignette en plus. Sur un telephone, ou ces passes sont exactement ce
+pour quoi un GPU existe, c&apos;est sans commune mesure — mais **cela n&apos;a pas pu etre
+mesure sur un vrai appareil depuis ici**.
 
 **Le feedback n&apos;a aucun effet sur les regles.** Toutes les methodes de `Juice`
 peuvent etre retirees sans changer l&apos;issue d&apos;une partie :

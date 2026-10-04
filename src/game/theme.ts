@@ -122,6 +122,26 @@ export const KING_SKINS: KingSkin[] = ['or', 'argent', 'obsidienne'];
 /** Seul habillage disponible d'office, sans passer par la boutique. */
 export const FREE_KING_SKINS: readonly KingSkin[] = ['or'];
 
+/**
+ * Teintes de chaque skin de roi : base, facette claire, contour/couronne,
+ * joyaux.
+ *
+ * Ici plutot que dans BootScene parce que deux rendus en dependent
+ * desormais : le dessin de la texture, et le halo WebGL allume quand le roi
+ * devient une cible legale (King.ts) — qui doit etre de la couleur du roi,
+ * sinon un roi d'obsidienne s'entourerait d'or.
+ */
+export const KING_SKIN_COLORS: Record<KingSkin, { base: number; light: number; dark: number; gem: number }> = {
+  or: { base: PALETTE.gold, light: PALETTE.goldLight, dark: PALETTE.goldDark, gem: 0xfffdf2 },
+  argent: { base: PALETTE.silver, light: PALETTE.silverLight, dark: PALETTE.silverDark, gem: 0xeaf6ff },
+  obsidienne: {
+    base: PALETTE.obsidian,
+    light: PALETTE.obsidianLight,
+    dark: PALETTE.obsidianDark,
+    gem: PALETTE.obsidianGem
+  }
+};
+
 // Libelles et indices : src/i18n/dictionaries.ts (king.<id>.label / .hint).
 
 /**

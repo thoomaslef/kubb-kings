@@ -40,6 +40,15 @@ KUBB_URL=... node tests/browser/partie-en-ligne.mjs
 > mv .env .env.horsjeu
 > env -u VITE_SUPABASE_URL -u VITE_SUPABASE_ANON_KEY VITE_EXPOSE_TEST_HANDLE=1 npm run build
 > ```
+>
+> **Symptome si on l'oublie** : les quatre verifications en ligne echouent sur
+> « Le salon ne s'est pas ouvert (service en ligne injoignable ?) », et la
+> console de la page montre
+> `WebSocket ... failed: net::ERR_CERT_AUTHORITY_INVALID` — le Chromium de
+> l'atelier ne fait pas confiance au certificat du mandataire sortant. Le
+> service Supabase, lui, repond parfaitement (`curl` dessus renvoie 401). Ce
+> n'est donc jamais un defaut du jeu : c'est un build qui embarque les
+> coordonnees alors qu'il ne devrait pas.
 | `KUBB_LEGAL_URL` | racine des pages legales (`pages-legales.mjs`) | `legal` deduit de `KUBB_URL` |
 | `CHROMIUM_PATH` | binaire Chromium a piloter | celui de l'atelier |
 
@@ -51,6 +60,7 @@ c'est `CHROMIUM_PATH` qui en designe un.
 | Fichier | Couvre |
 | --- | --- |
 | `pages-legales.mjs` | Les trois pages legales et l'ecran in-app : rendu reel, liens croises, **aucun debordement a 390 px**, et la divulgation du mode en ligne presente **dans les deux formes**. Ne lance aucune partie : quelques secondes |
+| `resolution-ecran.mjs` | **La seule a tourner a DPR 3**, comme un telephone : toutes les autres sont a DPR 1, ou le facteur de rendu vaut 1 et ou tout le code haute resolution est inerte. Mesure la nettete (pixels physiques par pixel de texture), les tailles AFFICHEES de chaque piece, et surtout que les corps Matter ne bougent pas — y compris ceux qui sont recrees en cours de partie (kubb de champ, kubb redresse). Ne lance aucune partie complete |
 | `menu-reglages.mjs` | La mise en page des groupes de choix du menu, **tout contenu debloque** : rien ne deborde, aucun libelle tronque, cibles tactiles >= 44 px — a 5 largeurs d'ecran et dans les deux langues. Ne lance aucune partie |
 | `mise-en-veille.mjs` | Le canevas revient a la bonne echelle apres une mise en veille, un changement d'orientation ou un conteneur qui bouge **pendant que la boucle Phaser est gelee**. Signale sur un vrai iPhone : apres verrouillage/deverrouillage, le jeu se retrouvait dans un petit rectangle centre |
 | `choix-du-terrain.mjs` | L'ecran de choix du terrain : le terrain retenu est bien celui que la partie utilise, les quatre modes y passent et aboutissent au bon endroit, le Defi non, un terrain verrouille reste visible mais non selectionnable, et la barre d'action reste a l'ecran malgre les onze terrains |
@@ -108,6 +118,28 @@ rien — et une fois sur trois seulement. `ouvrirPartieEnLigne` attend
 desormais les deux cotes. Defaut trouve en relancant la suite, confirme
 present AVANT le changement en cours, et verifie corrige sur quatre essais
 consecutifs.
+
+**Une verification a DPR 1 ne voit rien du rendu haute resolution.** Tant que
+la suite entiere tournait au `deviceScaleFactor` par defaut de Playwright, le
+facteur de rendu valait 1 et le code ecrit pour les ecrans denses n'etait
+jamais execute. Trois defauts bien reels ont ainsi ete livres : le bandeau de
+passage de tour ecrivait son texte hors du cadre, la chute du roi divisait le
+terrain par deux **definitivement**, et les textes flottants n'etaient plus
+bornes. `resolution-ecran.mjs` tourne donc a DPR 3.
+
+**Mesurer une intention n'est pas mesurer un resultat.** La premiere version du
+controle de nettete calculait les pixels par texel a partir du facteur
+*attendu*, et non de la taille reelle des textures : la mutation « generer les
+textures a la taille de design » ne la faisait pas broncher. De meme, le
+controle du bandeau lui passait sa propre largeur, et ne testait donc que le
+centrage interne — le parametre a disparu de `turnBanner`, la seule largeur
+correcte etant celle du terrain.
+
+**Un corps Matter qu'on redimensionne au tween ne se mesure pas pendant le
+tween.** Le kubb replante en champ part a 0,6 et grandit : lu tout de suite,
+son corps fait 21,6 au lieu de 36, a tous les DPR, et la mesure ne dit rien.
+On attend la fin de l'animation — pas question de lui imposer la valeur
+attendue.
 
 **Une simulation qui juge son propre modele se donne raison toute seule.**
 Le controle anti-suicide de l'IA (`curvedKingDanger`) simule la trajectoire

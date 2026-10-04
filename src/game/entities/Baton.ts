@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BATON_BODY } from '../physics/matterConfig';
 import { THROW, MAX_AIM_DEVIATION_DEG, HITBOX } from '../rules';
 import { SHADOW } from '../theme';
+import { appliquerEchelleMatter, echelleSprite } from '../renderScale';
 import type { BatonStats } from '../batons';
 import type { ThrowRoll } from '../online/protocol';
 
@@ -45,7 +46,10 @@ export class Baton {
       .image(x + SHADOW.offsetX, y + SHADOW.offsetY, 'shadow')
       .setDepth(3)
       .setAlpha(SHADOW.alpha * 0.8)
-      .setScale(SHADOW.scale.baton, shape === 'baton' ? SHADOW.scale.baton * 1.5 : SHADOW.scale.baton);
+      .setScale(
+        echelleSprite(SHADOW.scale.baton),
+        echelleSprite(shape === 'baton' ? SHADOW.scale.baton * 1.5 : SHADOW.scale.baton)
+      );
 
     const bodyShape =
       shape === 'boule'
@@ -60,6 +64,7 @@ export class Baton {
       ...bodyShape
     });
     this.sprite.setDepth(6);
+    appliquerEchelleMatter(this.sprite);
   }
 
   /** Recale l'ombre sur le baton. Appele a chaque frame par la scene. */

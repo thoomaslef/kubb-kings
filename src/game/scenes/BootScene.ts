@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { TEAMS } from '../entities/Team';
-import { PALETTE, KUBB_SKINS, type KubbSkin, KING_SKINS, type KingSkin } from '../theme';
+import { PALETTE, KUBB_SKINS, type KubbSkin, KING_SKINS, KING_SKIN_COLORS } from '../theme';
 import { HITBOX, OBSTACLE_RADIUS } from '../rules';
+import { Pinceau } from '../pinceau';
+import { renderScaleFactor } from '../renderScale';
 
 /**
  * Genere toutes les textures du jeu par code (aucun asset externe a charger),
@@ -37,30 +39,34 @@ export class BootScene extends Phaser.Scene {
     this.scene.start('MenuScene');
   }
 
-  private texture(key: string, width: number, height: number, draw: (g: Phaser.GameObjects.Graphics) => void) {
-    const g = this.make.graphics({ x: 0, y: 0 }, false);
-    draw(g);
-    g.generateTexture(key, width, height);
-    g.destroy();
-  }
-
   /**
-   * Disque a bord doux. Graphics ne sait pas faire de degrade : on empile des
-   * cercles concentriques dont les alphas s'additionnent vers le centre.
+   * Genere une texture. `width`/`height` sont en UNITES DE DESIGN : la toile
+   * reelle est `renderScaleFactor()` fois plus grande, et le dessin est mis a
+   * l'echelle en consequence.
+   *
+   * C'est la moitie manquante du rendu haute resolution : le tampon avait
+   * bien ete porte a la definition de l'ecran (renderScale.ts), mais une
+   * texture generee a la taille de design se faisait ensuite agrandir
+   * d'autant par le zoom de la camera. Cote affichage, chaque sprite
+   * compense par `echelleSprite` / `appliquerEchelleMatter`.
    */
-  private softCircle(
-    g: Phaser.GameObjects.Graphics,
-    cx: number,
-    cy: number,
-    radius: number,
-    color: number,
-    steps = 14,
-    step = 0.1
-  ) {
-    for (let i = steps; i >= 1; i -= 1) {
-      g.fillStyle(color, step);
-      g.fillCircle(cx, cy, (radius * i) / steps);
-    }
+  private texture(key: string, width: number, height: number, draw: (p: Pinceau) => void) {
+    const facteur = renderScaleFactor();
+    // Un jeu recree (remontage du composant React) retrouve un gestionnaire
+    // de textures neuf, mais autant ne pas dependre de ce detail : une cle
+    // deja prise ferait echouer createCanvas en silence (il renvoie null).
+    if (this.textures.exists(key)) this.textures.remove(key);
+
+    const texture = this.textures.createCanvas(key, Math.ceil(width * facteur), Math.ceil(height * facteur));
+    if (!texture) return;
+
+    const ctx = texture.getContext();
+    ctx.save();
+    ctx.scale(facteur, facteur);
+    draw(new Pinceau(ctx, facteur));
+    ctx.restore();
+    // Sans ceci, la toile est peinte mais jamais envoyee au GPU.
+    texture.refresh();
   }
 
   /** Variantes claire et sombre d'une couleur d'equipe. */
@@ -220,14 +226,20 @@ export class BootScene extends Phaser.Scene {
     this.texture('baton', 16, 66, (g) => {
       g.fillStyle(PALETTE.batonWoodDark, 1);
       g.fillRoundedRect(0, 0, 16, 66, 7);
-      g.fillStyle(PALETTE.batonWood, 1);
-      g.fillRoundedRect(1, 1, 14, 64, 6);
+
+      // Degrade en travers du baton : c'est ce qui le fait lire comme un
+      // cylindre et non comme un rectangle. Trois bandes de couleur plate le
+      // suggeraient avant, avec une marche bien visible entre chacune.
+      g.degradeLineaire(1, 0, 15, 0, [
+        { stop: 0, color: PALETTE.batonWoodDark },
+        { stop: 0.28, color: PALETTE.batonWoodLight },
+        { stop: 0.52, color: PALETTE.batonWood },
+        { stop: 1, color: PALETTE.batonWoodDark }
+      ]).fillRoundedRect(1, 1, 14, 64, 6);
 
       // Fil du bois : quelques veines longitudinales.
-      g.fillStyle(PALETTE.batonWoodLight, 0.85);
-      g.fillRect(5, 6, 3, 54);
-      g.fillStyle(PALETTE.batonWoodDark, 0.28);
-      g.fillRect(3, 10, 1, 46);
+      g.fillStyle(PALETTE.batonWoodDark, 0.22);
+      g.fillRect(4, 10, 1, 46);
       g.fillRect(11, 8, 1, 50);
 
       // Bouts scies, plus sombres que le corps.
@@ -252,11 +264,15 @@ export class BootScene extends Phaser.Scene {
     this.texture('boule', size, size, (g) => {
       g.fillStyle(PALETTE.batonWoodDark, 1);
       g.fillCircle(cx, cy, r + 2);
-      g.fillStyle(PALETTE.batonWood, 1);
-      g.fillCircle(cx, cy, r);
 
-      g.fillStyle(PALETTE.batonWoodLight, 0.55);
-      g.fillCircle(cx - r * 0.32, cy - r * 0.32, r * 0.45);
+      // Sphere : degrade radial decentre vers la source de lumiere (en haut
+      // a gauche, comme les ombres portees, cf. theme.ts). Un disque plat
+      // surmonte d'un petit cercle clair ne tournait pas vraiment rond.
+      g.degradeRadial(cx - r * 0.3, cy - r * 0.32, r * 1.5, [
+        { stop: 0, color: PALETTE.batonWoodLight },
+        { stop: 0.42, color: PALETTE.batonWood },
+        { stop: 1, color: PALETTE.batonWoodDark }
+      ]).fillCircle(cx, cy, r);
 
       g.lineStyle(1.5, PALETTE.batonWoodDark, 0.55);
       g.strokeCircle(cx, cy, r * 0.62);
@@ -280,11 +296,15 @@ export class BootScene extends Phaser.Scene {
     this.texture('boulefer', size, size, (g) => {
       g.fillStyle(PALETTE.metalDark, 1);
       g.fillCircle(cx, cy, r + 2);
-      g.fillStyle(PALETTE.metal, 1);
-      g.fillCircle(cx, cy, r);
 
-      g.fillStyle(PALETTE.metalLight, 0.6);
-      g.fillCircle(cx - r * 0.32, cy - r * 0.32, r * 0.4);
+      // Metal : meme sphere degradee que la boule en bois, mais avec un
+      // reflet franc — c'est le contraste serre qui fait "poli".
+      g.degradeRadial(cx - r * 0.34, cy - r * 0.36, r * 1.4, [
+        { stop: 0, color: 0xffffff, alpha: 0.95 },
+        { stop: 0.18, color: PALETTE.metalLight },
+        { stop: 0.52, color: PALETTE.metal },
+        { stop: 1, color: PALETTE.metalDark }
+      ]).fillCircle(cx, cy, r);
 
       // Rivets : 4 petits points sombres, comme une boule de canon rivetee.
       g.fillStyle(PALETTE.metalDark, 0.7);
@@ -311,10 +331,18 @@ export class BootScene extends Phaser.Scene {
     this.texture('disque', size, size, (g) => {
       g.fillStyle(PALETTE.slateDark, 1);
       g.fillCircle(cx, cy, r + 2);
-      g.fillStyle(PALETTE.slate, 1);
-      g.fillCircle(cx, cy, r);
-      g.fillStyle(PALETTE.slateLight, 1);
-      g.fillCircle(cx, cy, r * 0.72);
+      // Palet vu de dessus : l'anneau exterieur garde son degrade d'epaisseur,
+      // la face superieure reste franche pour que le palet ne passe pas pour
+      // une bille.
+      g.degradeRadial(cx, cy, r, [
+        { stop: 0, color: PALETTE.slate },
+        { stop: 0.74, color: PALETTE.slate },
+        { stop: 1, color: PALETTE.slateDark }
+      ]).fillCircle(cx, cy, r);
+      g.degradeLineaire(cx, cy - r * 0.72, cx, cy + r * 0.72, [
+        { stop: 0, color: PALETTE.slateLight },
+        { stop: 1, color: PALETTE.slate }
+      ]).fillCircle(cx, cy, r * 0.72);
 
       g.lineStyle(1.5, PALETTE.slateDark, 0.6);
       g.strokeCircle(cx, cy, r * 0.72);
@@ -346,7 +374,7 @@ export class BootScene extends Phaser.Scene {
    * hitbox (rules.ts::HITBOX) ne depend d'aucun de ces choix visuels.
    */
   private drawKubbStanding(
-    g: Phaser.GameObjects.Graphics,
+    g: Pinceau,
     skin: KubbSkin,
     color: number,
     shades: { light: number; dark: number; deep: number }
@@ -356,11 +384,16 @@ export class BootScene extends Phaser.Scene {
     if (skin === 'marbre') {
       g.fillStyle(deep, 1);
       g.fillRoundedRect(0, 0, 40, 40, 8);
-      g.fillStyle(PALETTE.marble, 1);
-      g.fillRoundedRect(1, 1, 38, 36, 7);
+      g.degradeLineaire(0, 1, 0, 37, [
+        { stop: 0, color: 0xffffff },
+        { stop: 0.4, color: PALETTE.marble },
+        { stop: 1, color: dark, alpha: 0.75 }
+      ]).fillRoundedRect(1, 1, 38, 36, 7);
 
-      g.fillStyle(0xffffff, 0.5);
-      g.fillRoundedRect(4, 4, 32, 13, 5);
+      g.degradeLineaire(0, 4, 0, 18, [
+        { stop: 0, color: 0xffffff, alpha: 0.75 },
+        { stop: 1, color: 0xffffff, alpha: 0 }
+      ]).fillRoundedRect(4, 4, 32, 14, 5);
 
       // Veines irregulieres, teintees par la couleur d'equipe.
       g.lineStyle(1, dark, 0.5);
@@ -377,14 +410,15 @@ export class BootScene extends Phaser.Scene {
     if (skin === 'metal') {
       g.fillStyle(deep, 1);
       g.fillRoundedRect(0, 0, 40, 40, 8);
-      g.fillStyle(PALETTE.metal, 1);
-      g.fillRoundedRect(1, 1, 38, 36, 7);
-
-      // Reflet metallique en bandes, plutot que le fil de bois.
-      g.fillStyle(PALETTE.metalLight, 0.75);
-      g.fillRect(4, 4, 32, 6);
-      g.fillStyle(PALETTE.metalDark, 0.35);
-      g.fillRect(4, 25, 32, 3);
+      // Metal brosse : une serie de bandes de clarte decroissante, ce que
+      // deux rectangles d'alpha fixe ne pouvaient pas rendre.
+      g.degradeLineaire(0, 1, 0, 37, [
+        { stop: 0, color: 0xffffff },
+        { stop: 0.14, color: PALETTE.metalLight },
+        { stop: 0.42, color: PALETTE.metal },
+        { stop: 0.68, color: PALETTE.metalLight, alpha: 0.9 },
+        { stop: 1, color: PALETTE.metalDark }
+      ]).fillRoundedRect(1, 1, 38, 36, 7);
 
       // Bande d'equipe pleine couleur : seul un cadre suffirait moins a se
       // reperer au premier coup d'oeil sur une surface aussi neutre.
@@ -397,11 +431,16 @@ export class BootScene extends Phaser.Scene {
       // Boutique : pierre sombre fracturee, bande d'equipe fine en accent.
       g.fillStyle(PALETTE.slateDark, 1);
       g.fillRoundedRect(0, 0, 40, 40, 8);
-      g.fillStyle(PALETTE.slate, 1);
-      g.fillRoundedRect(1, 1, 38, 36, 7);
+      g.degradeLineaire(0, 1, 0, 37, [
+        { stop: 0, color: PALETTE.slateLight },
+        { stop: 0.3, color: PALETTE.slate },
+        { stop: 1, color: PALETTE.slateDark }
+      ]).fillRoundedRect(1, 1, 38, 36, 7);
 
-      g.fillStyle(PALETTE.slateLight, 0.4);
-      g.fillRoundedRect(4, 4, 32, 11, 5);
+      g.degradeLineaire(0, 4, 0, 16, [
+        { stop: 0, color: PALETTE.slateLight, alpha: 0.6 },
+        { stop: 1, color: PALETTE.slateLight, alpha: 0 }
+      ]).fillRoundedRect(4, 4, 32, 12, 5);
 
       // Fractures irregulieres, comme des veines de marbre mais anguleuses.
       g.lineStyle(1, PALETTE.slateDark, 0.7);
@@ -415,25 +454,38 @@ export class BootScene extends Phaser.Scene {
       return;
     }
 
-    // 'bois' — look d'origine.
+    // 'bois' — look d'origine, mais modele par de vrais degrades : le bloc
+    // etait fait de trois aplats (corps, face du dessus, biseau) avec une
+    // marche nette entre chacun. Memes dimensions, meme silhouette.
     g.fillStyle(deep, 1);
     g.fillRoundedRect(0, 0, 40, 40, 8);
-    g.fillStyle(color, 1);
-    g.fillRoundedRect(1, 1, 38, 36, 7);
 
-    g.fillStyle(light, 0.62);
-    g.fillRoundedRect(4, 4, 32, 13, 5);
+    g.degradeLineaire(0, 1, 0, 37, [
+      { stop: 0, color: light },
+      { stop: 0.36, color },
+      { stop: 1, color: dark }
+    ]).fillRoundedRect(1, 1, 38, 36, 7);
+
+    // Face du dessus : la lumiere s'y eteint vers l'arete, au lieu de
+    // s'arreter net.
+    g.degradeLineaire(0, 4, 0, 18, [
+      { stop: 0, color: light, alpha: 0.9 },
+      { stop: 1, color: light, alpha: 0 }
+    ]).fillRoundedRect(4, 4, 32, 14, 5);
 
     // Fil du bois.
-    g.fillStyle(dark, 0.2);
+    g.fillStyle(dark, 0.18);
     for (let y = 20; y < 34; y += 5) g.fillRect(6, y, 28, 1);
 
-    g.fillStyle(deep, 0.55);
-    g.fillRoundedRect(1, 30, 38, 7, 4);
+    // Assise : l'ombre monte du sol, elle n'est plus une bande posee.
+    g.degradeLineaire(0, 27, 0, 37, [
+      { stop: 0, color: deep, alpha: 0 },
+      { stop: 1, color: deep, alpha: 0.72 }
+    ]).fillRoundedRect(1, 27, 38, 10, 5);
   }
 
   private drawKubbFallen(
-    g: Phaser.GameObjects.Graphics,
+    g: Pinceau,
     skin: KubbSkin,
     color: number,
     shades: { light: number; dark: number; deep: number }
@@ -508,37 +560,49 @@ export class BootScene extends Phaser.Scene {
 
   // -------------------------------------------------------------------- roi
 
-  /** Teintes par skin de roi (KingSkin) : base, facette claire, contour/couronne, joyaux. */
-  private static readonly KING_SKIN_COLORS: Record<KingSkin, { base: number; light: number; dark: number; gem: number }> = {
-    or: { base: PALETTE.gold, light: PALETTE.goldLight, dark: PALETTE.goldDark, gem: 0xfffdf2 },
-    argent: { base: PALETTE.silver, light: PALETTE.silverLight, dark: PALETTE.silverDark, gem: 0xeaf6ff },
-    obsidienne: { base: PALETTE.obsidian, light: PALETTE.obsidianLight, dark: PALETTE.obsidianDark, gem: PALETTE.obsidianGem }
-  };
-
   private buildKingTextures() {
     KING_SKINS.forEach((skin) => {
-      const { base, light, dark, gem } = BootScene.KING_SKIN_COLORS[skin];
+      const { base, light, dark, gem } = KING_SKIN_COLORS[skin];
 
       this.texture(`king-${skin}`, 52, 52, (g) => {
         g.fillStyle(dark, 1);
         g.fillCircle(26, 26, 24);
-        g.fillStyle(base, 1);
-        g.fillCircle(26, 25, 22);
-        g.fillStyle(light, 0.55);
-        g.fillCircle(26, 22, 15);
 
-        // Couronne a trois pointes, posee sur un bandeau.
-        g.fillStyle(dark, 1);
-        g.fillTriangle(11, 32, 17, 15, 23, 32);
-        g.fillTriangle(20, 32, 26, 11, 32, 32);
-        g.fillTriangle(29, 32, 35, 15, 41, 32);
-        g.fillRoundedRect(11, 30, 30, 8, 3);
+        // Spheroide metallique : degrade radial decentre vers la lumiere, et
+        // un rebond de clarte au bord oppose, comme sur un metal poli. Trois
+        // cercles concentriques donnaient un roi plat.
+        g.degradeRadial(21, 19, 30, [
+          { stop: 0, color: 0xffffff, alpha: 0.9 },
+          { stop: 0.16, color: light },
+          { stop: 0.52, color: base },
+          { stop: 0.86, color: dark },
+          { stop: 1, color: light, alpha: 0.55 }
+        ]).fillCircle(26, 25, 22);
 
-        // Joyaux au sommet des pointes.
-        g.fillStyle(gem, 1);
-        g.fillCircle(17, 16, 2.2);
-        g.fillCircle(26, 12, 2.6);
-        g.fillCircle(35, 16, 2.2);
+        // Couronne a trois pointes, posee sur un bandeau, detachee du corps
+        // par une vraie ombre floue — c'est elle qui donne le relief.
+        g.avecOmbre(3, 0, 1.5, 0x000000, 0.55, () => {
+          g.degradeLineaire(0, 11, 0, 38, [
+            { stop: 0, color: light },
+            { stop: 0.55, color: base },
+            { stop: 1, color: dark }
+          ]);
+          g.fillTriangle(11, 32, 17, 15, 23, 32);
+          g.fillTriangle(20, 32, 26, 11, 32, 32);
+          g.fillTriangle(29, 32, 35, 15, 41, 32);
+          g.fillRoundedRect(11, 30, 30, 8, 3);
+        });
+
+        // Joyaux au sommet des pointes, chacun avec son propre eclat.
+        [
+          [17, 16, 2.2],
+          [26, 12, 2.6],
+          [35, 16, 2.2]
+        ].forEach(([jx, jy, jr]) => {
+          g.disqueDoux(jx, jy, jr * 2, gem, 0.5);
+          g.fillStyle(gem, 1);
+          g.fillCircle(jx, jy, jr);
+        });
 
         g.lineStyle(2, dark, 0.9);
         g.strokeCircle(26, 25, 22);
@@ -571,7 +635,7 @@ export class BootScene extends Phaser.Scene {
       const { light } = this.shades(color);
 
       this.texture(`thrower-${id}`, 40, 40, (g) => {
-        this.softCircle(g, 20, 20, 19, color, 8, 0.05);
+        g.disqueDoux(20, 20, 19, color, 0.4);
         g.lineStyle(3, color, 0.9);
         g.strokeCircle(20, 20, 14);
         g.lineStyle(2, light, 0.55);
@@ -664,9 +728,13 @@ export class BootScene extends Phaser.Scene {
    */
   private buildShadowTexture() {
     this.texture('shadow', 56, 56, (g) => {
-      this.softCircle(g, 28, 28, 26, 0x061109, 12, 0.13);
-      g.fillStyle(0x061109, 0.5);
-      g.fillCircle(28, 28, 12);
+      // Un seul vrai degrade, la ou il fallait douze cercles empiles plus un
+      // disque plein : coeur dense, puis fondu complet au bord.
+      g.degradeRadial(28, 28, 26, [
+        { stop: 0, color: 0x061109, alpha: 0.95 },
+        { stop: 0.42, color: 0x061109, alpha: 0.7 },
+        { stop: 1, color: 0x061109, alpha: 0 }
+      ]).fillCircle(28, 28, 26);
     });
   }
 
@@ -682,26 +750,29 @@ export class BootScene extends Phaser.Scene {
     });
 
     // Poussiere soulevee au sol.
-    this.texture('p-dust', 22, 22, (g) => this.softCircle(g, 11, 11, 11, 0xd9e6d4));
+    this.texture('p-dust', 22, 22, (g) => g.disqueDoux(11, 11, 11, 0xd9e6d4, 1, 0.12));
 
     // Etincelle doree, reservee au roi.
     this.texture('p-gold', 10, 10, (g) => {
-      this.softCircle(g, 5, 5, 5, PALETTE.goldLight, 6);
+      g.disqueDoux(5, 5, 5, PALETTE.goldLight, 0.75, 0.1);
       g.fillStyle(0xfff6d5, 1);
       g.fillCircle(5, 5, 1.6);
     });
 
     // Halo d'impact : agrandi puis efface par un tween.
-    this.texture('p-flash', 96, 96, (g) => this.softCircle(g, 48, 48, 48, 0xffffff, 18));
+    this.texture('p-flash', 96, 96, (g) => g.disqueDoux(48, 48, 48, 0xffffff, 1, 0.06));
 
     // Anneau pulsant autour du roi quand il devient une cible legale.
     this.texture('p-halo', 170, 170, (g) => {
-      for (let i = 0; i < 10; i += 1) {
-        g.lineStyle(10 - i * 0.6, PALETTE.gold, 0.05);
-        g.strokeCircle(85, 85, 52 + i * 2.4);
-      }
-      g.lineStyle(3, PALETTE.goldLight, 0.5);
-      g.strokeCircle(85, 85, 58);
+      // Anneau degrade : plein au rayon de l'anneau, eteint de part et
+      // d'autre. Dix contours empiles donnaient des marches visibles.
+      g.degradeRadial(85, 85, 85, [
+        { stop: 0, color: PALETTE.gold, alpha: 0 },
+        { stop: 0.56, color: PALETTE.gold, alpha: 0 },
+        { stop: 0.69, color: PALETTE.goldLight, alpha: 0.55 },
+        { stop: 0.78, color: PALETTE.gold, alpha: 0.18 },
+        { stop: 1, color: PALETTE.gold, alpha: 0 }
+      ]).fillCircle(85, 85, 85);
     });
   }
 }

@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import { OBSTACLE_BODY } from '../physics/matterConfig';
 import { OBSTACLE_RADIUS } from '../rules';
 import { SHADOW } from '../theme';
+import { appliquerEchelleMatter, echelleSprite } from '../renderScale';
 
 /**
  * Un rocher (ou cactus, sur "Sable") de terrain a obstacles. Purement
@@ -20,12 +21,13 @@ export class Obstacle {
       .image(x + SHADOW.offsetX, y + SHADOW.offsetY, 'shadow')
       .setDepth(2)
       .setAlpha(SHADOW.alpha)
-      .setScale(SHADOW.scale.obstacle);
+      .setScale(echelleSprite(SHADOW.scale.obstacle));
 
     this.sprite = scene.matter.add.image(x, y, textureKey, undefined, {
       ...OBSTACLE_BODY,
       shape: { type: 'circle', radius: OBSTACLE_RADIUS }
     });
     this.sprite.setDepth(4);
+    appliquerEchelleMatter(this.sprite);
   }
 }

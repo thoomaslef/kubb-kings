@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import * as sfx from './audio';
+import { baseCameraZoom, echelleSprite, renderScaleFactor } from './renderScale';
+import { DESIGN_HEIGHT, DESIGN_WIDTH } from './rules';
 
 /**
  * Tout le "ressenti" du match : particules, secousses, vibration, ralenti,
@@ -56,7 +58,10 @@ export class Juice {
     this.splinters = scene.add.particles(0, 0, 'p-splinter', {
       speed: { min: 90, max: 320 },
       lifespan: { min: 260, max: 520 },
-      scale: { start: 1, end: 0.2 },
+      // Les textures de particules sont generees a la resolution de l'ecran
+      // (BootScene) : leur echelle d'affichage est divisee d'autant, sinon
+      // les eclats seraient deux fois plus gros sur un ecran dense.
+      scale: { start: echelleSprite(1), end: echelleSprite(0.2) },
       alpha: { start: 1, end: 0 },
       rotate: { min: -180, max: 180 },
       emitting: false
@@ -67,7 +72,7 @@ export class Juice {
     this.dust = scene.add.particles(0, 0, 'p-dust', {
       speed: { min: 20, max: 110 },
       lifespan: { min: 320, max: 620 },
-      scale: { start: 0.5, end: 1.7 },
+      scale: { start: echelleSprite(0.5), end: echelleSprite(1.7) },
       alpha: { start: 0.32, end: 0 },
       emitting: false
     });
@@ -77,7 +82,7 @@ export class Juice {
     this.sparkle = scene.add.particles(0, 0, 'p-gold', {
       speed: { min: 60, max: 280 },
       lifespan: { min: 420, max: 900 },
-      scale: { start: 1.1, end: 0 },
+      scale: { start: echelleSprite(1.1), end: 0 },
       alpha: { start: 1, end: 0 },
       blendMode: Phaser.BlendModes.ADD,
       emitting: false
@@ -118,13 +123,14 @@ export class Juice {
       .image(x, y, textureKey)
       .setDepth(5)
       .setRotation(rotation)
+      .setScale(echelleSprite())
       .setAlpha(0.3 * speedRatio);
     if (tint !== null) ghost.setTint(tint);
 
     this.scene.tweens.add({
       targets: ghost,
       alpha: 0,
-      scaleX: 0.6,
+      scaleX: echelleSprite(0.6),
       duration: 200,
       ease: 'Quad.easeOut',
       onComplete: () => ghost.destroy()
@@ -171,11 +177,11 @@ export class Juice {
       .setTint(color)
       .setAlpha(alpha)
       .setBlendMode(Phaser.BlendModes.ADD)
-      .setScale(0.4);
+      .setScale(echelleSprite(0.4));
 
     this.scene.tweens.add({
       targets: halo,
-      scale: 1.6,
+      scale: echelleSprite(1.6),
       alpha: 0,
       duration: 260,
       ease: 'Cubic.easeOut',
@@ -214,7 +220,7 @@ export class Juice {
 
     this.haloTween = this.scene.tweens.add({
       targets: this.kingHalo,
-      scale: { from: 0.8, to: 1.25 },
+      scale: { from: echelleSprite(0.8), to: echelleSprite(1.25) },
       alpha: { from: 0.55, to: 0.18 },
       duration: 900,
       yoyo: true,
@@ -240,8 +246,13 @@ export class Juice {
     const cam = this.scene.cameras.main;
     cam.shake(FEEL.kingShake.duration, FEEL.kingShake.intensity);
     cam.flash(180, 255, 240, 200, false);
-    cam.zoomTo(1.09, 220, 'Sine.easeOut');
-    this.scene.time.delayedCall(520, () => cam.zoomTo(1, 320, 'Sine.easeInOut'));
+    // Le coup de zoom se calcule en MULTIPLE du zoom de base : celui-ci
+    // porte le facteur de rendu (renderScale.ts), et un `zoomTo(1)` en dur
+    // ne ramenait pas la camera a la normale — il divisait le terrain par
+    // deux sur un ecran dense, definitivement, des la chute du roi.
+    const base = baseCameraZoom();
+    cam.zoomTo(base * 1.09, 220, 'Sine.easeOut');
+    this.scene.time.delayedCall(520, () => cam.zoomTo(base, 320, 'Sine.easeInOut'));
 
     this.hitStop();
   }
@@ -270,8 +281,11 @@ export class Juice {
   floatingText(x: number, y: number, label: string, color: string) {
     // Le texte monte de 70 px pendant son fondu : la borne haute tient compte
     // de cette course, sinon un impact sur la ligne de fond finit sous le HUD.
-    const safeX = Phaser.Math.Clamp(x, 180, this.scene.scale.width - 180);
-    const safeY = Phaser.Math.Clamp(y, 290, this.scene.scale.height - 90);
+    // Bornes en unites de DESIGN, pas en taille de jeu : celle-ci vaut
+    // design x facteur de rendu (renderScale.ts), et la borne haute ne
+    // mordait donc plus du tout sur un ecran dense.
+    const safeX = Phaser.Math.Clamp(x, 180, DESIGN_WIDTH - 180);
+    const safeY = Phaser.Math.Clamp(y, 290, DESIGN_HEIGHT - 90);
 
     const text = this.scene.add
       .text(safeX, safeY, label, {
@@ -280,24 +294,40 @@ export class Juice {
         fontStyle: 'bold',
         color,
         stroke: '#0d1a14',
-        strokeThickness: 6
+        strokeThickness: 6,
+        // Un objet Text se dessine dans sa propre toile a la taille de la
+        // police : sous le zoom de la camera, il serait agrandi et donc flou.
+        // `resolution` le fait rendre plus finement ; l'echelle d'affichage
+        // compense, comme pour les textures (renderScale.ts).
+        resolution: renderScaleFactor()
       })
       .setOrigin(0.5)
+      .setScale(echelleSprite())
       .setDepth(12);
 
     this.scene.tweens.add({
       targets: text,
       y: safeY - 70,
       alpha: { from: 1, to: 0 },
-      scale: { from: 0.6, to: 1.15 },
+      scale: { from: echelleSprite(0.6), to: echelleSprite(1.15) },
       duration: 850,
       ease: 'Cubic.easeOut',
       onComplete: () => text.destroy()
     });
   }
 
-  /** Bandeau de passage de tour, qui traverse l'ecran horizontalement. */
-  turnBanner(label: string, color: number, centerY: number, width: number) {
+  /**
+   * Bandeau de passage de tour, qui traverse l'ecran horizontalement.
+   *
+   * La largeur n'est PLUS un parametre, et c'est delibere : les appelants
+   * passaient `scene.scale.width`, qui vaut design x facteur de rendu depuis
+   * que le jeu dessine a la definition de l'ecran — le texte partait alors a
+   * x=720, hors du cadre visible. Le bandeau traverse toujours exactement le
+   * terrain, donc la seule bonne valeur est celle-ci, et personne ne peut
+   * plus se tromper en l'appelant.
+   */
+  turnBanner(label: string, color: number, centerY: number) {
+    const width = DESIGN_WIDTH;
     sfx.playTurn();
 
     const container = this.scene.add.container(0, centerY).setDepth(14);
@@ -314,9 +344,11 @@ export class Juice {
         fontFamily: 'Trebuchet MS, Segoe UI, sans-serif',
         fontSize: '30px',
         fontStyle: 'bold',
-        color: '#eef4ef'
+        color: '#eef4ef',
+        resolution: renderScaleFactor()
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setScale(echelleSprite());
 
     container.add([bar, text]);
     container.setAlpha(0);

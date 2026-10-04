@@ -105,8 +105,14 @@ Le `base` de Vite est `/kubb-kings/` au build et en preview, `/` en dev.
 | **Zustand**    | Etat global partage entre Phaser et React                     |
 
 Aucun asset externe : toutes les textures, **tous les sons** et **jusqu&apos;aux icones
-de l&apos;application** sont generes par code (`BootScene` pour les textures, WebAudio
-pour l&apos;audio, `scripts/make-icons.mjs` pour les icones).
+de l&apos;application** sont generes par code (`BootScene` + `pinceau.ts` pour les
+textures, WebAudio pour l&apos;audio, `scripts/make-icons.mjs` pour les icones).
+
+Les textures sont peintes sur une toile Canvas 2D, a la **definition reelle de
+l&apos;ecran** (`renderScale.ts`) : vrais degrades et vraies ombres floues, que
+`Phaser.Graphics` ne sait pas faire, et un pixel de texture qui ne couvre plus
+qu&apos;**0,81 pixel physique** au lieu de 1,63. Voir
+[docs/qualite-et-verification.md](docs/qualite-et-verification.md#le-jeu-dessinait-a-720p-et-etirait).
 
 ---
 
@@ -122,6 +128,8 @@ kubb-kings/
 │   │   ├── config.ts   config Phaser
 │   │   ├── rules.ts    regles, equilibrage, geometrie du terrain et hitboxes
 │   │   ├── theme.ts    palette et constantes de rendu (pendant visuel de rules.ts)
+│   │   ├── renderScale.ts  resolution de rendu (tampon, zoom camera, echelle des sprites)
+│   │   ├── pinceau.ts  dessin des textures sur Canvas 2D : degrades, ombres floues
 │   │   ├── ai.ts       adversaire solo (module pur, simulable hors navigateur)
 │   │   ├── juice.ts    feedback : particules, secousses, vibration, ralenti
 │   │   ├── audio.ts    sons synthetises par code (WebAudio)

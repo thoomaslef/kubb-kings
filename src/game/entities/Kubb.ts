@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { KUBB_BODY } from '../physics/matterConfig';
 import { HITBOX, REVIVED_KUBB_SCALE } from '../rules';
 import { SHADOW, type KubbSkin } from '../theme';
+import { appliquerEchelleMatter, echelleSprite } from '../renderScale';
 import type { TeamId } from './Team';
 
 /**
@@ -58,7 +59,7 @@ export class Kubb {
       .image(x + SHADOW.offsetX, y + SHADOW.offsetY, 'shadow')
       .setDepth(2)
       .setAlpha(SHADOW.alpha)
-      .setScale(SHADOW.scale.kubb);
+      .setScale(echelleSprite(SHADOW.scale.kubb));
 
     this.sprite = this.spawnBody(scene, x, y);
   }
@@ -73,7 +74,10 @@ export class Kubb {
     // `setScale` sur une image Matter redimensionne l'image ET son corps :
     // il ne faut donc PAS reduire aussi `shape` ci-dessus, sinon la
     // reduction s'applique deux fois (mesure : 9 px de cote au lieu de 18).
-    sprite.setScale(this.sizeScale);
+    // `appliquerEchelleMatter` applique `sizeScale` au corps comme le faisait
+    // `setScale`, en compensant au passage la resolution des textures — qui
+    // ne doit, elle, rien changer a la hitbox (cf. renderScale.ts).
+    appliquerEchelleMatter(sprite, this.sizeScale);
     sprite.setData('kubb', this);
     return sprite;
   }
@@ -146,15 +150,15 @@ export class Kubb {
       .image(x, y, `kubb-down-${this.team}-${this.skin}`)
       .setDepth(1)
       .setRotation(rotation)
-      .setScale(0.68 * this.sizeScale, 1.05 * this.sizeScale);
+      .setScale(echelleSprite(0.68 * this.sizeScale), echelleSprite(1.05 * this.sizeScale));
     this.fallenSprite = fallen;
 
     // Le bloc part sur un cote au hasard et s'aplatit.
     scene.tweens.add({
       targets: fallen,
       rotation: rotation + Phaser.Math.FloatBetween(-Math.PI / 3, Math.PI / 3),
-      scaleX: this.sizeScale,
-      scaleY: 0.94 * this.sizeScale,
+      scaleX: echelleSprite(this.sizeScale),
+      scaleY: echelleSprite(0.94 * this.sizeScale),
       duration: 260,
       ease: 'Back.easeOut'
     });
@@ -165,8 +169,8 @@ export class Kubb {
       targets: this.shadow,
       x: x + SHADOW.offsetX * 0.4,
       y: y + SHADOW.offsetY * 0.4,
-      scaleX: SHADOW.scale.kubb * this.sizeScale * 1.4,
-      scaleY: SHADOW.scale.kubb * this.sizeScale * 0.85,
+      scaleX: echelleSprite(SHADOW.scale.kubb * this.sizeScale * 1.4),
+      scaleY: echelleSprite(SHADOW.scale.kubb * this.sizeScale * 0.85),
       alpha: SHADOW.alpha * 0.6,
       duration: 260,
       ease: 'Quad.easeOut'
@@ -197,10 +201,13 @@ export class Kubb {
     // (knockDown), que ce kubb vient d'etre replante ailleurs. Il repart de
     // `sizeScale`, pas de 1 : sinon un kubb reduit reprendrait sa taille
     // normale en etant replante.
-    this.sprite.setScale(this.sizeScale * 0.6);
+    appliquerEchelleMatter(this.sprite, this.sizeScale * 0.6);
     scene.tweens.add({
       targets: this.sprite,
-      scale: this.sizeScale,
+      // Le tween ecrit l'echelle d'AFFICHAGE ; Phaser ramene le corps a
+      // l'echelle memorisee avant d'appliquer la nouvelle, si bien que la
+      // compensation posee par `appliquerEchelleMatter` tient toute seule.
+      scale: echelleSprite(this.sizeScale),
       duration: 220,
       ease: 'Back.easeOut'
     });
@@ -233,7 +240,7 @@ export class Kubb {
     this.shadow.setDepth(2);
     this.shadow.setPosition(this.baselineX + SHADOW.offsetX, this.baselineY + SHADOW.offsetY);
     this.shadow.setRotation(0);
-    this.shadow.setScale(SHADOW.scale.kubb * this.sizeScale);
+    this.shadow.setScale(echelleSprite(SHADOW.scale.kubb * this.sizeScale));
     this.shadow.setAlpha(SHADOW.alpha);
   }
 }

@@ -52,6 +52,18 @@ export function gameSize(): { width: number; height: number } {
 }
 
 /**
+ * Zoom de base de la camera d'une scene qui dessine.
+ *
+ * A LIRE avant tout zoom temporaire : `cam.zoomTo(1)` ne ramene plus la
+ * camera a son etat normal depuis que le zoom porte le facteur de rendu —
+ * il la ramenerait a la moitie sur un ecran dense. Un coup de zoom se
+ * calcule donc toujours en multiple de cette valeur (cf. juice.ts::kingFall).
+ */
+export function baseCameraZoom(): number {
+  return renderScaleFactor();
+}
+
+/**
  * Ramene la camera d'une scene aux coordonnees de design.
  *
  * A appeler dans le `create()` de CHAQUE scene qui dessine : sans cela, la
@@ -67,3 +79,53 @@ export function fitCameraToDesign(scene: Phaser.Scene) {
   // l'ecran.
   camera.centerOn(DESIGN_WIDTH / 2, DESIGN_HEIGHT / 2);
 }
+
+/**
+ * Echelle a donner a un sprite ordinaire pour qu'une texture generee a
+ * `renderScaleFactor()` (cf. pinceau.ts et BootScene) s'affiche a sa taille
+ * de design.
+ *
+ * `designScale` est l'echelle qu'on aurait ecrite avant : `echelleSprite(0.5)`
+ * affiche la piece a la moitie de sa taille normale, quel que soit l'ecran.
+ */
+export function echelleSprite(designScale = 1): number {
+  return designScale / renderScaleFactor();
+}
+
+/** Marque un corps dont la resolution a deja ete compensee. */
+const CORPS_DEJA_CORRIGE = 'echelleMatterCorrigee';
+
+/**
+ * Meme chose pour une image Matter, SANS toucher a son corps physique.
+ *
+ * Le piege est ici : sur une image Matter, `setScale` (et tout ce qui passe
+ * par `scaleX`/`scaleY`, donc `setDisplaySize` aussi) redimensionne l'image
+ * ET le corps. Compenser la resolution des textures par l'echelle du sprite
+ * reduirait donc la hitbox d'autant — et seulement sur les ecrans denses,
+ * c'est-a-dire precisement ceux des joueurs, jamais ceux des verifications.
+ *
+ * On rend donc au corps le facteur que `setScale` lui a pris — UNE SEULE FOIS
+ * par corps, et c'est tout l'objet du drapeau ci-dessous. Le setter de Phaser
+ * ramene d'abord le corps a l'echelle 1 par rapport a l'echelle MEMORISEE
+ * (`_scaleX`), pas a la geometrie reelle : la correction survit donc d'elle-meme
+ * a tous les changements d'echelle ulterieurs — un tween de "pop" continue de
+ * fonctionner sans rien savoir de tout ceci — et la REFAIRE multiplierait la
+ * hitbox par le facteur. C'etait un vrai defaut : un kubb replante en champ
+ * (`Kubb.plantInField`, qui recree un corps puis l'anime) se retrouvait avec
+ * une hitbox deux fois trop grande sur un ecran dense.
+ *
+ * Verifie a DPR 3 dans tests/browser/resolution-ecran.mjs : le corps d'un kubb
+ * mesure exactement HITBOX.kubb a la pose, une fois replante en champ et une
+ * fois redresse en demi-taille, et le roi garde son rayon.
+ */
+export function appliquerEchelleMatter(sprite: Phaser.Physics.Matter.Image, designScale = 1) {
+  const facteur = renderScaleFactor();
+  sprite.setScale(designScale / facteur);
+  if (facteur === 1) return;
+
+  const corps = sprite.body as MatterJS.BodyType | null;
+  if (!corps || sprite.getData(CORPS_DEJA_CORRIGE)) return;
+  sprite.setData(CORPS_DEJA_CORRIGE, true);
+  sprite.scene.matter.body.scale(corps, facteur, facteur);
+}
+

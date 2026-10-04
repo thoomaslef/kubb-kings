@@ -6,3 +6,7 @@ dist
 # Coordonnees Supabase locales (cf. .env.example).
 .env
 .env.local
+# Le nom que prend `.env` pendant les verifications en ligne, qui demandent un
+# build SANS coordonnees Supabase (cf. tests/browser/README.md) : il contient
+# la meme cle, il doit donc etre ignore tout autant.
+.env.horsjeu
