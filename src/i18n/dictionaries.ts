@@ -377,6 +377,8 @@ const fr: Record<string, string> = {
   'rules.item2':
     "Les equipes lancent a tour de role, uniquement depuis l'aplomb de l'un de leurs kubbs encore debout : touchez l'un d'eux sur votre ligne, c'est de la que part le baton. Un kubb tombe n'est plus une position de lancer.",
   'rules.item3': "Glissez vers la cible pour donner l'angle, la longueur du glissement donne la puissance. Relachez pour lancer.",
+  'rules.itemSpin':
+    "Glissez en COURBE et le baton part en courbe, du cote ou votre doigt est passe. C'est ainsi qu'on contourne un rocher — ou le roi, pour atteindre le kubb central derriere lui.",
   'rules.item4':
     "Un baton ne fait tomber un kubb que s'il le percute assez fort. Chaque lancer part avec une legere deviation : personne ne vise parfaitement.",
   'rules.item5': 'Un kubb tombe est hors jeu. Quand tous les kubbs adverses sont a terre, vous pouvez viser le roi.',
@@ -399,6 +401,7 @@ const fr: Record<string, string> = {
   'tutorial.step1': 'Touchez votre ligne pour vous placer',
   'tutorial.step2': 'Glissez vers la cible, relachez pour lancer',
   'tutorial.step3': "Le roi, au centre, est interdit tant que l'adversaire tient debout",
+  'tutorial.step4': 'Glissez en courbe pour donner de l\'effet — le baton suit votre trace',
   'tutorial.toast': 'Un lancer par tour — un kubb tombe reste hors jeu.',
 
   // ---- Tournament
@@ -827,6 +830,8 @@ const en: Record<string, string> = {
   'rules.item2':
     "Teams throw in turn, only from directly behind one of their kubbs still standing: tap one of them on your line, that's where the baton starts from. A fallen kubb is no longer a valid throwing spot.",
   'rules.item3': "Drag toward the target to set the angle; the drag length sets the power. Release to throw.",
+  'rules.itemSpin':
+    'Swipe in a CURVE and the baton curves too, toward the side your finger travelled. That is how you get around a rock — or around the king, to reach the centre kubb behind it.',
   'rules.item4':
     "A baton only knocks down a kubb if it hits hard enough. Every throw starts with a slight deviation: nobody aims perfectly.",
   'rules.item5': "A fallen kubb is out of play. Once all the opposing kubbs are down, you may aim for the king.",
@@ -849,6 +854,7 @@ const en: Record<string, string> = {
   'tutorial.step1': 'Tap your line to position yourself',
   'tutorial.step2': 'Drag toward the target, release to throw',
   'tutorial.step3': 'The king, at the center, is off-limits while the opponent still stands',
+  'tutorial.step4': 'Swipe in a curve to add spin — the baton follows your path',
   'tutorial.toast': "One throw per turn — a fallen kubb stays out of play.",
 
   // ---- Tournament

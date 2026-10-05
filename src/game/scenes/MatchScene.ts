@@ -16,6 +16,7 @@ import { BATON_BODY, WALL_BODY } from '../physics/matterConfig';
 import { Juice } from '../juice';
 import { PALETTE, BORDER_WIDTH } from '../theme';
 import { echelleSprite, fitCameraToDesign } from '../renderScale';
+import { spinAcceleration, spinFromDragPath, type Point } from '../spin';
 import { AI_PROFILES, AI_TEAM, decideApproachThrow, decideThrow, type AiProfile } from '../ai';
 import {
   BOURSE_PLEINE_COINS_MULTIPLIER,
@@ -258,6 +259,19 @@ export class MatchScene extends Phaser.Scene {
   private isDragging = false;
   private aimAngle = 0;
   private aimPower = 0;
+  /**
+   * Effet en cours de dosage, entre -1 et 1 (cf. spin.ts). Lu dans la
+   * COURBURE du trajet du doigt, pas dans un controle a part : le geste de
+   * visee n'a pas change.
+   *
+   * Remis a 0 a chaque debut de visee, et laisse a 0 par l'IA — qui tire
+   * donc toujours droit.
+   */
+  private aimSpin = 0;
+  /** Trajet du doigt depuis le debut du glissement, pour en lire la courbure. */
+  private dragPath: Point[] = [];
+  /** Effet du lancer EN VOL. Distinct de `aimSpin`, qui repart a 0 des la fin du geste. */
+  private flightSpin = 0;
 
   private restMs = 0;
   private flightMs = 0;
@@ -452,6 +466,7 @@ export class MatchScene extends Phaser.Scene {
 
     if (this.phase === 'flying' && this.baton) {
       if (this.wind) this.applyWind(delta);
+      this.applySpin(delta);
       this.applyTerrainFriction();
 
       this.flightMs += delta;
@@ -518,6 +533,8 @@ export class MatchScene extends Phaser.Scene {
     this.isDragging = true;
     this.aimAngle = this.forwardAngle();
     this.aimPower = AIM.minPower;
+    this.aimSpin = 0;
+    this.dragPath = [{ x: pointer.worldX, y: pointer.worldY }];
     this.drawAim();
   }
 
@@ -541,6 +558,17 @@ export class MatchScene extends Phaser.Scene {
 
     const delta = Phaser.Math.Angle.Wrap(raw - forward);
     this.aimAngle = forward + Phaser.Math.Clamp(delta, -maxDelta, maxDelta);
+
+    // Trajet du doigt : c'est sa COURBURE qui donne l'effet (cf. spin.ts).
+    // Un point n'est retenu que s'il s'est reellement deplace — sinon un
+    // doigt pose qui tremble remplirait le trajet de bruit, et la borne
+    // haute evite qu'un glissement interminable fasse enfler le tableau.
+    const dernier = this.dragPath[this.dragPath.length - 1];
+    const bouge = !dernier || Phaser.Math.Distance.Between(dernier.x, dernier.y, pointer.worldX, pointer.worldY) >= 6;
+    if (bouge && this.dragPath.length < 200) {
+      this.dragPath.push({ x: pointer.worldX, y: pointer.worldY });
+    }
+    this.aimSpin = spinFromDragPath(this.dragPath);
 
     const distance = Phaser.Math.Distance.Between(origin.x, origin.y, pointer.worldX, pointer.worldY);
     let power = Phaser.Math.Clamp(distance / AIM.maxDragDistance, AIM.minPower, 1);
@@ -585,10 +613,32 @@ export class MatchScene extends Phaser.Scene {
    * framerate — meme increment par pas que le modele suivi par l'IA pour
    * compenser sa visee (ai.ts::simulateWindFlight).
    */
+  /**
+   * Nombre de pas Matter ecoules cette image, BORNE.
+   *
+   * Le vent et l'effet ajoutent une vitesse « par pas » : sans borne, une
+   * image qui accroche — compilation de shader, ramasse-miettes, onglet qui
+   * revient au premier plan — injecte d'un coup la poussee de dix ou douze
+   * pas, et le projectile fait une embardee que rien dans le jeu n'explique.
+   *
+   * Trouve en mesurant : le MEME tir, repete dix fois, donnait deux fois
+   * 119 px de derive puis huit fois ~9 px. Les deux premiers vols suivaient
+   * la mise en route de la page, donc ses images longues. Le defaut
+   * existait deja pour le vent ; l'effet, six fois plus fort, l'a rendu
+   * visible.
+   *
+   * 3 pas = 50 ms : au-dela, mieux vaut sous-corriger que teleporter.
+   */
+  private static readonly MAX_STEPS_PAR_IMAGE = 3;
+
+  private pasMatter(delta: number): number {
+    return Math.min(MatchScene.MAX_STEPS_PAR_IMAGE, delta / (1000 / 60));
+  }
+
   private applyWind(delta: number) {
     if (!this.baton || !this.wind) return;
     const body = this.baton.sprite.body as MatterJS.BodyType;
-    const steps = delta / (1000 / 60);
+    const steps = this.pasMatter(delta);
     const accel = windAcceleration(this.wind);
     let mult = batonWindMultiplier(this.activeBatonStats());
     // "Sang-froid" (Defi) : ne joue que pour le joueur, jamais pour l'IA.
@@ -596,6 +646,24 @@ export class MatchScene extends Phaser.Scene {
       mult *= SANG_FROID_WIND_MULTIPLIER;
     }
     this.baton.sprite.setVelocity(body.velocity.x + accel.x * mult * steps, body.velocity.y + accel.y * mult * steps);
+  }
+
+  /**
+   * Effet : une acceleration PERPENDICULAIRE a la vitesse courante s'ajoute
+   * au projectile a chaque pas, ce qui courbe sa trajectoire au lieu de
+   * l'incliner (cf. spin.ts). Meme mecanique que le vent juste au-dessus —
+   * meme deduction du nombre de pas Matter ecoules, pour rester independant
+   * du framerate.
+   *
+   * `flightSpin` vaut 0 pour l'IA et pour tout lancer rectiligne : la
+   * fonction rend alors une acceleration nulle et rien ne change.
+   */
+  private applySpin(delta: number) {
+    if (!this.baton || this.flightSpin === 0) return;
+    const body = this.baton.sprite.body as MatterJS.BodyType;
+    const steps = this.pasMatter(delta);
+    const accel = spinAcceleration(body.velocity.x, body.velocity.y, this.flightSpin, THROW.maxSpeed);
+    this.baton.sprite.setVelocity(body.velocity.x + accel.x * steps, body.velocity.y + accel.y * steps);
   }
 
   /**
@@ -653,12 +721,19 @@ export class MatchScene extends Phaser.Scene {
     if (this.isProfileTeam(this.activeTeam) && this.runPerks.includes('oeil-de-lynx')) {
       deviationDeg *= OEIL_DE_LYNX_DEVIATION_MULTIPLIER;
     }
+    // L'effet rejoue tel quel pour un lancer impose (en ligne) ; sinon celui
+    // que le geste vient de dessiner. L'IA laisse `aimSpin` a 0 : elle tire
+    // droit, et son modele de vol — qui ne connait que le vent — reste donc
+    // exact, y compris son controle anti-suicide (ai.ts::curvedKingDanger).
+    const spin = imposed ? imposed.spin : this.aimSpin;
+    this.flightSpin = spin;
     const roll = this.baton.launch(
       this.aimAngle,
       this.aimPower,
       deviationDeg,
       batonPowerMultiplier(stats),
-      imposed?.roll
+      imposed?.roll,
+      spin
     );
     // Retenu jusqu'a la fin du lancer : l'enregistrement associe des entrees
     // a leur RESULTAT, qu'on ne connait pas encore ici.
@@ -666,6 +741,7 @@ export class MatchScene extends Phaser.Scene {
       throwX: this.throwX[this.activeTeam],
       angle: this.aimAngle,
       power: this.aimPower,
+      spin,
       batonId: this.batonIdForTeam(this.activeTeam),
       roll
     };
@@ -676,6 +752,8 @@ export class MatchScene extends Phaser.Scene {
     this.flightMs = 0;
     this.restMs = 0;
     this.aimPower = 0;
+    this.aimSpin = 0;
+    this.dragPath = [];
     this.knockedThisThrow = false;
     this.bouncedWallThisThrow = false;
     this.knockedThisThrowCount = 0;
@@ -1269,6 +1347,10 @@ export class MatchScene extends Phaser.Scene {
       onComplete: () => {
         if (this.phase !== 'ai-aiming') return;
         this.aimPower = power;
+        // L'IA tire droit : son modele de vol ne connait que le vent, et son
+        // controle anti-suicide (ai.ts::curvedKingDanger) ne vaut que pour
+        // une trajectoire sans effet.
+        this.aimSpin = 0;
         this.launch();
       }
     });
@@ -1752,22 +1834,54 @@ export class MatchScene extends Phaser.Scene {
       return;
     }
 
-    const dirX = Math.cos(this.aimAngle);
-    const dirY = Math.sin(this.aimAngle);
     // Longueur divisee par 2 par rapport a l'origine (etait 90 + power*430) :
     // a pleine charge, la fleche laissait deviner la trajectoire bien trop
     // clairement. Purement visuel — aimPower/aimAngle, donc le lancer reel,
     // sont inchanges ; l'IA ne lit jamais aimGfx.
     const length = 45 + this.aimPower * 215;
 
+    // La fleche SUIT L'EFFET : elle s'incurve du cote ou le doigt courbe.
+    // C'est le seul retour que le joueur ait pendant qu'il dose, et sans lui
+    // l'effet serait invisible jusqu'au relachement.
+    const segments = 14;
+    const pasLong = length / segments;
+    const virage = this.aimSpin * Phaser.Math.DegToRad(AIM.spinArrowTurnDeg);
+    const arc: Point[] = [];
+    let ax = origin.x;
+    let ay = origin.y;
+    let cap = this.aimAngle;
+    for (let i = 0; i <= segments; i += 1) {
+      arc.push({ x: ax, y: ay });
+      ax += Math.cos(cap) * pasLong;
+      ay += Math.sin(cap) * pasLong;
+      cap += virage / segments;
+    }
+    /** Point de l'arc a `d` pixels de l'origine, le long de la courbe. */
+    const surLArc = (d: number): Point => {
+      const t = Phaser.Math.Clamp(d / pasLong, 0, segments);
+      const i = Math.floor(t);
+      const f = t - i;
+      const a = arc[i];
+      const b = arc[Math.min(segments, i + 1)];
+      return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f };
+    };
+
     g.lineStyle(4, color, 0.85);
     for (let d = 34; d < length; d += 26) {
-      const end = Math.min(d + 13, length);
-      g.lineBetween(origin.x + dirX * d, origin.y + dirY * d, origin.x + dirX * end, origin.y + dirY * end);
+      const debut = surLArc(d);
+      const fin = surLArc(Math.min(d + 13, length));
+      g.lineBetween(debut.x, debut.y, fin.x, fin.y);
     }
 
-    const tipX = origin.x + dirX * length;
-    const tipY = origin.y + dirY * length;
+    // La pointe suit la tangente de FIN d'arc, pas l'angle de depart.
+    const bout = surLArc(length);
+    const avant = surLArc(Math.max(0, length - 6));
+    const dirLong = Math.max(1e-6, Phaser.Math.Distance.Between(avant.x, avant.y, bout.x, bout.y));
+    const dirX = (bout.x - avant.x) / dirLong;
+    const dirY = (bout.y - avant.y) / dirLong;
+
+    const tipX = bout.x;
+    const tipY = bout.y;
     const wing = 14;
     g.fillStyle(color, 0.9);
     g.fillTriangle(

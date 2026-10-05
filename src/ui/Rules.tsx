@@ -19,6 +19,7 @@ export function Rules() {
           <li>{t('rules.item1', { n: KUBBS_PER_TEAM })}</li>
           <li>{t('rules.item2')}</li>
           <li>{t('rules.item3')}</li>
+          <li>{t('rules.itemSpin')}</li>
           <li>{t('rules.item4')}</li>
           <li>{t('rules.item5')}</li>
           <li>{t('rules.item6')}</li>

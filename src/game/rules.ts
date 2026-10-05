@@ -546,7 +546,17 @@ export const AIM = {
   maxDragDistance: 420,
   minPower: 0.12,
   /** Ouverture maximale autorisee de part et d'autre de l'axe du terrain. */
-  maxAngleDeg: 75
+  maxAngleDeg: 75,
+  /**
+   * Virage total de la fleche de visee, en degres, a effet maximal.
+   *
+   * Purement indicatif, et volontairement EXAGERE : la fleche ne fait que
+   * 260 px au plus alors qu'un lancer en parcourt 900, et la vraie courbure
+   * y serait invisible. Elle montre de quel cote et combien on courbe, pas
+   * ou le baton finira — exactement comme sa longueur, deja divisee par deux
+   * pour ne pas trahir la trajectoire.
+   */
+  spinArrowTurnDeg: 46
 } as const;
 
 /** Parametres du lancer. */

@@ -241,6 +241,96 @@ independant de la distance visee — verifie de bout en bout :
 
 ---
 
+## L&apos;effet
+
+Un lancer tenait en deux nombres — un angle et une puissance — tires du meme
+glissement, et l&apos;angle etait en plus brouille par une deviation aleatoire. Le geste
+se terminait au relachement : aucune decision a prendre pendant le vol, et aucune facon
+de faire mieux que « viser juste ». C&apos;est la raison pour laquelle le jeu paraissait
+simple.
+
+L&apos;effet ajoute une troisieme entree **sans ajouter d&apos;interface** : on le lit
+dans la COURBURE du trajet du doigt ([`src/game/spin.ts`](../src/game/spin.ts)). Glisser
+tout droit donne exactement le tir d&apos;avant, au pixel pres ; glisser en arc fait
+decrire au baton une courbe du meme cote. On dessine la trajectoire qu&apos;on veut.
+
+Concretement : on mesure l&apos;ecart perpendiculaire MOYEN des points du trajet a la
+corde qui joint son debut a sa fin, rapporte a la longueur de cette corde. La moyenne
+plutot que le point du milieu, parce qu&apos;un doigt ne trace pas un arc parfait et
+qu&apos;un seul point mal place deciderait de tout. Un geste de moins de 60 px ne
+produit aucun effet — a cette echelle, la main qui tremble suffirait a en fabriquer un.
+
+En vol, une acceleration **perpendiculaire a la vitesse courante** s&apos;ajoute a chaque
+pas, comme le vent juste en dessous mais dans une direction qui tourne avec le
+projectile : c&apos;est ce qui fait une courbe plutot qu&apos;une droite inclinee. Elle
+est proportionnelle a la vitesse, comme la vraie force de Magnus — la courbe se produit
+tant que le baton file et s&apos;efface quand il ralentit.
+
+### Ce que l&apos;effet vaut, mesure
+
+Force de l&apos;effet, tir droit vers la ligne de fond adverse (un kubb fait 36 px de
+cote, espace de 120 px) :
+
+| Effet | Ecart a hauteur du roi | Ecart a la ligne de fond |
+| --- | --- | --- |
+| 0,25 | 8 px | 48 px |
+| 0,50 | 16 px | 95 px |
+| 0,75 | 25 px | 150 px |
+| 1,00 | 34 px | 207 px |
+
+L&apos;effet maximal deplace donc l&apos;arrivee de **1,7 espacement de kubb**. C&apos;est
+un reglage FIN compare a la visee : 17 degres d&apos;angle en deplacent 285. L&apos;effet
+ne remplace pas de viser juste, il permet de courber.
+
+**Et le kubb central devient atteignable.** C&apos;etait l&apos;objectif de conception,
+et il est tenu : le kubb du centre etait injouable parce que la ligne droite passe par
+le roi, dont le moindre contact fait perdre sur-le-champ. En visant 13 a 14 degres de
+cote avec un effet proche du maximum, le baton passe **55 a 63 px** a cote du roi — le
+contact est a 27 px — puis revient se poser a moins de 18 px du kubb central. La fenetre
+est etroite (5 couples angle/effet sur 35 essayes) et la deviation aleatoire de +/-2,5
+degres vaut deja +/-20 px a hauteur du roi : le coup reste difficile et peut rater. Un
+tir de specialiste, pas une solution gratuite.
+
+> Le reglage de la force (0,3 d&apos;acceleration par pas, a comparer aux 0,05 du vent)
+> n&apos;a PAS ete choisi a l&apos;intuition : a 0,2, le meme balayage ne trouvait aucun
+> couple qui contourne le roi et touche le centre.
+
+> **Le piege de ce module est le SIGNE**, et la premiere version l&apos;avait a
+> l&apos;envers : chaque tir partait a l&apos;oppose de ce que le joueur avait dessine.
+> Rien ne l&apos;aurait signale — le jeu fonctionnait, les trajectoires etaient courbes.
+> `spin.test.ts` verrouille desormais la correspondance dans les quatre directions, en
+> partant d&apos;un vrai geste et non d&apos;une valeur d&apos;effet ecrite a la main.
+
+**L&apos;IA n&apos;en joue pas** : elle tire toujours avec un effet nul. Son modele de vol
+(`ai.ts::simulateWindFlight`) ne connait que le vent, et son controle anti-suicide
+(`curvedKingDanger`) n&apos;est exact que pour une trajectoire sans effet — lui donner
+l&apos;effet sans lui apprendre a le simuler l&apos;aurait rendue dangereuse pour
+elle-meme. C&apos;est un choix assume, verifie par
+[`tests/browser/effet.mjs`](../tests/browser/effet.mjs), pas un oubli.
+
+**En ligne**, l&apos;effet est un nombre de plus dans `ThrowInput`, rejoue a
+l&apos;identique chez l&apos;adversaire comme le reste du lancer. `PROTOCOL_VERSION` passe
+a 2 : une version 1 rejouerait les lancers tout droit — l&apos;issue serait la bonne,
+elle vient de l&apos;instantane du lanceur, mais l&apos;animation montrerait un baton qui
+rate ce qu&apos;il vient d&apos;abattre.
+
+### Un defaut trouve en mesurant : la poussee par image n&apos;etait pas bornee
+
+Le vent et l&apos;effet ajoutent une vitesse « par pas de simulation », et le nombre de
+pas se deduisait du delta reel **sans aucune borne**. Une image qui accroche —
+compilation de shader, ramasse-miettes, onglet qui revient au premier plan — injectait
+d&apos;un coup la poussee de dix ou douze pas, et le projectile faisait une embardee que
+rien dans le jeu n&apos;expliquait.
+
+Mesure : le MEME tir, repete dix fois, donnait deux fois 119 px de derive puis huit fois
+~9 px. Les deux premiers vols suivaient la mise en route de la page, donc ses images
+longues. Le defaut existait deja pour le vent depuis toujours ; l&apos;effet, six fois
+plus fort, l&apos;a rendu visible. Le nombre de pas est desormais plafonne a 3 (50 ms) :
+au-dela, mieux vaut sous-corriger que teleporter. A 60 images par seconde, ce plafond ne
+mord jamais.
+
+---
+
 ## Meteo (vent)
 
 Bouton au menu, off par defaut (`windEnabled` dans le store) — toujours un simple

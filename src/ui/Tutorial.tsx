@@ -68,6 +68,7 @@ export function Tutorial() {
             <li>{t('tutorial.step1')}</li>
             <li>{t('tutorial.step2')}</li>
             <li>{t('tutorial.step3')}</li>
+            <li>{t('tutorial.step4')}</li>
           </ul>
         </div>
       )}

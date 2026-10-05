@@ -9,6 +9,11 @@ Six modes : **solo contre l'IA** (trois niveaux), **1v1 local**, **2v2 local**
 **en ligne** (partie privee a deux, par code). Onze terrains, un vent optionnel, quatre
 skins de blocs, une partie de 4 minutes maximum.
 
+Un lancer se dose d&apos;un seul geste : la direction donne l&apos;angle, la longueur
+donne la puissance, et **la courbure du glissement donne l&apos;effet** — glissez en arc
+et le baton part en courbe, du cote ou votre doigt est passe. C&apos;est ainsi qu&apos;on
+contourne un rocher, ou le roi pour atteindre le kubb cache derriere lui.
+
 ---
 
 ## Documentation

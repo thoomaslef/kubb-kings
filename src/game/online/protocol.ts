@@ -35,8 +35,16 @@ import type { MatchResult } from '../matchResult';
  * qu'on ait a changer le protocole.
  */
 
-/** Incremente a chaque changement incompatible : deux versions differentes ne jouent pas ensemble. */
-export const PROTOCOL_VERSION = 1;
+/**
+ * Incremente a chaque changement incompatible : deux versions differentes ne
+ * jouent pas ensemble.
+ *
+ * Passe a 2 avec l'effet (`ThrowInput.spin`). Une version 1 rejouerait les
+ * lancers de son adversaire tout droit : l'issue serait la bonne — elle vient
+ * de l'instantane du lanceur, qui fait autorite — mais l'animation montrerait
+ * un baton qui rate ce qu'il vient d'abattre. On prefere refuser l'appairage.
+ */
+export const PROTOCOL_VERSION = 2;
 
 /**
  * Ce qu'un joueur dit de LUI a l'autre — par opposition a `MatchSetup`, qui
@@ -73,6 +81,11 @@ export interface ThrowInput {
   angle: number;
   /** Jauge de puissance, entre AIM.minPower et 1. */
   power: number;
+  /**
+   * Effet, entre -1 et 1 (cf. spin.ts). 0 = tir rectiligne, c'est-a-dire le
+   * lancer tel qu'il existait avant — et c'est toujours ce que joue l'IA.
+   */
+  spin: number;
   /** Projectile du lanceur : il change la vitesse, la deviation et la forme du corps. */
   batonId: BatonId;
   roll: ThrowRoll;

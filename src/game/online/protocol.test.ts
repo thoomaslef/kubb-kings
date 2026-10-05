@@ -105,6 +105,7 @@ function input() {
     throwX: 120,
     angle: -1.5,
     power: 0.8,
+    spin: 0,
     batonId: 'base' as const,
     roll: { deviationRad: 0.01, spinSign: 1 as const }
   };

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BATON_BODY } from '../physics/matterConfig';
 import { THROW, MAX_AIM_DEVIATION_DEG, HITBOX } from '../rules';
+import { SPIN } from '../spin';
 import { SHADOW } from '../theme';
 import { appliquerEchelleMatter, echelleSprite } from '../renderScale';
 import type { BatonStats } from '../batons';
@@ -89,7 +90,8 @@ export class Baton {
     power: number,
     deviationDeg = MAX_AIM_DEVIATION_DEG,
     speedMultiplier = 1,
-    roll?: ThrowRoll
+    roll?: ThrowRoll,
+    spin = 0
   ): ThrowRoll {
     const applied: ThrowRoll = roll ?? {
       deviationRad: Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-deviationDeg, deviationDeg)),
@@ -101,7 +103,13 @@ export class Baton {
     // La texture est verticale : on aligne son grand axe sur la trajectoire.
     this.sprite.setRotation(finalAngle - Math.PI / 2);
     this.sprite.setVelocity(Math.cos(finalAngle) * speed, Math.sin(finalAngle) * speed);
-    this.sprite.setAngularVelocity(THROW.spin * applied.spinSign);
+    // Avec de l'effet, la rotation visible suit l'effet joue : c'est le seul
+    // retour immediat que le joueur ait sur ce qu'il vient de doser, bien
+    // avant que la courbe ne se voie. Sans effet, on garde le sens tire au
+    // hasard — un baton qui tournerait toujours du meme cote ferait faux.
+    this.sprite.setAngularVelocity(
+      spin === 0 ? THROW.spin * applied.spinSign : SPIN.visualSpin * spin
+    );
     this.previousSpeed = speed;
     return applied;
   }

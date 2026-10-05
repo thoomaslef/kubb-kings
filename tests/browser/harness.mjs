@@ -133,20 +133,25 @@ export async function attendreSonTour(page) {
  * adverses fait PERDRE son auteur — c'est le moyen le plus court de terminer
  * une partie, et de choisir qui gagne.
  */
-export async function lancer(page, power, { surLeRoi = false } = {}) {
+export async function lancer(page, power, { surLeRoi = false, effet = 0 } = {}) {
   if (!(await attendreSonTour(page))) {
     // Echec franc plutot qu'un lancer perdu : on saura POURQUOI.
     throw new Error("La page n'a jamais ete en etat de lancer (pas la main, ou coup adverse encore en cours).");
   }
   await page.evaluate(
-    ({ power, surLeRoi }) => {
+    ({ power, surLeRoi, effet }) => {
       const scene = window.__kubb.scene.getScene('MatchScene');
       scene.throwX[scene.activeTeam] = surLeRoi ? 360 : 120;
       scene.aimAngle = scene.forwardAngle();
       scene.aimPower = power;
+      // `effet` court-circuite volontairement le geste : ici on verifie ce
+      // que l'effet DEVIENT (transmission en ligne, rejeu), pas comment il
+      // se lit dans un glissement — c'est le travail de effet.mjs, qui
+      // pilote la souris.
+      scene.aimSpin = effet;
       scene.launch();
     },
-    { power, surLeRoi }
+    { power, surLeRoi, effet }
   );
   for (let i = 0; i < 400; i += 1) {
     const fini = await page.evaluate(() => {

@@ -53,13 +53,35 @@ resultats.tourVerrouille = bloque === false;
 resultats.bandeauDeTour = (await etat(enAttente)).notes.concat((await etat(enAttente)).boutons).join(' ').length >= 0;
 
 // ---- Un lancer de chaque camp, etat identique des deux cotes.
+//
+// Le PREMIER part avec de l'effet : c'est la seule entree de lancer ajoutee
+// depuis que le protocole existe, et il faut verifier qu'elle traverse. Sans
+// cela, l'adversaire rejouerait un baton tout droit et verrait son
+// animation rater ce qu'elle vient d'abattre.
+const effetsEnvoyes = [0.6, 0];
+/** Effet reellement APPLIQUE au dernier vol de cette page. */
+const effetDuVol = (page) =>
+  page.evaluate(() => window.__kubb.scene.getScene('MatchScene').flightSpin);
+
+let effetRejoue = null;
 for (const n of [1, 2]) {
   const s = await etat(hote);
   const lanceur = s.activeTeam === 'blue' ? hote : invite;
   const autre = s.activeTeam === 'blue' ? invite : hote;
-  await lancer(lanceur, 0.8);
+  await lancer(lanceur, 0.8, { effet: effetsEnvoyes[n - 1] });
   resultats[`lancer${n}Recu`] = await attendreCoups(autre, n);
+  // Releve APRES le premier lancer seulement : le second, sans effet,
+  // ecraserait la valeur.
+  if (n === 1) effetRejoue = await effetDuVol(autre);
 }
+
+console.log(`effet envoye : ${effetsEnvoyes[0]}   effet rejoue chez l'adversaire : ${effetRejoue}`);
+// On regarde le VOL rejoue, pas l'enregistrement : celui-ci n'est que la
+// charge utile renvoyee en echo, et il reste identique des deux cotes meme
+// si le receveur anime un baton tout droit. Une premiere version comparait
+// les enregistrements — la mutation « ne pas rejouer l'effet » ne la faisait
+// pas broncher.
+resultats.effetRejoueChezLAdversaire = effetRejoue === effetsEnvoyes[0];
 const h2 = await etat(hote);
 const g2 = await etat(invite);
 console.log('apres deux lancers — hote :', JSON.stringify({ coups: h2.coups, kubbs: h2.kubbs, restants: h2.throwsLeft }));

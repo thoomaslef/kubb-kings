@@ -64,6 +64,7 @@ c'est `CHROMIUM_PATH` qui en designe un.
 | `menu-reglages.mjs` | La mise en page des groupes de choix du menu, **tout contenu debloque** : rien ne deborde, aucun libelle tronque, cibles tactiles >= 44 px — a 5 largeurs d'ecran et dans les deux langues. Ne lance aucune partie |
 | `mise-en-veille.mjs` | Le canevas revient a la bonne echelle apres une mise en veille, un changement d'orientation ou un conteneur qui bouge **pendant que la boucle Phaser est gelee**. Signale sur un vrai iPhone : apres verrouillage/deverrouillage, le jeu se retrouvait dans un petit rectangle centre |
 | `choix-du-terrain.mjs` | L'ecran de choix du terrain : le terrain retenu est bien celui que la partie utilise, les quatre modes y passent et aboutissent au bon endroit, le Defi non, un terrain verrouille reste visible mais non selectionnable, et la barre d'action reste a l'ecran malgre les onze terrains |
+| `effet.mjs` | L'effet, de bout en bout : la verification **pilote la souris** et glisse en arc sur le canevas, comme un pouce. Un geste droit ne courbe rien, un demi-geste courbe a moitie, un geste franc courbe du cote ou le doigt est passe. Couvre aussi la zone morte (un pouce pivote, un glissement « droit » l'est rarement) et le fait que l'IA tire toujours droit |
 | `kubb-redresse.mjs` | Un kubb redresse par la recompense du ricochet revient a la moitie de sa taille — **corps Matter compris**, pas seulement l'image — sans cumul, et pas sous la regle "Kubbs de champ" |
 | `ia-roi.mjs` | L'IA ne renverse jamais le roi tant qu'il est protege, **sous la vraie physique Matter** : son controle anti-suicide simule son propre modele de vol, une verification headless le comparerait donc a lui-meme |
 | `tchat.mjs` | Un message part d'un appareil et arrive sur l'autre, les garde-fous tiennent sur le chemin REEL (longueur plafonnee a la reception, sauts de ligne neutralises, cadence), et rien ne survit a la partie. Comprend un message **depose directement sur le canal**, sans passer par l'interface — seul moyen d'eprouver l'assainissement a la reception |
@@ -140,6 +141,36 @@ tween.** Le kubb replante en champ part a 0,6 et grandit : lu tout de suite,
 son corps fait 21,6 au lieu de 36, a tous les DPR, et la mesure ne dit rien.
 On attend la fin de l'animation — pas question de lui imposer la valeur
 attendue.
+
+**Un banc d'essai qui ecrit `scene.aimSpin` ne teste pas le geste.** L'effet se lit
+dans la courbure du trajet du doigt : poser directement la valeur sauterait
+exactement la moitie qu'on vient d'ecrire. `effet.mjs` pilote donc la souris.
+
+**Un baton orphelin se laisse suivre sans rien dire.** Mettre `scene.baton = null`
+sans le detruire laissait l'ancien projectile, immobile, dans le monde : l'enregistreur
+le suivait en croyant suivre le nouveau, et la courbure mesuree valait 0 px sur 0 px.
+La verification en concluait que l'effet ne courbait rien. Elle echoue desormais
+franchement si le projectile n'a pas parcouru 50 px.
+
+**Mesurer la courbure par rapport a la corde depart -> arrivee est faux.** Le baton
+rebondit sur la bande du fond et revient : cette corde ne designe plus la direction du
+vol, elle peut meme pointer a l'oppose. Une premiere version concluait que la courbe
+partait du mauvais cote alors que la physique etait juste. On mesure l'ecart a la
+direction de DEPART, et sur le seul aller.
+
+**A 20 images par seconde, le baton parcourt 90 px entre deux releves.** Relever le
+point d'APRES la ligne qu'on veut franchir introduisait jusqu'a 90 px d'erreur, assez
+pour faire croire a une physique capricieuse et pour fausser tout un balayage de
+reglage. On interpole entre les deux releves qui encadrent la ligne.
+
+**Les deux premiers vols d'une page ne ressemblent pas aux suivants.** Mise en route,
+compilation des shaders, premieres allocations : leurs images sont bien plus longues.
+Mesure : 119 px de derive contre 9 px ensuite, de facon parfaitement reproductible. Les
+bancs d'essai tirent deux fois a vide avant de mesurer. (C'est ainsi qu'a ete trouve un
+vrai defaut du jeu : la poussee du vent et de l'effet n'etait pas bornee par image.)
+
+**En Solo, l'IA joue entre deux mesures** et remplace le baton qu'on echantillonne. Les
+mesures de trajectoire se font en 1v1 local.
 
 **Une simulation qui juge son propre modele se donne raison toute seule.**
 Le controle anti-suicide de l'IA (`curvedKingDanger`) simule la trajectoire
