@@ -102,7 +102,7 @@ const depart = (page) =>
 
 // =================================================== 1. Le sort donne Bleue
 {
-  const page = await demarrer(/1v1 local/i, 'blue');
+  const page = await demarrer(/1v1/i, 'blue');
   const d = await depart(page);
   const k = await kubbs(page);
   console.log('sort = Bleue :', JSON.stringify(d), JSON.stringify({ visibles: k.visibles, presents: k.presents }));
@@ -191,7 +191,7 @@ const depart = (page) =>
 
 // ==================================================== 2. Le sort donne Rouge
 {
-  const page = await demarrer(/1v1 local/i, 'red');
+  const page = await demarrer(/1v1/i, 'red');
   const d = await depart(page);
   const k = await kubbs(page);
   console.log('sort = Rouge :', JSON.stringify(d), JSON.stringify({ visibles: k.visibles, presents: k.presents }));

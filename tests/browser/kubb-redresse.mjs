@@ -45,7 +45,7 @@ async function scenario(regleKubbsDeChamp) {
   // 1v1 LOCAL et non Solo : il n'y a plus de tir d'ouverture pour geler le
   // plateau, donc en Solo l'IA peut commencer et percuter le kubb qu'on mesure.
   // La regle testee (taille d'un kubb redresse) ne depend pas du mode.
-  await lancerDepuisLeMenu(page, /1v1 local/i);
+  await lancerDepuisLeMenu(page, /1v1/i);
   await attendreEcran(page, 'match');
   await page.waitForTimeout(1500);
 
