@@ -58,8 +58,9 @@ for (const dpr of [1, 3]) {
   await page.reload();
   await page.waitForFunction(() => window.__kubbStoreApi?.getState().screen === 'menu', null, { timeout: 30000 });
 
-  // Mode Solo, puis l'ecran de choix du terrain.
-  await page.locator('button', { hasText: /Solo|Contre l/i }).first().click();
+  // 1v1 local, puis l'ecran de choix du terrain. Pas de Solo : l'IA peut
+  // commencer et lancer pendant que la verification mesure et tire elle-meme.
+  await page.locator('button', { hasText: /1v1 local/i }).first().click();
   await page.waitForSelector('.map-grid', { timeout: 20000 });
   await page.locator('.map-actions .btn--primary').first().click();
   await page.waitForFunction(() => window.__kubbStoreApi.getState().screen === 'match', null, { timeout: 30000 });

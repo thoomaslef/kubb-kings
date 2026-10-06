@@ -23,7 +23,7 @@ sujet — chaque page se lit seule.
 
 | Page | Ce qu&apos;on y trouve |
 | --- | --- |
-| [Regles du jeu](docs/regles-du-jeu.md) | Ce que le jeu fait respecter : regles de base, tir d&apos;ouverture, kubbs de champ, vent, tutoriel, tournoi local |
+| [Regles du jeu](docs/regles-du-jeu.md) | Ce que le jeu fait respecter : regles de base, qui commence, kubbs de champ, vent, tutoriel, tournoi local |
 | [Contenu et boutique](docs/contenu-et-boutique.md) | Les 11 terrains, les projectiles, les apparences, les pieces et le deverrouillage par niveau |
 | [Progression, succes et mode Defi](docs/progression-et-succes.md) | Combo, XP et niveaux, les 18 succes, le roguelite en 30 manches |
 | [L&apos;adversaire solo](docs/adversaire-solo.md) | Comment l&apos;IA vise, et ce que son calibrage a appris |

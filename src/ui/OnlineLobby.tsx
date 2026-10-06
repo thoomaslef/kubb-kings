@@ -6,7 +6,7 @@ import { createMatchTransport, transportKind } from '../game/online/transportFac
 import { setCurrentSession } from '../game/online/currentSession';
 import { OnlineSession } from '../game/online/session';
 import { PROTOCOL_VERSION, type MatchSetup, type PlayerCard } from '../game/online/protocol';
-import { WIND_DIRECTIONS, type FieldPresetId } from '../game/rules';
+import { WIND_DIRECTIONS, drawStartingTeam, type FieldPresetId } from '../game/rules';
 import type { BatonId } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { useT } from '../i18n/useT';
@@ -40,7 +40,7 @@ function drawSetup(
     // baton a un effet de jeu reel : le forcer priverait chacun de l'objet
     // qu'il a achete.
     batons: { blue: batonId, red: 'base' },
-    startingTeam: Math.random() < 0.5 ? 'blue' : 'red'
+    startingTeam: drawStartingTeam()
   };
 }
 

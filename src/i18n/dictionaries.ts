@@ -206,7 +206,7 @@ const fr: Record<string, string> = {
   'achievement.roi-dernier-lancer.label': 'Coup de grace',
   'achievement.roi-dernier-lancer.hint': 'Faire tomber le roi sur votre tout dernier lancer',
   'achievement.frolement.label': 'Froleur',
-  'achievement.frolement.hint': "Au tir d'ouverture, s'arreter a moins de {n}px du roi sans le toucher",
+  'achievement.frolement.hint': "En partie, s'arreter a moins de {n}px du roi sans le toucher",
   'achievement.nettoyeur.label': 'Nettoyeur',
   'achievement.nettoyeur.hint': 'Degager {n} kubbs de champ de votre camp dans la meme partie',
   'achievement.dans-le-vent.label': 'Dans le vent',
@@ -318,7 +318,6 @@ const fr: Record<string, string> = {
   'hud.kingTipExpanded': 'Le roi est a portee : le viser maintenant fait gagner la partie',
   'hud.kingTipShort': 'Le roi est a portee — visez-le pour gagner',
   'hud.fieldKubbsPriority': 'Degagez les kubbs de champ de votre camp avant de viser la ligne adverse',
-  'hud.openingThrow': "Tir d'ouverture : approchez le roi le plus possible SANS le toucher",
   'hud.resume': 'Reprendre',
   'hud.leaveMatch': 'Quitter la partie',
 
@@ -391,8 +390,8 @@ const fr: Record<string, string> = {
     "Un tir qui ricoche sur une bande avant d'abattre un kubb adverse redresse en recompense l'un de vos propres kubbs tombes, toujours le plus a gauche.",
   'rules.itemFieldKubbs':
     "Regle « Kubbs de champ » (activable au menu) : un kubb que vous abattez n'est pas retire du jeu, il est replante dans VOTRE camp — vous devrez l'y abattre une seconde fois, en priorite, avant de pouvoir viser de nouveau la ligne adverse.",
-  'rules.itemOpening':
-    "Avant la partie, chaque equipe tire une fois vers le roi pour savoir qui commence : le plus proche SANS le toucher est prioritaire. Toucher le roi fait perdre ce tirage — sauf si l'adversaire le touche aussi, auquel cas on recommence.",
+  'rules.itemStart':
+    "Un tirage au sort designe l'equipe qui commence : un bandeau l'annonce au debut de la partie.",
   'rules.back': 'Retour',
   'rules.replayTutorial': 'Revoir le tutoriel',
   'rules.tutorialWillReplay': 'Reapparaitra a la prochaine partie',
@@ -458,8 +457,6 @@ const fr: Record<string, string> = {
   'match.knockedDown': 'ABATTU !',
   'match.kubbPlanted': 'KUBB DE CHAMP !',
   'match.kubbRevived': 'KUBB RELEVE !',
-  'match.openingTouched': 'TOUCHE !',
-  'match.openingBothTouched': 'EGALITE, ON REJOUE !',
   'match.comboGood': 'BON LANCER',
   'match.comboPrecision': 'PRECISION',
   'match.comboDouble': 'DOUBLE',
@@ -662,7 +659,7 @@ const en: Record<string, string> = {
   'achievement.roi-dernier-lancer.label': 'Final blow',
   'achievement.roi-dernier-lancer.hint': 'Knock down the king on your very last throw',
   'achievement.frolement.label': 'Close shave',
-  'achievement.frolement.hint': 'On the opening throw, stop within {n}px of the king without touching it',
+  'achievement.frolement.hint': 'In a match, stop within {n}px of the king without touching it',
   'achievement.nettoyeur.label': 'Sweeper',
   'achievement.nettoyeur.hint': 'Clear {n} field kubbs from your half in a single match',
   'achievement.dans-le-vent.label': 'Into the wind',
@@ -774,7 +771,6 @@ const en: Record<string, string> = {
   'hud.kingTipExpanded': 'The king is in range: hitting it now wins the match',
   'hud.kingTipShort': 'The king is in range — aim for it to win',
   'hud.fieldKubbsPriority': 'Clear the field kubbs in your half before aiming at the opposing baseline',
-  'hud.openingThrow': "Opening throw: get as close to the king as you can WITHOUT touching it",
   'hud.resume': 'Resume',
   'hud.leaveMatch': 'Leave the match',
 
@@ -844,8 +840,8 @@ const en: Record<string, string> = {
     "A throw that bounces off a wall before knocking down an opposing kubb revives one of your own fallen kubbs as a reward — always the leftmost one.",
   'rules.itemFieldKubbs':
     "\"Field kubbs\" rule (toggle in the menu): a kubb you knock down isn't removed from play, it's replanted in YOUR half — you must knock it down a second time, as a priority, before you can aim at the opposing baseline again.",
-  'rules.itemOpening':
-    "Before the match, each team throws once at the king to decide who starts: whoever gets closest WITHOUT touching it goes first. Touching the king loses this toss — unless the other team also touches it, in which case it's replayed.",
+  'rules.itemStart':
+    'A coin toss decides which team starts: a banner announces it at the beginning of the match.',
   'rules.back': 'Back',
   'rules.replayTutorial': 'Replay the tutorial',
   'rules.tutorialWillReplay': 'Will show again next match',
@@ -910,8 +906,6 @@ const en: Record<string, string> = {
   'match.knockedLast': 'LAST ONE!',
   'match.knockedDown': 'DOWN!',
   'match.kubbPlanted': 'FIELD KUBB!',
-  'match.openingTouched': 'HIT!',
-  'match.openingBothTouched': 'TIE, THROW AGAIN!',
   'match.kubbRevived': 'KUBB REVIVED!',
   'match.comboGood': 'GOOD THROW',
   'match.comboPrecision': 'PRECISION',

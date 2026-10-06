@@ -59,7 +59,7 @@ rochers la plupart du temps plutot que de leur foncer dedans.
 rebondit, il ressort simplement plus lent qu&apos;il n&apos;y est entre. Traverser tout
 son diametre coute environ 10% de jauge de puissance en plus pour arriver avec la meme
 force. Cote IA (`ai.ts`), la compensation est exacte des que possible : `simulateWindFlight`
-(donc `curvedKingDanger` et `decideApproachThrow`, deja bases sur une simulation complete
+(donc `curvedKingDanger`, deja basee sur une simulation complete
 pas a pas) integre directement la friction accrue selon la position reelle du baton a
 chaque pas ; `decideThrow`, qui evite cette simulation complete pour des raisons de
 performance, calcule la longueur du trajet qui traverse le disque (geometrie exacte d&apos;une
@@ -99,7 +99,8 @@ un lancer plus FAIBLE que prevu reste plus longtemps expose au vent avant de cro
 roi, ce qui peut au contraire le rapprocher davantage — un cas jamais teste jusque-la
 (la friction normale masquait l&apos;effet). Corrige en testant les deux bornes de
 puissance (`power*(1-powerErrorRatio)` et `power*(1+powerErrorRatio)`), dans
-`curvedKingDanger` et dans le controle equivalent de `decideApproachThrow`. Reverifie
+`curvedKingDanger` et dans le controle equivalent du tir d&apos;approche de l&apos;ancien
+tir d&apos;ouverture (retire depuis). Reverifie
 ensuite par simulation (17 etats de vent x 3 niveaux x 2 terrains, 102 combinaisons,
 300 matchs chacune, 30&nbsp;600 matchs) : zero suicide. Puis en navigateur reel (vraie
 physique Matter) : glace et sable listes au menu, un tir a puissance egale ressort plus
@@ -218,8 +219,8 @@ d&apos;un rayon avec un CERCLE, geometrie quadratique) ont recu un pendant
 `riverCrossingOnRay`/`riverCrossingToTarget` plutot que d&apos;etre generalisees en
 place : geometrie de BANDE (intersection lineaire, plus simple), fonctions separees
 pour ne jamais risquer de regression sur "Colline", deja verifiee independamment.
-`simulateWindFlight` (donc `curvedKingDanger`, `windCompensatedAngle` et
-`decideApproachThrow`, tous bases dessus) applique le multiplicateur pas a pas des que
+`simulateWindFlight` (donc `curvedKingDanger` et
+`windCompensatedAngle`, tous deux bases dessus) applique le multiplicateur pas a pas des que
 le baton est dans la bande ; `decideThrow`, qui evite cette simulation complete pour
 des raisons de performance, calcule la longueur du trajet qui la traverse (geometrie
 exacte, comme pour Colline) et l&apos;utilise pour definir une "distance effective"
@@ -296,7 +297,7 @@ bien sur la Glace.
 **Jamais l&apos;IA.** Seules les equipes tenues par un joueur humain beneficient de ces
 multiplicateurs (`MatchScene::activeBatonStats`) — l&apos;IA reste toujours sur le baton
 de base, quel que soit le choix au menu. Ce choix ne touche donc a aucun des reglages de
-securite de l&apos;IA (`decideThrow`/`decideApproachThrow`) : aucune simulation de
+securite de l&apos;IA (`decideThrow`) : aucune simulation de
 suicide n&apos;etait necessaire pour cette fonctionnalite (ni pour l&apos;ajout ulterieur
 de Boule de fer et Disque), seulement une verification en navigateur (stats correctement
 appliquees au joueur, jamais a l&apos;IA, meme quand un baton different est choisi ;
@@ -446,7 +447,7 @@ gratuits ou achetes, teinte de trainee appliquee au bon lancer et jamais a celui
 l&apos;IA, gain de pieces reel en fin de match ; pour la Boule specifiquement : corps
 Matter reellement circulaire au lancer, rendu visuel distinct du baton, et un abattage de
 kubb reel via cette collision) — aucune simulation IA necessaire, ce systeme
-n&apos;influence jamais `decideThrow` ni `decideApproachThrow`.
+n&apos;influence jamais `decideThrow`.
 
 ---
 
@@ -498,7 +499,7 @@ et un article deja achete le reste ensuite quel que soit le niveau (pas de
 
 **Purement un systeme cote menu/joueur.** Le niveau ne conditionne jamais ce que l&apos;IA
 peut jouer (elle reste toujours sur le baton de base et n&apos;a aucune notion de
-progression) ni les reglages de securite de `decideThrow`/`decideApproachThrow` — un
+progression) ni les reglages de securite de `decideThrow` — un
 terrain de boutique n&apos;a d&apos;ailleurs besoin d&apos;aucune verification IA
 supplementaire (c&apos;est un reglage de partie choisi avant le match, comme la
 difficulte ; seul son contenu, deja verifie independamment pour chaque preset, compte

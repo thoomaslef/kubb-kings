@@ -74,7 +74,7 @@ recompense a l&apos;ecran pendant le match :
 | Serie de victoires (par victoire consecutive, plafonnee a 10) | +5                      |
 
 **Aucun effet sur les regles ni sur l&apos;IA.** Un calcul pur (`progression.ts`,
-`computeXpAward`), independant de `decideThrow`/`decideApproachThrow` — verifie
+`computeXpAward`), independant de `decideThrow` — verifie
 directement (4 scenarios geres a la main via le store : victoire simple, victoire
 parfaite + bonus cumules, defaite qui brise la serie, gros score TRIPLE+PERFECT —
 total d&apos;XP et passage de niveau corrects a chaque fois), persistance confirmee
@@ -105,7 +105,7 @@ tombe pendant la partie.
 | Sans-faute        | Gagner une partie sans rater un seul lancer                      | +400 XP · +150 🪙 |
 | Victoire parfaite | Gagner une partie sans perdre un seul de ses propres kubbs       | +350 XP · +125 🪙 |
 | Coup de grace     | Faire tomber le roi sur son tout dernier lancer disponible       | +400 XP · +150 🪙 |
-| Froleur           | Au tir d&apos;ouverture, s&apos;arreter a moins de 60px du roi sans le toucher | +250 XP · +75 🪙  |
+| Froleur           | En partie, s&apos;arreter a moins de 60px du roi sans le toucher | +250 XP · +75 🪙  |
 | Nettoyeur         | Degager 3 kubbs de champ de son camp dans la meme partie         | +250 XP · +75 🪙  |
 | Dans le vent      | Abattre un kubb avec un vent de travers de force 2               | +150 XP · +50 🪙  |
 | Chirurgien        | Gagner sans qu&apos;un seul de ses batons touche une bande       | +400 XP · +150 🪙 |
@@ -161,7 +161,7 @@ chacun une question differente :
 
 **Aucun effet sur l&apos;IA ni sur les regles.** Un systeme de detection cote joueur
 pur, ajoute par-dessus les evenements deja suivis pour le combo (Phase 1) et l&apos;XP
-(Phase 2) — aucun nouveau reglage de `decideThrow`/`decideApproachThrow`. Verifie
+(Phase 2) — aucun nouveau reglage de `decideThrow`. Verifie
 directement : logique de detection (le kubb le plus eloigne reellement identifie
 parmi les kubbs adverses encore debout, un lancer a 5 kubbs qui debloque Double +
 Perfect sans redebloquer Triple, une redresse via ricochet qui ne debloque jamais

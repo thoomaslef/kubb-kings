@@ -43,8 +43,13 @@ import type { MatchResult } from '../matchResult';
  * lancers de son adversaire tout droit : l'issue serait la bonne — elle vient
  * de l'instantane du lanceur, qui fait autorite — mais l'animation montrerait
  * un baton qui rate ce qu'il vient d'abattre. On prefere refuser l'appairage.
+ *
+ * Passe a 3 avec le retrait du tir d'ouverture : l'instantane ne porte plus
+ * `stage`. Ce n'est PAS cosmetique — une version 2 qui recevrait un instantane
+ * sans `stage` lirait `undefined`, ne le prendrait pas pour la partie
+ * normale, et rendrait tous les kubbs intouchables.
  */
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 /**
  * Ce qu'un joueur dit de LUI a l'autre — par opposition a `MatchSetup`, qui
@@ -104,7 +109,6 @@ export interface MatchSnapshot {
   throwsLeft: Record<TeamId, number>;
   /** A qui de jouer APRES ce lancer. */
   activeTeam: TeamId;
-  stage: 'opening' | 'match';
 }
 
 /** Un lancer joue, tel qu'il part sur le reseau et tel qu'on l'archive. */
@@ -140,16 +144,12 @@ export interface MatchSetup {
   /** Projectile de chaque camp — il a un vrai effet de jeu, pas cosmetique. */
   batons: Record<TeamId, BatonId>;
   /**
-   * Qui commence, tire au sort par l'hote.
+   * Qui commence, tire au sort par l'hote (rules.ts::drawStartingTeam).
    *
-   * Simplification ASSUMEE de la premiere version en ligne : le tir
-   * d'ouverture (chaque camp approche le roi, le plus pres commence) est
-   * saute. Son arbitrage a besoin des DEUX mesures avant de trancher, ce
-   * qui en fait un etat reparti — avec rejeu quand les deux touchent le
-   * roi, et donc toute une classe de desynchronisations pour un mecanisme
-   * qui ne fait que designer le premier joueur. Le tirage au sort par
-   * l'hote donne le meme resultat sans le risque. A reprendre si l'on veut
-   * l'ouverture fidele en ligne.
+   * C'est la regle de tous les modes, en ligne comme hors ligne. Elle a
+   * remplace le tir d'ouverture (chaque camp approchait le roi, le plus pres
+   * commencait), dont l'arbitrage avait besoin des DEUX mesures avant de
+   * trancher — un etat reparti, avec rejeu quand les deux touchent le roi.
    */
   startingTeam: TeamId;
 }

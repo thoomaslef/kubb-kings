@@ -65,7 +65,8 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
 
 /**
  * "Frolement" : distance maximale au CENTRE du roi ou le baton doit
- * s'immobiliser au tir d'ouverture, sans l'avoir touche. Le rayon de
+ * s'immobiliser, en partie, sans l'avoir touche. (Il se gagnait autrefois au
+ * tir d'ouverture, qui n'existe plus.) Le rayon de
  * collision du roi vaut ~27px (HITBOX.kingRadius + batonWidth/2) : 60px du
  * centre laisse donc une marge reelle d'a peine ~33px.
  */

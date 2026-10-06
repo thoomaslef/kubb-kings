@@ -81,55 +81,39 @@ reglages chiffres sont dans [`src/game/rules.ts`](../src/game/rules.ts).
 
 ---
 
-## Tir d&apos;ouverture : qui commence ?
+## Qui commence ?
 
-Avant que la partie ne debute vraiment, chaque equipe tire une fois vers le roi pour
-determiner qui commence — comme au vrai Kubb : le camp qui s&apos;en approche le plus **sans
-le toucher** a la priorite. Toucher le roi (meme un frolement) fait perdre ce tirage, sauf
-si l&apos;adversaire le touche aussi, auquel cas on recommence entierement. Ces deux lancers
-comptent dans le total de 12 par equipe (`MatchScene.beginOpeningThrow` / `resolveOpeningThrow`
-/ `beginMatch`), le roi ne tombe jamais et la partie ne se termine pas pendant ce tirage.
+**Un tirage au sort, une chance sur deux**, dans tous les modes
+([`drawStartingTeam`](../src/game/rules.ts)). La partie demarre aussitot en partie
+normale : les 12 lancers de chaque equipe comptent tous, et le chronometre ne tourne
+plus pour rien. La pastille d&apos;equipe du HUD indique qui joue, et un bandeau de tour la nomme au
+debut de la partie. Si le sort designe Rouge en Solo, c&apos;est l&apos;IA qui lance en
+premier, de son propre chef (`MatchScene.beginMatch`).
 
-**Les kubbs n&apos;y participent pas du tout** : ils ne sont ni affiches, ni presents dans le
-monde physique tant que dure le tirage, et reviennent quand la partie commence
-(`Kubb::setHiddenForOpening`). Les deux, pas l&apos;un sans l&apos;autre — un bloc invisible
-mais toujours solide ferait rebondir le baton sur un obstacle que le joueur ne voit pas,
-ce qui serait pire que la regle qu&apos;on corrige.
+Le tirage est inscrit dans l&apos;enregistrement de la partie
+(`MatchSetup.startingTeam`). En ligne, c&apos;est l&apos;hote qui le tire et l&apos;envoie
+a l&apos;invite — la meme regle, la meme fonction.
 
-> **Ce qui a ete corrige.** Jusqu&apos;ici, la branche &laquo; kubb &raquo; de
-> `onCollisionStart` n&apos;avait aucune garde sur l&apos;etape de la partie : seul le roi y
-> etait traite a part. Un baton d&apos;ouverture qui depassait largement le roi et atteignait
-> la ligne adverse avec assez de vitesse pouvait donc **abattre un kubb**, et meme declencher
-> des succes. Rare — il fallait une tres longue trajectoire — mais contraire a la regle, et
-> l&apos;avantage etait gratuit. L&apos;ecran y gagne aussi : la consigne affichee dit
-> &laquo; approchez le roi SANS le toucher &raquo;, et le terrain ne montre plus que le roi.
+> **Pourquoi le tir d&apos;ouverture a ete retire.** Avant la partie, chaque equipe tirait
+> une fois vers le roi, et le camp qui s&apos;en approchait le plus **sans le toucher**
+> commencait (comme au vrai Kubb). Il avait un cout reel : deux lancers sans enjeu avant
+> chaque partie, une etape de plus a expliquer, et tout un mecanisme annexe — kubbs
+> retires du monde physique le temps du tirage, IA dediee (`decideApproachThrow`, qui
+> balayait position x angle x puissance), arbitrage des egalites avec rejeu, et un
+> instantane reseau qui portait l&apos;etape. Il n&apos;existait de toute facon qu&apos;hors
+> ligne : en ligne, l&apos;hote tirait deja au sort.
 >
-> La garde sur l&apos;etape a tout de meme ete ajoutee dans `onCollisionStart`, alors que les
-> corps retires du monde la rendent deja inutile : une regle doit etre **ecrite la ou elle
-> s&apos;applique**, pas dependre d&apos;un detail de mise en scene qui pourrait changer.
-
-> **Observation non corrigee.** Le chronometre de la partie tourne pendant le tirage.
-> Quelques secondes en pratique, mais ce sont des secondes prises sur les 4 minutes de jeu
-> alors que la partie n&apos;a pas commence. A trancher un jour, comme une regle.
-
-- **IA dediee.** `decideApproachThrow` (dans [`src/game/ai.ts`](../src/game/ai.ts)) balaie
-  position x angle x puissance, simule la trajectoire COURBEE reelle (`simulateWindFlight`,
-  pas une approximation en ligne droite) et retient le candidat le plus proche du roi dont
-  le cone d&apos;incertitude entier (erreur du niveau + deviation du jeu + pire cas de
-  puissance) reste hors de portee — `APPROACH_SAFETY_MARGIN` absorbe le residu de
-  discretisation d&apos;un tel balayage.
-- **Bug trouve et corrige avant tout affichage** : la premiere version du controle de
-  securite ignorait que l&apos;imprecision de puissance (appliquee apres coup) permet a un
-  tir plus fort d&apos;aller plus loin sur la meme trajectoire — un candidat juge sur pouvait
-  donc, une fois execute, toucher reellement le roi. Corrige en verifiant le pire cas de
-  puissance des la selection du candidat, pas seulement l&apos;angle.
-- **Verifie** : 1620 tirs d&apos;ouverture simules hors-navigateur (27 combinaisons terrain x
-  vent x niveau, 60 chacune) — zero contact avec le roi, et une nette progression par
-  niveau (le plus proche en moyenne : ~110 px en Difficile, ~190 px en Moyen, ~215 px en
-  Facile). Puis en navigateur : les 3 cas de decision (plus proche gagne, un seul touche,
-  les deux touchent -> on recommence) verifies directement, un flux complet de bout en bout
-  (lancers reels, decompte des lancers, transition vers la partie), et 6 matchs solo
-  Difficile avec l&apos;IA reelle sur les 3 terrains — zero erreur partout.
+> Retire a la demande du joueur, qui ne l&apos;aimait pas. Ce qui disparait avec lui : le
+> mini-jeu, l&apos;IA d&apos;approche, `Kubb::setHiddenForOpening`, la garde « etape » de
+> `onCollisionStart`, et `stage` dans l&apos;instantane en ligne — d&apos;ou
+> `PROTOCOL_VERSION` passe a **3** : une version 2 qui recevrait un instantane sans `stage`
+> lirait `undefined`, ne le prendrait pas pour la partie normale, et rendrait tous les
+> kubbs intouchables.
+>
+> Le succes **Froleur**, qui ne se gagnait qu&apos;a l&apos;ouverture, a ete conserve et
+> rattache a la partie : s&apos;arreter a moins de 60 px du roi **sans l&apos;avoir touche**.
+> Un effleurement trop doux pour le renverser ne perd pas, donc la scene retient a part si
+> le roi a ete touche pendant le lancer (`kingTouchedThisThrow`).
 
 ---
 
@@ -369,11 +353,6 @@ Verifie en deux temps, avant tout affichage a l&apos;ecran :
 2. **Navigateur, vraie physique Matter** : 6 matchs solo Difficile avec vent, boussole HUD
    verifiee a chaque partie (5 combinaisons direction/force differentes observees), zero
    roi touche trop tot par l&apos;IA, zero erreur console.
-
-Le tir d&apos;ouverture (`decideApproachThrow`) beneficie du meme vent 2D : verifie a part
-sur 4590 tirs simules, 0,37% de contact residuel (concentre sur les niveaux faciles/moyens
-par vent fort) — un taux juge acceptable puisque toucher le roi ici ne fait perdre le
-tirage au sort que si l&apos;adversaire ne le touche pas aussi (voir plus haut).
 
 ---
 

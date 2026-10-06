@@ -28,8 +28,7 @@ const snapshot: MatchSnapshot = {
   kubbs: { blue: ['baseline'], red: ['out'] },
   kingStanding: true,
   throwsLeft: { blue: 11, red: 12 },
-  activeTeam: 'red',
-  stage: 'match'
+  activeTeam: 'red'
 };
 
 describe('checkSeq', () => {

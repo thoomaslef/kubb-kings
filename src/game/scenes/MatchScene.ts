@@ -17,7 +17,7 @@ import { Juice } from '../juice';
 import { PALETTE, BORDER_WIDTH } from '../theme';
 import { echelleSprite, fitCameraToDesign } from '../renderScale';
 import { spinAcceleration, spinFromDragPath, type Point } from '../spin';
-import { AI_PROFILES, AI_TEAM, decideApproachThrow, decideThrow, type AiProfile } from '../ai';
+import { AI_PROFILES, AI_TEAM, decideThrow, type AiProfile } from '../ai';
 import {
   BOURSE_PLEINE_COINS_MULTIPLIER,
   BRAS_VIF_MULTIPLIER,
@@ -53,6 +53,7 @@ import {
   WIND_DIRECTIONS,
   WIND_UNIT_VECTORS,
   availableThrowPositions,
+  drawStartingTeam,
   windAcceleration,
   type FieldPresetId,
   type Wind
@@ -100,19 +101,6 @@ const COMBO_PRECISION_FORCE = 0.55;
  */
 export class MatchScene extends Phaser.Scene {
   private phase: MatchPhase = 'aiming';
-  /**
-   * 'opening' : tir d'ouverture qui determine qui commence (chaque equipe
-   * tire une fois vers le roi, s'en approcher sans le toucher fait gagner
-   * la priorite). 'match' : partie normale, une fois ce tirage tranche.
-   */
-  private matchStage: 'opening' | 'match' = 'opening';
-  /** Resultat du tir d'ouverture de chaque equipe, rempli au fur et a mesure. */
-  private openingResults: Partial<Record<TeamId, { touched: boolean; distance: number }>> = {};
-  /**
-   * Le tir d'ouverture en cours a-t-il touche le roi (meme un frolement) ?
-   * Remis a zero a chaque tir d'ouverture.
-   */
-  private openingTouchedKingThisThrow = false;
   private mode: GameMode = 'local';
   /**
    * Equipe du joueur de CET appareil : celle dont les succes, l'XP, les
@@ -192,6 +180,14 @@ export class MatchScene extends Phaser.Scene {
    * indirect plus difficile a placer.
    */
   private bouncedWallThisThrow = false;
+  /**
+   * Le lancer en cours a-t-il touche le roi, meme sans le faire tomber ?
+   * Remis a zero a chaque tir. Sert au succes "Froleur", dont la promesse est
+   * de s'arreter pres du roi SANS l'avoir touche : en pleine partie, un
+   * effleurement trop doux pour le renverser ne perd pas, il faut donc le
+   * retenir a part.
+   */
+  private kingTouchedThisThrow = false;
   /**
    * Nombre de kubbs abattus par le lancer en cours (pour distinguer un
    * lancer simple d'un DOUBLE/TRIPLE/PERFECT) et force du coup le plus dur
@@ -295,9 +291,6 @@ export class MatchScene extends Phaser.Scene {
     fitCameraToDesign(this);
     this.appliquerVignette();
     this.phase = 'aiming';
-    this.matchStage = 'opening';
-    this.openingResults = {};
-    this.openingTouchedKingThisThrow = false;
     this.activeTeam = 'blue';
     this.throwsLeft = { blue: MAX_THROWS_PER_TEAM, red: MAX_THROWS_PER_TEAM };
     this.timeLeftMs = MATCH_DURATION_MS;
@@ -357,6 +350,7 @@ export class MatchScene extends Phaser.Scene {
     this.secondSouffleUsed = false;
     this.knockedThisThrow = false;
     this.bouncedWallThisThrow = false;
+    this.kingTouchedThisThrow = false;
     this.knockedThisThrowCount = 0;
     this.knockedThisThrowMaxForce = 0;
     this.comboCount = { blue: 0, red: 0 };
@@ -392,15 +386,16 @@ export class MatchScene extends Phaser.Scene {
     // Enregistrement de la partie : ouvert ici, une fois le terrain, le vent
     // et les projectiles connus — c'est exactement ce dont un adversaire (ou
     // un serveur qui rejouerait la partie) a besoin avant le premier lancer.
+    // Qui commence : fixe par l'hote en ligne, tire au sort ici sinon — la
+    // meme regle dans les deux cas (rules.ts::drawStartingTeam).
+    const startingTeam = remoteSetup?.startingTeam ?? drawStartingTeam();
     this.matchRecord = createRecord({
       version: PROTOCOL_VERSION,
       fieldPreset: this.fieldPreset,
       wind: this.wind,
       fieldKubbsEnabled: this.fieldKubbsEnabled,
       batons: { blue: this.batonIdForTeam('blue'), red: this.batonIdForTeam('red') },
-      // Hors ligne, le tir d'ouverture designe le premier joueur : la valeur
-      // n'a d'effet qu'en ligne, ou l'hote l'a tiree au sort.
-      startingTeam: remoteSetup?.startingTeam ?? 'blue'
+      startingTeam
     });
     this.pendingThrowInput = null;
 
@@ -444,18 +439,7 @@ export class MatchScene extends Phaser.Scene {
       this.matter.world?.off(Phaser.Physics.Matter.Events.COLLISION_START, this.onCollisionStart, this);
     });
 
-    // En ligne, pas de tir d'ouverture : l'hote a deja tire au sort qui
-    // commence (cf. MatchSetup.startingTeam et le commentaire qui l'explique).
-    if (remoteSetup) {
-      this.beginMatch(remoteSetup.startingTeam);
-    } else {
-      // Le tirage au sort ne designe QUE le premier joueur : les kubbs n'y
-      // participent pas. Ils quittent donc l'ecran et le monde physique le
-      // temps de l'ouverture — invisibles sans etre intangibles, le baton
-      // rebondirait sur des blocs qu'on ne voit pas.
-      this.showKubbs(false);
-      this.beginOpeningThrow('blue');
-    }
+    this.beginMatch(startingTeam);
   }
 
   update(_time: number, delta: number) {
@@ -756,6 +740,7 @@ export class MatchScene extends Phaser.Scene {
     this.dragPath = [];
     this.knockedThisThrow = false;
     this.bouncedWallThisThrow = false;
+    this.kingTouchedThisThrow = false;
     this.knockedThisThrowCount = 0;
     this.knockedThisThrowMaxForce = 0;
     this.drawAim();
@@ -843,8 +828,7 @@ export class MatchScene extends Phaser.Scene {
       },
       kingStanding: this.king.isStanding,
       throwsLeft: { ...this.throwsLeft },
-      activeTeam: this.activeTeam,
-      stage: this.matchStage
+      activeTeam: this.activeTeam
     };
   }
 
@@ -876,7 +860,6 @@ export class MatchScene extends Phaser.Scene {
     if (!snapshot.kingStanding && this.king.isStanding) this.king.knockDown(this);
     this.throwsLeft = { ...snapshot.throwsLeft };
     this.activeTeam = snapshot.activeTeam;
-    this.matchStage = snapshot.stage;
     this.syncHud();
   }
 
@@ -911,12 +894,6 @@ export class MatchScene extends Phaser.Scene {
   /** Enregistrement de la partie en cours (online/protocol.ts). */
   get record(): MatchRecord {
     return this.matchRecord;
-  }
-
-  /** Montre ou retire la ligne de kubbs des deux camps (cf. Kubb::setHiddenForOpening). */
-  private showKubbs(visible: boolean) {
-    this.teams.blue.setHiddenForOpening(this, !visible);
-    this.teams.red.setHiddenForOpening(this, !visible);
   }
 
   /**
@@ -971,11 +948,7 @@ export class MatchScene extends Phaser.Scene {
       this.playerIndex[this.activeTeam] = this.playerIndex[this.activeTeam] === 1 ? 2 : 1;
     }
 
-    if (this.matchStage === 'opening') {
-      this.resolveOpeningThrow(lastBatonPos);
-      return;
-    }
-
+    this.resolveGrazeAchievement(lastBatonPos);
     this.resolveComboFeedback(this.activeTeam, lastBatonPos);
 
     if (this.throwsLeft.blue <= 0 && this.throwsLeft.red <= 0) {
@@ -1000,80 +973,21 @@ export class MatchScene extends Phaser.Scene {
     if (this.isAiTeam(this.activeTeam)) this.beginAiTurn();
   }
 
-  // --------------------------------------------------------- tir d'ouverture
-
   /**
-   * Lance le tir d'ouverture d'une equipe : reutilise exactement les memes
-   * mecanismes de visee/lancer que le jeu normal (onPointerDown/Move/Up,
-   * launch(), la collision, endThrow()) — seule la resolution en fin de tir
-   * differe (resolveOpeningThrow au lieu de l'alternance normale des tours).
+   * Succes "Froleur" (achievements.ts) : s'arreter a portee de main du roi
+   * sans l'avoir touche.
+   *
+   * Il se gagnait autrefois au tir d'ouverture, qui n'existe plus : c'etait
+   * l'exercice exact que cette phase demandait, pousse a l'extreme. Il
+   * s'obtient maintenant en pleine partie, ou il demande de l'intention — le
+   * roi n'est jamais sur la ligne d'un tir normal, il faut le viser, ou
+   * presque, et savoir doser.
    */
-  private beginOpeningThrow(team: TeamId) {
-    this.activeTeam = team;
-    this.phase = 'aiming';
-    this.openingTouchedKingThisThrow = false;
-    this.aimAngle = this.forwardAngle();
-    this.aimPower = 0;
-    this.drawAim();
-    this.syncHud();
-
-    // Rouge tire apres bleu : un bandeau de passage, comme un vrai changement
-    // de tour, pour que ce soit clair sur un meme appareil (1v1/2v2 local).
-    if (team === 'red') {
-      this.juice.turnBanner(this.turnLabel('red'), TEAMS.red.color, FIELD_CENTER_Y);
-    }
-
-    if (this.isAiTeam(team)) this.beginAiOpeningTurn();
-  }
-
-  /**
-   * Resout le tir d'ouverture qui vient de se terminer : enregistre son
-   * resultat (roi touche ou non, distance d'arret), puis soit passe au tir
-   * de l'autre equipe, soit tranche qui commence la partie — a egalite
-   * (les deux ont touche le roi), on recommence entierement depuis bleu.
-   */
-  private resolveOpeningThrow(lastBatonPos: { x: number; y: number } | null) {
-    const distance = lastBatonPos
-      ? Phaser.Math.Distance.Between(lastBatonPos.x, lastBatonPos.y, FIELD_CENTER_X, FIELD_CENTER_Y)
-      : Infinity;
-    this.openingResults[this.activeTeam] = { touched: this.openingTouchedKingThisThrow, distance };
-
-    if (this.isProfileTeam(this.activeTeam)) {
-      // Succes "frolement" (achievements.ts) : s'arreter a portee de main du
-      // roi au tir d'ouverture sans l'avoir effleure — l'exercice exact que
-      // cette phase demande, pousse a l'extreme.
-      if (!this.openingTouchedKingThisThrow && distance <= GRAZE_MAX_DISTANCE && lastBatonPos) {
-        this.tryUnlockAchievement('frolement', lastBatonPos);
-      }
-      this.beginOpeningThrow('red');
-      return;
-    }
-
-    const blueResult = this.openingResults.blue;
-    const redResult = this.openingResults.red;
-    if (!blueResult || !redResult) return;
-
-    if (blueResult.touched && redResult.touched) {
-      this.openingResults = {};
-      this.juice.floatingText(
-        FIELD_CENTER_X,
-        FIELD_CENTER_Y - 70,
-        translate(gameStore.getState().lang, 'match.openingBothTouched'),
-        '#f2c14e'
-      );
-      this.time.delayedCall(1200, () => this.beginOpeningThrow('blue'));
-      return;
-    }
-
-    const winner: TeamId = blueResult.touched
-      ? 'red'
-      : redResult.touched
-        ? 'blue'
-        : blueResult.distance <= redResult.distance
-          ? 'blue'
-          : 'red';
-
-    this.beginMatch(winner);
+  private resolveGrazeAchievement(lastBatonPos: { x: number; y: number } | null) {
+    if (!this.isProfileTeam(this.activeTeam) || !lastBatonPos) return;
+    if (!this.king.isStanding || this.kingTouchedThisThrow) return;
+    const distance = Phaser.Math.Distance.Between(lastBatonPos.x, lastBatonPos.y, FIELD_CENTER_X, FIELD_CENTER_Y);
+    if (distance <= GRAZE_MAX_DISTANCE) this.tryUnlockAchievement('frolement', lastBatonPos);
   }
 
   /**
@@ -1160,7 +1074,7 @@ export class MatchScene extends Phaser.Scene {
    * pour la progression, inutile de le calculer pour l'IA.
    */
   private updateFarthestTarget(origin: { x: number; y: number }) {
-    if (!this.isProfileTeam(this.activeTeam) || this.matchStage !== 'match') {
+    if (!this.isProfileTeam(this.activeTeam)) {
       this.farthestTarget = null;
       return;
     }
@@ -1200,19 +1114,20 @@ export class MatchScene extends Phaser.Scene {
   }
 
   /** Le tirage au sort est tranche : demarre la partie normale avec l'equipe gagnante. */
-  private beginMatch(winner: TeamId) {
-    this.matchStage = 'match';
-    // Fin du tirage : la ligne de kubbs entre en jeu (sans effet en ligne,
-    // ou elle n'en est jamais sortie).
-    this.showKubbs(true);
-    this.activeTeam = winner;
+  /**
+   * Premier tour de la partie. Le tirage au sort se fait sans mise en scene :
+   * le joueur apprend qui commence par le bandeau de tour et par la pastille
+   * d'equipe du HUD (cette derniere est ce que depart-de-partie.mjs verifie).
+   */
+  private beginMatch(starter: TeamId) {
+    this.activeTeam = starter;
     this.phase = 'aiming';
     this.aimAngle = this.forwardAngle();
-    this.juice.turnBanner(this.turnLabel(winner), TEAMS[winner].color, FIELD_CENTER_Y);
+    this.juice.turnBanner(this.turnLabel(starter), TEAMS[starter].color, FIELD_CENTER_Y);
     this.drawAim();
     this.syncHud();
 
-    if (this.isAiTeam(winner)) this.beginAiTurn();
+    if (this.isAiTeam(starter)) this.beginAiTurn();
   }
 
   /**
@@ -1264,51 +1179,6 @@ export class MatchScene extends Phaser.Scene {
           kingStanding: this.king.isStanding,
           obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
           ownStanding: this.teams[AI_TEAM].kubbs.map((k) => k.isAtBaseline),
-          hasHill: FIELD_PRESETS[this.fieldPreset].hasHill,
-          hasRiver: FIELD_PRESETS[this.fieldPreset].hasRiver,
-          frictionMultiplier: FIELD_PRESETS[this.fieldPreset].frictionMultiplier,
-          ...(this.wind ? { wind: this.wind } : {})
-        },
-        profile
-      );
-
-      this.throwX[AI_TEAM] = shot.throwX;
-      this.aimAngle = shot.angle;
-
-      this.aiTween = this.tweens.add({
-        targets: this.throwerSprites[AI_TEAM],
-        x: shot.throwX,
-        duration: 280,
-        ease: 'Sine.easeInOut',
-        onComplete: () => this.animateAiAim(shot.power)
-      });
-    });
-  }
-
-  /**
-   * Tour d'IA pendant le tir d'ouverture : meme mise en scene que beginAiTurn
-   * (reflexion, deplacement, jauge, lancer via animateAiAim), mais une
-   * decision differente — decideApproachThrow, pas decideThrow — puisqu'il
-   * n'y a ici ni kubb ni victoire en jeu, juste le roi a approcher.
-   */
-  private beginAiOpeningTurn() {
-    const profile = this.ai;
-    if (!profile) return;
-
-    this.phase = 'ai-aiming';
-    this.aimPower = 0;
-    this.aimAngle = this.forwardAngle();
-    this.drawAim();
-    this.syncHud();
-
-    this.aiTimer = this.time.delayedCall(profile.thinkMs, () => {
-      if (this.phase !== 'ai-aiming') return;
-
-      const shot = decideApproachThrow(
-        {
-          throwerY: TEAMS[AI_TEAM].throwerY,
-          direction: TEAMS[AI_TEAM].direction,
-          obstacles: this.obstacles.map((o) => ({ x: o.sprite.x, y: o.sprite.y })),
           hasHill: FIELD_PRESETS[this.fieldPreset].hasHill,
           hasRiver: FIELD_PRESETS[this.fieldPreset].hasRiver,
           frictionMultiplier: FIELD_PRESETS[this.fieldPreset].frictionMultiplier,
@@ -1467,22 +1337,7 @@ export class MatchScene extends Phaser.Scene {
       }
 
       if (this.isKing(pair.bodyA) || this.isKing(pair.bodyB)) {
-        // Tir d'ouverture : meme un frolement disqualifie (regle du tirage
-        // au sort), mais le roi ne tombe jamais et la partie ne se termine
-        // pas ici — resolveOpeningThrow tranche a la fin du lancer.
-        if (this.matchStage === 'opening') {
-          if (!this.openingTouchedKingThisThrow) {
-            this.openingTouchedKingThisThrow = true;
-            this.juice.floatingText(
-              this.king.sprite.x,
-              this.king.sprite.y,
-              translate(gameStore.getState().lang, 'match.openingTouched'),
-              '#ff5a4a'
-            );
-          }
-          this.playBounce(speed);
-          continue;
-        }
+        this.kingTouchedThisThrow = true;
         if (hardEnough && this.king.isStanding) {
           this.resolveKingHit();
           return;
@@ -1493,15 +1348,6 @@ export class MatchScene extends Phaser.Scene {
 
       const kubb = this.asKubb(pair.bodyA) ?? this.asKubb(pair.bodyB);
       if (!kubb || !kubb.isInPlay) continue;
-      // Pendant le tir d'ouverture, rien ne peut tomber : le tirage au sort
-      // ne fait que designer le premier joueur. Les corps sont deja retires
-      // du monde a ce moment-la, donc ce garde-fou ne devrait jamais servir —
-      // mais la regle doit etre ECRITE la ou elle s'applique, et non dependre
-      // d'un detail de mise en scene.
-      if (this.matchStage !== 'match') {
-        this.playBounce(speed);
-        continue;
-      }
       // Seule une cible legale (cf. legalTargets — un kubb de champ adverse
       // plante dans son propre camp en priorite, sinon un kubb de ligne
       // adverse) declenche un effet ; tout le reste (ses propres kubbs, une
@@ -2160,7 +2006,6 @@ export class MatchScene extends Phaser.Scene {
     gameStore.getState().patchHud({
       activeTeam: this.activeTeam,
       phase: this.phase,
-      stage: this.matchStage,
       kubbsStanding: {
         blue: this.teams.blue.standingCount,
         red: this.teams.red.standingCount

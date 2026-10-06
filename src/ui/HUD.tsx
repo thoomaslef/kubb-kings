@@ -157,29 +157,23 @@ export function HUD() {
           </button>
         </div>
 
-        {hud.stage === 'opening' ? (
-          <div className="hud__banner">{t('hud.openingThrow')}</div>
-        ) : (
-          <>
-            {hud.phase === 'ai-aiming' && <div className="hud__banner hud__banner--ai">{t('hud.aiAiming')}</div>}
+        {hud.phase === 'ai-aiming' && <div className="hud__banner hud__banner--ai">{t('hud.aiAiming')}</div>}
 
-            {/* En ligne, la phase ne dit pas a qui est le tour : apres notre
-                lancer la scene repasse en 'aiming' alors que c'est a
-                l'adversaire. Sans ce bandeau, on croit pouvoir jouer. */}
-            {online && hud.phase !== 'over' && (
-              <div className={`hud__banner${hud.activeTeam === profileTeam ? '' : ' hud__banner--ai'}`}>
-                {t(hud.activeTeam === profileTeam ? 'online.yourTurn' : 'online.opponentTurn')}
-              </div>
-            )}
+        {/* En ligne, la phase ne dit pas a qui est le tour : apres notre
+            lancer la scene repasse en 'aiming' alors que c'est a
+            l'adversaire. Sans ce bandeau, on croit pouvoir jouer. */}
+        {online && hud.phase !== 'over' && (
+          <div className={`hud__banner${hud.activeTeam === profileTeam ? '' : ' hud__banner--ai'}`}>
+            {t(hud.activeTeam === profileTeam ? 'online.yourTurn' : 'online.opponentTurn')}
+          </div>
+        )}
 
-            {hud.phase === 'aiming' && hud.fieldKubbs[hud.activeTeam] > 0 && (
-              <div className="hud__banner">{t('hud.fieldKubbsPriority')}</div>
-            )}
+        {hud.phase === 'aiming' && hud.fieldKubbs[hud.activeTeam] > 0 && (
+          <div className="hud__banner">{t('hud.fieldKubbsPriority')}</div>
+        )}
 
-            {hud.canTargetKing && hud.phase === 'aiming' && (
-              <div className="hud__banner">{t(kingTipExpanded ? 'hud.kingTipExpanded' : 'hud.kingTipShort')}</div>
-            )}
-          </>
+        {hud.canTargetKing && hud.phase === 'aiming' && (
+          <div className="hud__banner">{t(kingTipExpanded ? 'hud.kingTipExpanded' : 'hud.kingTipShort')}</div>
         )}
       </div>
 

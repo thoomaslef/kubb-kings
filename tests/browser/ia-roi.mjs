@@ -39,8 +39,7 @@ const plateau = () =>
       bleusDebout: s.teams.blue.standingCount,
       rougesDebout: s.teams.red.standingCount,
       equipeActive: s.activeTeam,
-      phase: s.phase,
-      etape: s.matchStage
+      phase: s.phase
     };
   });
 
@@ -67,6 +66,9 @@ for (const niveau of NIVEAUX) {
     // 'aiming' ne le voyait donc jamais passer.
     let precedent = await plateau();
     let lancersBleus = 0;
+    // L'IA peut desormais COMMENCER (tirage au sort) : son premier tour n'est
+    // pas precede d'un passage de main, on le compte donc des le depart.
+    if (precedent?.equipeActive === 'red') toursIA += 1;
 
     for (let tick = 0; tick < 420; tick += 1) {
       const ecran = await page.evaluate(() => window.__kubbStoreApi.getState().screen);
@@ -98,14 +100,13 @@ for (const niveau of NIVEAUX) {
 
       // Tour de Bleue : on le gache volontairement pour laisser jouer l'IA.
       if (vu.equipeActive === 'blue' && vu.phase === 'aiming') {
-        const ouverture = vu.etape === 'opening';
-        await page.evaluate((o) => {
+        await page.evaluate(() => {
           const s = window.__kubb.scene.getScene('MatchScene');
           s.throwX.blue = 120;
           s.aimAngle = s.forwardAngle();
-          s.aimPower = o ? 0.55 : 0.32; // hors ouverture : trop court pour atteindre la ligne
+          s.aimPower = 0.32; // trop court pour atteindre la ligne
           s.launch();
-        }, ouverture);
+        });
         lancersBleus += 1;
         await page.waitForTimeout(900);
       }

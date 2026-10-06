@@ -96,7 +96,12 @@ async function lancerAvecGeste(fleche) {
     // 0 px sur 0 px, et la verification concluait a tort.
     if (scene.baton) scene.baton.destroy();
     scene.baton = null;
-    ['blue', 'red'].forEach((t) => scene.teams[t].kubbs.forEach((k) => k.setHiddenForOpening(scene, true)));
+    ['blue', 'red'].forEach((t) =>
+      scene.teams[t].kubbs.forEach((k) => {
+        k.sprite.setVisible(false);
+        if (k.sprite.body && k.sprite.body.world) scene.matter.world.remove(k.sprite.body);
+      })
+    );
     if (scene.king.sprite.body && scene.king.sprite.body.world !== null) {
       try { scene.matter.world.remove(scene.king.sprite.body); } catch { /* deja retire */ }
     }

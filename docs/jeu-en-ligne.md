@@ -24,7 +24,7 @@ tient Rouge. Un seul reglage porte desormais cette information
 | Ce qui suit le profil | Ce qui reste en dur (et doit le rester) |
 | --- | --- |
 | Succes, XP, pieces, bonus de run | Construction des deux equipes et de leurs sprites |
-| « Ai-je gagne ? », titre et libelles de l&apos;ecran de fin | Bleue ouvre le tir d&apos;ouverture |
+| « Ai-je gagne ? », titre et libelles de l&apos;ecran de fin | Construction de la ligne de kubbs de chaque equipe |
 | Cible la plus eloignee, compteurs de manche | Comparaisons symetriques (departage, points) |
 | Kubb adverse abattu par « Renfort » | Noms des slots Bleu/Rouge de l&apos;arbre de tournoi |
 
@@ -161,12 +161,11 @@ Deux pieges corriges, tous deux trouves par la verification et invisibles a la l
    verdict LOCAL. `finish()` ignore maintenant ces appels tant qu&apos;un coup distant
    est en cours : seul le resultat joint au coup fait foi.
 
-> **Simplification assumee : pas de tir d&apos;ouverture en ligne.** Son arbitrage a
-> besoin des DEUX mesures avant de trancher — c&apos;est un etat reparti, avec rejeu
-> quand les deux joueurs touchent le roi, donc toute une classe de desynchronisations
-> pour un mecanisme qui ne fait que designer le premier joueur. L&apos;hote tire au
-> sort (`MatchSetup.startingTeam`). A reprendre si l&apos;on veut l&apos;ouverture
-> fidele en ligne.
+> **Qui commence : l&apos;hote tire au sort** (`MatchSetup.startingTeam`, via
+> `drawStartingTeam` — la meme regle que hors ligne). Le tir d&apos;ouverture, qui
+> demandait les DEUX mesures avant de trancher (un etat reparti, avec rejeu quand les
+> deux joueurs touchent le roi), a ete retire dans tous les modes : voir
+> [Regles du jeu](regles-du-jeu.md#qui-commence).
 
 **Verifie avec deux vrais onglets jouant l&apos;un contre l&apos;autre**, par
 l&apos;interface (creer, partager le code, rejoindre) et avec la physique Matter
@@ -181,12 +180,6 @@ tot termine la partie **des deux cotes avec le meme resultat**. Zero erreur cons
 > vol de 3 s de jeu peut demander une minute de temps reel. Toute la verification
 > attend donc des ETATS (`record.throws.length`, `screen === 'result'`), jamais un
 > delai.
-
-> **Observation, non corrigee.** La trace a revele qu&apos;un kubb peut etre abattu
-> pendant le **tir d&apos;ouverture** : la branche « kubb » de `onCollisionStart` n&apos;a
-> aucune garde sur `matchStage`, seul le roi y est traite a part. C&apos;est anterieur au
-> chantier en ligne et c&apos;est une question de regle (au vrai Kubb, le tirage au sort
-> ne fait que designer qui commence) — a trancher, pas a corriger en passant.
 
 > **Note d&apos;outillage.** Chromium headless fait tourner la boucle de rendu a
 > environ un quart de la vitesse reelle : un `delayedCall` de 750 ms de temps de jeu

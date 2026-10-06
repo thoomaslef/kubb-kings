@@ -527,6 +527,21 @@ export function windAcceleration(wind: Wind): { x: number; y: number } {
   return { x: unit.x * magnitude, y: unit.y * magnitude };
 }
 
+/**
+ * Qui commence : un tirage au sort, une chance sur deux.
+ *
+ * C'est la regle de TOUS les modes. Elle a remplace le tir d'ouverture (chaque
+ * camp approchait le roi sans le toucher, le plus pres commencait), qui
+ * n'existait de toute facon qu'hors ligne : en ligne, l'hote tirait deja au
+ * sort — l'arbitrage de l'ouverture a besoin des DEUX mesures avant de
+ * trancher, ce qui en faisait un etat reparti avec rejeu en cas d'egalite.
+ *
+ * `random` est injectable pour que la regle se teste sans hasard.
+ */
+export function drawStartingTeam(random: () => number = Math.random): 'blue' | 'red' {
+  return random() < 0.5 ? 'blue' : 'red';
+}
+
 /** Vitesse d'impact minimale (px/step Matter) pour faire tomber un kubb. */
 export const KNOCKDOWN_IMPACT_SPEED = 6;
 /**

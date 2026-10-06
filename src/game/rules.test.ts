@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { simulateWindFlight } from './ai';
 import {
   BASELINE_INSET,
+  drawStartingTeam,
   FIELD,
   FIELD_CENTER_X,
   FIELD_KUBB_INSET,
@@ -144,5 +145,23 @@ describe('penalites tactiques', () => {
     for (const id of terrains.filter((t) => t !== 'sable')) {
       expect(porteeUtile(FIELD_PRESETS[id], 'boule', 1), `boule sur ${id}`).toBeGreaterThanOrEqual(DISTANCE_LIGNE);
     }
+  });
+});
+
+describe('drawStartingTeam', () => {
+  it('donne Bleue sous 0,5 et Rouge a partir de 0,5', () => {
+    expect(drawStartingTeam(() => 0)).toBe('blue');
+    expect(drawStartingTeam(() => 0.4999)).toBe('blue');
+    expect(drawStartingTeam(() => 0.5)).toBe('red');
+    expect(drawStartingTeam(() => 0.9999)).toBe('red');
+  });
+
+  it('est equitable : une chance sur deux, pas un camp avantage', () => {
+    // Echantillon deterministe et uniforme : un biais de la regle se verrait
+    // ici, pas un aleas du tirage.
+    const n = 1000;
+    let bleues = 0;
+    for (let i = 0; i < n; i += 1) if (drawStartingTeam(() => i / n) === 'blue') bleues += 1;
+    expect(bleues).toBe(n / 2);
   });
 });
