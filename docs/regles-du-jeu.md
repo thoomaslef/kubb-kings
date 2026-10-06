@@ -257,25 +257,25 @@ cote, espace de 120 px) :
 
 | Effet | Ecart a hauteur du roi | Ecart a la ligne de fond |
 | --- | --- | --- |
-| 0,25 | 8 px | 48 px |
-| 0,50 | 16 px | 95 px |
-| 0,75 | 25 px | 150 px |
-| 1,00 | 34 px | 207 px |
+| 0,25 | 11 px | 65 px |
+| 0,50 | 22 px | 132 px |
+| 0,75 | 34 px | 207 px |
+| 1,00 | 45 px | 292 px |
 
-L&apos;effet maximal deplace donc l&apos;arrivee de **1,7 espacement de kubb**. C&apos;est
+L&apos;effet maximal deplace donc l&apos;arrivee de **2,4 espacements de kubb**. C&apos;est
 un reglage FIN compare a la visee : 17 degres d&apos;angle en deplacent 285. L&apos;effet
 ne remplace pas de viser juste, il permet de courber.
 
 **Et le kubb central devient atteignable.** C&apos;etait l&apos;objectif de conception,
 et il est tenu : le kubb du centre etait injouable parce que la ligne droite passe par
-le roi, dont le moindre contact fait perdre sur-le-champ. En visant 13 a 14 degres de
-cote avec un effet proche du maximum, le baton passe **55 a 63 px** a cote du roi — le
-contact est a 27 px — puis revient se poser a moins de 18 px du kubb central. La fenetre
-est etroite (5 couples angle/effet sur 35 essayes) et la deviation aleatoire de +/-2,5
+le roi, dont le moindre contact fait perdre sur-le-champ. En visant 13 a 18 degres de
+cote avec un effet de 0,7 a 1, le baton passe **55 a 75 px** a cote du roi — le
+contact est a 27 px — puis revient se poser a moins de 10 a 20 px du kubb central. La fenetre
+est etroite (7 couples angle/effet retenus sur la grille essayee) et la deviation aleatoire de +/-2,5
 degres vaut deja +/-20 px a hauteur du roi : le coup reste difficile et peut rater. Un
 tir de specialiste, pas une solution gratuite.
 
-> Le reglage de la force (0,3 d&apos;acceleration par pas, a comparer aux 0,05 du vent)
+> Le reglage de la force (0,4 d&apos;acceleration par pas, a comparer aux 0,05 du vent)
 > n&apos;a PAS ete choisi a l&apos;intuition : a 0,2, le meme balayage ne trouvait aucun
 > couple qui contourne le roi et touche le centre.
 

@@ -35,15 +35,21 @@ export const SPIN = {
    * l'effet est maximal.
    *
    * Mesure geometrique : l'ecart perpendiculaire MOYEN vaut les deux tiers de
-   * la fleche de l'arc. 0,16 correspond donc a une fleche d'environ 24 % de
-   * la corde — une banane franche, impossible a tracer par megarde.
+   * la fleche de l'arc. 0,10 correspond donc a une fleche d'environ 14 % de
+   * la corde — un arc franc, mais que le pouce trace sans effort.
    *
-   * La premiere valeur, 0,08, saturait a l'effet maximal pour un arc tout a
-   * fait ordinaire (mesure au banc d'essai : fleche de 70 px sur 380,
-   * effet 1,000). Il ne restait donc aucune plage utile entre « un peu » et
-   * « a fond ».
+   * Historique, parce que cette valeur a ete mal reglee DEUX fois :
+   *   - 0,08 saturait pour un arc ordinaire : plus de plage entre « un peu »
+   *     et « a fond » ;
+   *   - 0,16 corrigeait cela... sur un geste SIMULE (fleche de 18 % au banc
+   *     d'essai), pas sur un pouce. Un pouce trace plutot un arc de 8 a 12 %,
+   *     ce qui donnait un effet lu de 0,15 a 0,39 — « je n'arrive pas a
+   *     donner assez de courbe », signale en jeu. Il fallait une banane de
+   *     24 % pour atteindre le maximum.
+   * A 0,10 (mesure sur un trajet de 12 points) : 8 % d'arc donne 0,30, 10 %
+   * donne 0,55, 12 % donne 0,79, et le maximum arrive a 14 %.
    */
-  fullCurveRatio: 0.16,
+  fullCurveRatio: 0.1,
 
   /**
    * En deca de cette courbure, l'effet est nul.
@@ -69,9 +75,12 @@ export const SPIN = {
    * laquelle il faut compter sans qu'elle decide de la partie.
    *
    * Valeur choisie sur une MESURE en vraie physique Matter, pas a
-   * l'intuition (cf. tests/browser/effet.mjs).
+   * l'intuition (cf. tests/browser/effet.mjs). Passee de 0,3 a 0,4 sur le
+   * retour « pas assez de courbe » : a effet maximal, la correction a la
+   * ligne de fond passe de 207 a ~292 px, soit de 1,7 a 2,4 espacements de
+   * kubb.
    */
-  accelPerStep: 0.3,
+  accelPerStep: 0.4,
 
   /**
    * En dessous de cette vitesse (px/pas Matter), plus d'effet. Un baton qui

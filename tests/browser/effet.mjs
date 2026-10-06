@@ -198,9 +198,20 @@ const cPresque = courbure(presqueDroit.trajet);
 console.log(`  effet lu : ${presqueDroit.effetLu.toFixed(3)}   ecart lateral : ${cPresque.ecart.toFixed(0)} px sur ${cPresque.longueur.toFixed(0)} px`);
 
 console.log('\n--- geste a demi bombe ---');
-const moyen = await lancerAvecGeste(55);
+// Corde de 380 px : 32 px de fleche = 8 % d'arc. C'etait 55 px (14,5 %) quand
+// le maximum exigeait 24 % ; avec un maximum a 14 %, ce geste-la sature.
+const moyen = await lancerAvecGeste(32);
 const cMoyen = courbure(moyen.trajet);
 console.log(`  effet lu : ${moyen.effetLu.toFixed(3)}   ecart lateral : ${cMoyen.ecart.toFixed(0)} px sur ${cMoyen.longueur.toFixed(0)} px`);
+
+// Le cas du RETOUR DE JEU : « je n'arrive pas a donner assez de courbe ». Un
+// arc ordinaire, tel qu'un pouce le trace sans y penser : ~10 % de la corde.
+// Il ne donnait que 0,27 d'effet, parce que le maximum exigeait un arc de
+// 24 % — reglage calibre sur un geste SIMULE, jamais sur un pouce.
+console.log('\n--- arc ordinaire (10 % de la corde) ---');
+const ordinaire = await lancerAvecGeste(38);
+const cOrdinaire = courbure(ordinaire.trajet);
+console.log(`  effet lu : ${ordinaire.effetLu.toFixed(3)}   ecart lateral : ${cOrdinaire.ecart.toFixed(0)} px sur ${cOrdinaire.longueur.toFixed(0)} px`);
 
 // ---- L'IA ne joue JAMAIS avec de l'effet. Partie solo, on la laisse jouer.
 console.log('\n--- l IA tire droit ---');
@@ -247,6 +258,10 @@ const resultats = {
   // effet, et une courbe intermediaire. Sans cela, l'effet ne serait qu'un
   // interrupteur a trois positions.
   zoneMorteAbsorbeLePouceQuiPivote: presqueDroit.effetLu === 0,
+
+  // Un arc ordinaire doit DEJA courber nettement : plus de la moitie de
+  // l'effet, et un vol franchement courbe (pas quelques pixels de derive).
+  arcOrdinaireCourbeVraiment: ordinaire.effetLu > 0.45 && Math.abs(cOrdinaire.ecart) > 90,
 
   demiGesteDonneUnDemiEffet: moyen.effetLu > 0.15 && moyen.effetLu < 0.85,
   demiGesteDonneUneDemiCourbe:

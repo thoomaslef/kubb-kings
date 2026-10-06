@@ -149,12 +149,18 @@ describe('zone morte', () => {
     expect(spinFromDragPath(arcRelatif(-0.04))).toBe(0);
   });
 
-  it('demande une banane franche pour l effet maximal', () => {
-    // 24 % de fleche : impossible a tracer par megarde.
-    expect(Math.abs(spinFromDragPath(arcRelatif(0.24)))).toBeCloseTo(1, 1);
-    // ... et il reste de la plage entre les deux.
-    const moitie = Math.abs(spinFromDragPath(arcRelatif(0.14)));
+  it('atteint l effet maximal avec l arc qu un pouce trace vraiment', () => {
+    // Regression du retour « je n'arrive pas a donner assez de courbe » : le
+    // maximum exigeait un arc de 24 % de la corde, que personne ne trace au
+    // pouce. Il arrive maintenant a ~14 %.
+    expect(Math.abs(spinFromDragPath(arcRelatif(0.15)))).toBe(1);
+    // Un arc ordinaire (10 %) donne deja plus de la moitie de l'effet — il
+    // n'en donnait que 0,27.
+    expect(Math.abs(spinFromDragPath(arcRelatif(0.1)))).toBeGreaterThan(0.45);
+    // ... et il reste de la plage entre la zone morte et le maximum : le
+    // controle est GRADUE, pas un interrupteur.
+    const moitie = Math.abs(spinFromDragPath(arcRelatif(0.09)));
     expect(moitie).toBeGreaterThan(0.2);
-    expect(moitie).toBeLessThan(0.9);
+    expect(moitie).toBeLessThan(0.7);
   });
 });
