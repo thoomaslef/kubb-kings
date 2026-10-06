@@ -240,9 +240,10 @@ console.log(`  ${coupsIa.length} coup(s) d'IA observes, effets : [${coupsIa.join
 const resultats = {
   gesteRectiligneSansEffet: droit.effetLu === 0,
   // Le tir droit n'est pas parfaitement droit : la deviation aleatoire de
-  // +/-2,5 deg demeure. On exige seulement qu'il soit DROIT par rapport aux
-  // courbes, pas parfait.
-  trajectoireDroiteQuasiDroite: Math.abs(cDroit.ecart) < 30,
+  // +/-2,5 deg demeure (mesure jusqu'a 59 px sur 815, alors que 0 a 2 px
+  // d'autres fois). Une courbe a effet, elle, depasse 200 px : le seuil de
+  // 100 px separe les deux sans etre tributaire du tirage.
+  trajectoireDroiteQuasiDroite: Math.abs(cDroit.ecart) < 100,
 
   gesteCourbeDonneUnEffet: Math.abs(gauche.effetLu) > 0.2 && Math.abs(droite.effetLu) > 0.2,
   effetsOpposesPourGestesOpposes: Math.sign(gauche.effetLu) === -Math.sign(droite.effetLu),
