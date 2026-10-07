@@ -58,6 +58,7 @@ import {
   WIND_UNIT_VECTORS,
   availableThrowPositions,
   drawStartingTeam,
+  isMirroredView,
   windAcceleration,
   type FieldPresetId,
   type Wind
@@ -316,6 +317,9 @@ export class MatchScene extends Phaser.Scene {
     this.batonId = batonId;
     this.fieldKubbsEnabled = fieldKubbsEnabled;
     this.profileTeam = profileTeam;
+    // Vue en miroir (rules.ts::isMirroredView) : fixee a chaque creation de la
+    // scene, une revanche ou une reprise repartant de zero.
+    this.cameras.main.setRotation(isMirroredView(mode, profileTeam) ? Math.PI : 0);
 
     // En ligne, les conditions ne viennent pas des reglages locaux : elles
     // sont imposees par l'hote via la session, sans quoi les deux joueurs

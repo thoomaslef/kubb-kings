@@ -6,7 +6,7 @@ import { isMuted, setMuted } from '../game/audio';
 import { AI_TEAM } from '../game/ai';
 import { isKingTipSeen, markKingTipSeen } from '../game/tutorial';
 import { LADDER } from '../game/roguelite';
-import type { WindDirection } from '../game/rules';
+import { isMirroredView, mirrorWindDirection, type WindDirection } from '../game/rules';
 import { useT } from '../i18n/useT';
 
 function formatTime(ms: number) {
@@ -38,6 +38,8 @@ export function HUD() {
   const mode = useGameStore((s) => s.mode);
   const online = useGameStore((s) => s.online);
   const profileTeam = useGameStore((s) => s.profileTeam);
+  // Vue en miroir : le vent se lit depuis l'ecran du joueur, pas depuis le terrain.
+  const mirrored = isMirroredView(mode, profileTeam);
   const run = useGameStore((s) => s.run);
   const tournamentPending = useGameStore((s) => s.tournamentPending);
   const resetTournament = useGameStore((s) => s.resetTournament);
@@ -105,23 +107,23 @@ export function HUD() {
             <span
               className={`hud__wind hud__wind--force${hud.wind.force}`}
               aria-label={t('hud.windAria', {
-                direction: t(`wind.dir.${hud.wind.direction}`),
+                direction: t(`wind.dir.${mirrored ? mirrorWindDirection(hud.wind.direction) : hud.wind.direction}`),
                 force: hud.wind.force
               })}
               title={t('hud.windAria', {
-                direction: t(`wind.dir.${hud.wind.direction}`),
+                direction: t(`wind.dir.${mirrored ? mirrorWindDirection(hud.wind.direction) : hud.wind.direction}`),
                 force: hud.wind.force
               })}
             >
               <span
                 className="hud__wind-arrow"
-                style={{ transform: `rotate(${WIND_ARROW_ROTATION[hud.wind.direction]}deg)` }}
+                style={{ transform: `rotate(${WIND_ARROW_ROTATION[mirrored ? mirrorWindDirection(hud.wind.direction) : hud.wind.direction]}deg)` }}
                 aria-hidden="true"
               >
                 &uarr;
               </span>
               <span className="hud__wind-code" aria-hidden="true">
-                {hud.wind.direction}
+                {mirrored ? mirrorWindDirection(hud.wind.direction) : hud.wind.direction}
               </span>
               <span className="hud__wind-force" aria-hidden="true">
                 {hud.wind.force}

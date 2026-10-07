@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { simulateWindFlight } from './ai';
 import {
+  WIND_DIRECTIONS,
+  isMirroredView,
+  mirrorWindDirection,
   BASELINE_INSET,
   drawStartingTeam,
   FIELD,
@@ -163,5 +166,25 @@ describe('drawStartingTeam', () => {
     let bleues = 0;
     for (let i = 0; i < n; i += 1) if (drawStartingTeam(() => i / n) === 'blue') bleues += 1;
     expect(bleues).toBe(n / 2);
+  });
+});
+
+describe('vue en miroir', () => {
+  it('seul l invite d une partie en ligne voit le terrain a l envers', () => {
+    expect(isMirroredView('online', 'red')).toBe(true);
+    expect(isMirroredView('online', 'blue')).toBe(false);
+    // Hors ligne : jamais, quel que soit le camp tenu (1v1 local = un seul ecran partage).
+    for (const mode of ['solo', 'local', '2v2', 'defi', 'tournament']) {
+      expect(isMirroredView(mode, 'red')).toBe(false);
+      expect(isMirroredView(mode, 'blue')).toBe(false);
+    }
+  });
+
+  it('le vent se lit a l envers : nord <-> sud, est <-> ouest, et c est une involution', () => {
+    expect(mirrorWindDirection('N')).toBe('S');
+    expect(mirrorWindDirection('E')).toBe('W');
+    expect(mirrorWindDirection('NE')).toBe('SW');
+    expect(mirrorWindDirection('SE')).toBe('NW');
+    for (const d of WIND_DIRECTIONS) expect(mirrorWindDirection(mirrorWindDirection(d))).toBe(d);
   });
 });

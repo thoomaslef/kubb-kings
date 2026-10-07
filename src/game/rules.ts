@@ -498,6 +498,26 @@ export interface Wind {
 export const WIND_DIRECTIONS: readonly WindDirection[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 
 /**
+ * Vue en MIROIR : l'invite d'une partie en ligne tient Rouge, dont le lanceur
+ * est en HAUT du terrain. Plutot que de le laisser jouer a l'envers, on tourne
+ * l'affichage de 180 degres — chacun se voit en bas, face a son adversaire.
+ *
+ * Seul l'AFFICHAGE tourne : le monde physique est identique des deux cotes
+ * (c'est ce qui permet de rejouer un coup), les coordonnees de jeu ne bougent
+ * pas. Hors ligne, jamais : en 1v1 local les deux joueurs se partagent le
+ * meme ecran et se font face, et contre l'IA le joueur tient toujours Bleue.
+ */
+export function isMirroredView(mode: string, profileTeam: 'blue' | 'red'): boolean {
+  return mode === 'online' && profileTeam === 'red';
+}
+
+/** Une direction de vent vue depuis l'ecran tourne de 180 degres : le nord devient le sud, etc. */
+export function mirrorWindDirection(direction: WindDirection): WindDirection {
+  const i = WIND_DIRECTIONS.indexOf(direction);
+  return WIND_DIRECTIONS[(i + WIND_DIRECTIONS.length / 2) % WIND_DIRECTIONS.length];
+}
+
+/**
  * Vecteur unitaire par sens, dans le repere du terrain (x vers l'est/la
  * droite, y vers le sud/le bas — Nord est donc y negatif). Les diagonales
  * sont normalisees (norme 1) pour que la force d'un vent diagonal ne soit

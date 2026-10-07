@@ -273,19 +273,28 @@ export class Juice {
 
   // ----------------------------------------------------------------- textes
 
+  /** La camera est tournee de 180 degres (rules.ts::isMirroredView). */
+  private get vueEnMiroir(): boolean {
+    // `rotation` existe a l'execution (BaseCamera) mais pas dans les types.
+    return Math.abs((this.scene.cameras.main as unknown as { rotation: number }).rotation) > 1;
+  }
+
   /**
    * Texte qui monte et s'efface au-dessus d'un point du terrain.
    * Le point de depart est ramene dans l'ecran : un kubb abattu sur la ligne
    * de fond adverse est assez haut pour que le texte passe sous le HUD.
    */
   floatingText(x: number, y: number, label: string, color: string) {
+    const miroir = this.vueEnMiroir;
     // Le texte monte de 70 px pendant son fondu : la borne haute tient compte
     // de cette course, sinon un impact sur la ligne de fond finit sous le HUD.
     // Bornes en unites de DESIGN, pas en taille de jeu : celle-ci vaut
     // design x facteur de rendu (renderScale.ts), et la borne haute ne
     // mordait donc plus du tout sur un ecran dense.
     const safeX = Phaser.Math.Clamp(x, 180, DESIGN_WIDTH - 180);
-    const safeY = Phaser.Math.Clamp(y, 290, DESIGN_HEIGHT - 90);
+    // En vue miroir (rules.ts::isMirroredView), le haut de l'ecran est le BAS
+    // du monde : le HUD et la course du texte changent de cote.
+    const safeY = miroir ? Phaser.Math.Clamp(y, 90, DESIGN_HEIGHT - 290) : Phaser.Math.Clamp(y, 290, DESIGN_HEIGHT - 90);
 
     const text = this.scene.add
       .text(safeX, safeY, label, {
@@ -303,11 +312,13 @@ export class Juice {
       })
       .setOrigin(0.5)
       .setScale(echelleSprite())
+      // La camera tourne de 180 degres : le texte aussi, pour rester lisible.
+      .setRotation(miroir ? Math.PI : 0)
       .setDepth(12);
 
     this.scene.tweens.add({
       targets: text,
-      y: safeY - 70,
+      y: miroir ? safeY + 70 : safeY - 70,
       alpha: { from: 1, to: 0 },
       scale: { from: echelleSprite(0.6), to: echelleSprite(1.15) },
       duration: 850,
@@ -348,7 +359,8 @@ export class Juice {
         resolution: renderScaleFactor()
       })
       .setOrigin(0.5)
-      .setScale(echelleSprite());
+      .setScale(echelleSprite())
+      .setRotation(this.vueEnMiroir ? Math.PI : 0);
 
     container.add([bar, text]);
     container.setAlpha(0);
