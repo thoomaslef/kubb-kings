@@ -134,7 +134,7 @@ export function Menu() {
           </button>
         )}
 
-        <button type="button" className="btn btn--ghost btn--account" onClick={shareWithFriend}>
+        <button type="button" className="btn btn--ghost btn--share" onClick={shareWithFriend}>
           {t('menu.share.button')}
         </button>
         {shareState === 'copied' && (

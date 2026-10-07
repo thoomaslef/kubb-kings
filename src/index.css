@@ -1302,7 +1302,8 @@ body {
   gap: 10px;
 }
 
-.btn--account {
+.btn--account,
+.btn--share {
   margin: 0 0 12px;
   font-size: 14px;
   overflow: hidden;
