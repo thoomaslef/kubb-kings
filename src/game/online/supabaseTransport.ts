@@ -1,4 +1,7 @@
-import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { getSupabaseClient, supabaseConfig } from './supabaseClient';
+
+export { isSupabaseConfigured, supabaseConfig } from './supabaseClient';
 import type { OnlineMessage, Transport } from './transport';
 
 /**
@@ -21,60 +24,6 @@ import type { OnlineMessage, Transport } from './transport';
 const CHANNEL_PREFIX = 'kubb-kings.room.';
 /** Un seul type d'evenement : le tri se fait deja dans `OnlineMessage.kind`. */
 const EVENT = 'coup';
-
-interface SupabaseConfig {
-  url: string;
-  anonKey: string;
-}
-
-/**
- * Coordonnees du projet, injectees a la compilation (cf. `.env.example`).
- *
- * La cle attendue est celle destinee au navigateur : l'ancienne cle `anon`
- * ou la nouvelle cle « publishable » (`sb_publishable_...`) qui la remplace —
- * les deux se passent au meme endroit, le SDK ne fait pas la difference.
- *
- * Ces deux valeurs sont PUBLIQUES par conception : Vite les inscrit dans le
- * bundle, et n'importe qui peut les lire dans le site livre. Ce n'est pas une
- * negligence — cette cle est faite pour ca, et ce sont les regles d'acces
- * cote Supabase (RLS) qui protegent les donnees, jamais le secret de la cle.
- *
- * Consequence a connaitre, en revanche : sur un canal PUBLIC, quiconque a
- * cette cle peut s'abonner a n'importe quel salon dont il devine le code. Le
- * code de salon est donc le seul secret d'une partie privee — suffisant entre
- * amis, insuffisant le jour ou un classement sera en jeu. Le remede existe
- * chez Supabase (canaux prives + autorisation), il demande des comptes : il
- * viendra avec eux.
- */
-export function supabaseConfig(): SupabaseConfig | null {
-  const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim();
-  const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
-  return url && anonKey ? { url, anonKey } : null;
-}
-
-export function isSupabaseConfigured(): boolean {
-  return supabaseConfig() !== null;
-}
-
-/**
- * Client partage, charge A LA DEMANDE. Le `import()` dynamique garde le SDK
- * hors du bundle principal : un joueur qui ne touche jamais au mode en ligne
- * ne telecharge pas une ligne de Supabase.
- */
-let clientPromise: Promise<SupabaseClient> | null = null;
-
-function getClient(config: SupabaseConfig): Promise<SupabaseClient> {
-  if (!clientPromise) {
-    clientPromise = import('@supabase/supabase-js').then(({ createClient }) =>
-      createClient(config.url, config.anonKey, {
-        // Aucun compte pour l'instant : rien a retenir entre deux visites.
-        auth: { persistSession: false, autoRefreshToken: false },
-        realtime: { params: { eventsPerSecond: 20 } }
-      })
-    );
-  }
-  return clientPromise;
-}
 
 /**
  * @param onError appele si la liaison ne peut pas s'etablir (projet
@@ -113,7 +62,7 @@ export function createSupabaseTransport<M = OnlineMessage>(roomCode: string, onE
       return;
     }
     try {
-      const client = await getClient(config);
+      const client = await getSupabaseClient(config);
       if (closed) return;
       const opened = client.channel(CHANNEL_PREFIX + roomCode.toUpperCase(), {
         // `self: false` reproduit BroadcastChannel : on ne recoit jamais ses

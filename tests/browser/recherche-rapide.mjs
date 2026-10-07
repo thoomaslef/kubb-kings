@@ -59,6 +59,9 @@ async function nouvellePage(nom) {
   resultats.campsOpposes = new Set([ea.team, eb.team]).size === 2;
   resultats.memeSalon = !!ea.code && ea.code === eb.code;
   resultats.pasDeBotEntreHumains = ea.override === null && eb.override === null;
+  // Adversaire tire au sort : pas de tchat (du texte libre non modere avec un inconnu).
+  const bulles = (await a.locator('.chat-bulle').count()) + (await b.locator('.chat-bulle').count());
+  resultats.pasDeTchatContreUnInconnu = bulles === 0;
   await a.close();
   await b.close();
 }

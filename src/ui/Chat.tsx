@@ -49,7 +49,9 @@ export function Chat() {
     if (ouvert) setNonLus(0);
   }, [ouvert, messages]);
 
-  if (mode !== 'online' || !online || !session) return null;
+  // Adversaire tire au sort (partie rapide ou classee) : pas de tchat. Le texte
+  // libre n'est ouvert qu'entre deux joueurs qui se sont donne un code.
+  if (mode !== 'online' || !online || !session || online.matchmade) return null;
 
   const envoyer = () => {
     // `sendChat` applique les memes regles que l'affichage (nettoyage,

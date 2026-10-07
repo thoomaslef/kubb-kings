@@ -23,9 +23,9 @@ export function Legal() {
 
         <h3 className="legal-heading">Politique de confidentialite</h3>
         <p className="panel__text">
-          KUBB: Kings ne demande aucun compte, n&apos;utilise aucun outil d&apos;analyse
-          (analytics), aucun SDK tiers de suivi et aucune publicite. Le jeu ne constitue aucun
-          profil de joueur.
+          KUBB: Kings n&apos;utilise aucun outil d&apos;analyse (analytics), aucun SDK tiers de
+          suivi et aucune publicite. Un compte joueur est propose, mais il est facultatif : le
+          jeu se joue en entier sans.
         </p>
         <p className="panel__text">
           Les modes solo, local, Defi et tournoi fonctionnent entierement hors ligne : aucune
@@ -35,8 +35,10 @@ export function Legal() {
         <p className="panel__text">
           Vos preferences (langue, difficulte, terrain, projectile, skin, vent) et votre
           progression (meilleure serie du mode Defi, succes, serie de victoires en ligne) restent
-          stockees localement sur votre appareil. Elles ne quittent jamais celui-ci et ne sont
-          jamais transmises a l&apos;editeur ni a un tiers. Desinstaller l&apos;application ou
+          stockees localement sur votre appareil. Sans compte joueur, elles ne quittent jamais
+          celui-ci et ne sont jamais transmises a l&apos;editeur ni a un tiers ; avec un compte,
+          votre progression est en plus enregistree en ligne (voir « Compte joueur » ci-dessous).
+          Desinstaller l&apos;application ou
           vider les donnees du navigateur les supprime immediatement.
         </p>
         <p className="panel__text">
@@ -49,9 +51,27 @@ export function Legal() {
           designes par &laquo; hote &raquo; et &laquo; invite &raquo; suivis du code de salon.
         </p>
         <p className="panel__text">
-          Rien n&apos;est enregistre sur le serveur : les messages sont relayes en direct puis
-          perdus. Le jeu n&apos;ecrit dans aucune base de donnees et ne conserve aucun historique
-          de partie.
+          Rien n&apos;est enregistre sur le serveur pendant une partie : les messages sont
+          relayes en direct puis perdus, et aucun historique de partie n&apos;est conserve. Les
+          seules donnees enregistrees en ligne sont celles du compte joueur facultatif, decrit
+          plus bas.
+        </p>
+        <p className="panel__text">
+          La partie rapide et la partie classee vous opposent a un joueur tire au sort : chaque
+          joueur en recherche annonce sa presence (identifiant aleatoire temporaire, heure
+          d&apos;arrivee) sur un canal commun, sans rien conserver. Il n&apos;y a pas de tchat
+          dans ces parties. Sans adversaire au bout d&apos;une minute, vous jouez contre un bot,
+          sans aucun echange en ligne.
+        </p>
+        <p className="panel__text">
+          <strong>Compte joueur (facultatif).</strong> Si vous en creez un, Supabase (region
+          Europe) enregistre votre adresse e-mail, qui ne sert qu&apos;a vous connecter, votre
+          mot de passe sous forme chiffree, et votre progression : niveau, pieces, succes,
+          articles, rang des parties classees, meilleures series. Ni historique de parties, ni
+          messages, ni nom ni pseudonyme. Ces donnees ne servent qu&apos;a restaurer votre
+          progression et ne sont ni vendues ni partagees. Vous pouvez supprimer votre compte a
+          tout moment depuis le jeu : adresse e-mail et progression en ligne sont alors effacees
+          definitivement.
         </p>
         <p className="panel__text">
           Comme pour toute connexion Internet, l&apos;adresse IP de votre appareil est
@@ -64,15 +84,17 @@ export function Legal() {
           Une partie en ligne comporte un <strong>tchat en texte libre</strong>. Les messages y
           sont retransmis en direct puis perdus : ils ne sont ni enregistres, ni moderes, ni
           consultables par l&apos;editeur. Le tchat n&apos;existe qu&apos;entre deux joueurs qui
-          se sont volontairement partage un code de salon — il n&apos;y a ni salon public, ni
-          mise en relation avec des inconnus. Chacun repond de ce qu&apos;il ecrit ; quitter la
+          se sont volontairement partage un code de salon, dans une partie privee — il n&apos;y en
+          a pas dans la partie rapide ni la partie classee, et il n&apos;y a pas de salon public.
+          Chacun repond de ce qu&apos;il ecrit ; quitter la
           partie ferme immediatement la liaison.
         </p>
         <p className="panel__text">
           Les modes solo, local, Defi et tournoi ne comportent aucun echange et conviennent a
           tous les ages. Pour un enfant, nous recommandons que le code de salon ne soit partage
           qu&apos;avec des personnes connues de lui, et qu&apos;un adulte soit informe de
-          l&apos;usage du mode en ligne.
+          l&apos;usage du mode en ligne et de la creation d&apos;un compte joueur facultatif
+          (adresse e-mail).
         </p>
         <p className="panel__text">
           Le jeu ne demande aucune permission (localisation, contacts, photos,
@@ -96,8 +118,11 @@ export function Legal() {
         </p>
         <p className="panel__text">
           Le mode en ligne met en relation deux joueurs qui partagent un code de salon. Ce code
-          est le seul element qui protege une partie : il vous appartient de ne le communiquer
-          qu&apos;a la personne avec qui vous souhaitez jouer. Ce mode repose sur un service
+          est le seul element qui protege une partie privee : il vous appartient de ne le
+          communiquer qu&apos;a la personne avec qui vous souhaitez jouer. La partie rapide et la
+          partie classee vous opposent a un joueur tire au sort, sans tchat. Un compte joueur
+          facultatif permet de retrouver votre progression : vous etes responsable de votre mot
+          de passe, et le rang des parties classees n&apos;est pas verifie par un serveur. Ce mode repose sur un service
           tiers propose sans garantie de disponibilite ; l&apos;editeur peut le suspendre ou
           l&apos;interrompre a tout moment, sans que cela affecte les modes hors ligne.
         </p>
@@ -117,7 +142,7 @@ export function Legal() {
           Hebergement (version web) : GitHub, Inc. — 88 Colin P Kelly Jr St, San Francisco, CA
           94107, Etats-Unis.
           <br />
-          Relais du mode en ligne : Supabase, Inc. — projet heberge dans la region Europe.
+          Relais du mode en ligne et hebergement des comptes joueurs : Supabase, Inc. — projet heberge dans la region Europe.
         </p>
 
         <div className="button-column">

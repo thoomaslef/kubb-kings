@@ -184,6 +184,15 @@ export function getBestStage(): number {
   }
 }
 
+/** Impose la meilleure serie, meme plus basse : adoption d'un profil de compte (cf. account/sync.ts). */
+export function forceBestStage(stagesCleared: number) {
+  try {
+    window.localStorage?.setItem(BEST_STAGE_KEY, String(Math.max(0, Math.floor(stagesCleared))));
+  } catch {
+    /* sans stockage, la serie ne sera pas retenue, sans consequence sur le jeu */
+  }
+}
+
 export function setBestStageIfHigher(stagesCleared: number) {
   try {
     if (stagesCleared > getBestStage()) {

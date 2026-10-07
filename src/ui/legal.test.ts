@@ -4,6 +4,9 @@ import cguSource from "../../public/legal/cgu.html?raw";
 import mentionsSource from "../../public/legal/mentions-legales.html?raw";
 import ecranSource from "./Legal.tsx?raw";
 import transportSource from "../game/online/supabaseTransport.ts?raw";
+import clientSource from "../game/online/supabaseClient.ts?raw";
+import backendSource from "../game/account/backend.ts?raw";
+import chatUiSource from "./Chat.tsx?raw";
 import chatSource from "../game/online/chat.ts?raw";
 
 /**
@@ -89,6 +92,12 @@ const DENEGATIONS_UNIVERSELLES = [
   "Aucune donnee personnelle n'etant collectee",
   "aucune donnee personnelle n'est traitee",
   "Les seules informations conservees",
+  // Un compte joueur existe maintenant : ces phrases sont devenues fausses.
+  "ne demande aucun compte",
+  "aucun profil de joueur",
+  "ne cree aucun compte",
+  "n'ecrit dans aucune base de donnees",
+  "ni compte, ni classement",
 ];
 
 describe("aucune denegation universelle de transmission", () => {
@@ -109,7 +118,8 @@ describe("le reseau reellement present est divulgue", () => {
    * disparait un jour, ces exigences perdent leur objet d'elles-memes.
    */
   it("le code embarque bien un transport reseau (sinon ce test n a plus d objet)", () => {
-    expect(transportSource).toContain("createClient");
+    expect(clientSource).toContain("createClient");
+    expect(transportSource).toContain("getSupabaseClient");
   });
 
   /** Les faits qu'un joueur doit pouvoir lire avant de jouer en ligne. */
@@ -150,16 +160,57 @@ describe("le reseau reellement present est divulgue", () => {
     }
   });
 
-  it("rien n'est stocke cote serveur — et le code le confirme", () => {
-    // Verifiable, pas declaratif : le transport n'utilise ni table, ni
-    // auth persistante, ni storage — uniquement du broadcast ephemere.
+  it("rien n'est stocke cote serveur pendant une partie — et le code le confirme", () => {
+    // Verifiable, pas declaratif : le transport de PARTIE n'utilise ni table,
+    // ni storage — uniquement du broadcast ephemere. (Le compte joueur, lui,
+    // a son propre module et ses propres textes : voir plus bas.)
     expect(transportSource).not.toMatch(/\.from\(|\.insert\(|\.upsert\(/);
-    expect(transportSource).toContain("persistSession: false");
 
     for (const chemin of [POLITIQUE, ECRAN]) {
       expect(texteJoueur(chemin), chemin).toContain(
-        "Rien n'est enregistre sur le serveur",
+        "Rien n'est enregistre sur le serveur pendant une partie",
       );
+    }
+  });
+
+  it("le compte joueur est divulgue : ce qui est stocke, et la suppression", () => {
+    // Ancrage sur le CODE : tant que le jeu sait creer un compte, ces faits
+    // doivent etre ecrits.
+    expect(backendSource).toContain("signUp");
+    for (const chemin of [POLITIQUE, ECRAN]) {
+      const texte = texteJoueur(chemin);
+      for (const fait of [
+        "compte joueur",
+        "facultatif",
+        "adresse e-mail",
+        "mot de passe",
+        "supprimer votre compte",
+        "progression",
+      ]) {
+        expect(texte, `"${fait}" manque dans ${chemin}`).toContain(fait);
+      }
+    }
+    expect(texteJoueur(CGU)).toContain("Compte joueur");
+  });
+
+  it("le compte ne stocke que la progression : le code n'ecrit que par les trois fonctions prevues", () => {
+    // Pas de table ecrite directement, pas de stockage de fichiers : seulement
+    // les trois fonctions SQL de supabase/comptes.sql.
+    expect(backendSource).not.toMatch(/\.from\(|\.insert\(|\.upsert\(|\.storage/);
+    const appels = [...backendSource.matchAll(/\.rpc\(\s*'([a-z_]+)'/g)].map((m) => m[1]).sort();
+    expect(appels).toEqual(["delete_my_account", "load_profile", "save_profile"]);
+  });
+
+  it("partie rapide et partie classee : adversaire tire au sort, et pas de tchat", () => {
+    // Le code coupe le tchat des parties tirees au sort ; les textes doivent le dire,
+    // et ne plus pretendre qu'il n'y a jamais de mise en relation avec des inconnus.
+    expect(chatUiSource).toContain("online.matchmade");
+    for (const chemin of [POLITIQUE, ECRAN, CGU]) {
+      const texte = texteJoueur(chemin);
+      expect(texte, chemin).toContain("partie rapide");
+      expect(texte, chemin).toContain("partie classee");
+      expect(texte, chemin).toContain("tire au sort");
+      expect(texte, chemin).not.toContain("mise en relation avec des inconnus");
     }
   });
 

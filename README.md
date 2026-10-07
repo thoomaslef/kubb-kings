@@ -28,6 +28,7 @@ sujet — chaque page se lit seule.
 | [Progression, succes et mode Defi](docs/progression-et-succes.md) | Combo, XP et niveaux, les 18 succes, le roguelite en 30 manches |
 | [L&apos;adversaire solo](docs/adversaire-solo.md) | Comment l&apos;IA vise, et ce que son calibrage a appris |
 | [Le jeu en ligne](docs/jeu-en-ligne.md) | Protocole, transport, reprise apres coupure, revanche — et pourquoi le lanceur fait autorite |
+| [Comptes joueurs](docs/comptes-joueurs.md) | E-mail + mot de passe, progression synchronisee entre appareils, mise en place Supabase (`supabase/comptes.sql`), fusion et limites |
 | [Parties classees, rangs, vue en miroir](docs/parties-classees.md) | Six rangs de trois divisions, file classee, forfait et abandon, et pourquoi l'invite voit le terrain tourne de 180 degres |
 | [Qualite et verification](docs/qualite-et-verification.md) | Le filet de securite (tests et verifications navigateur), le rendu, les langues, le partage |
 | [Verifications au navigateur](tests/browser/README.md) | Comment les lancer, et les pieges appris a la dure |

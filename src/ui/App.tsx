@@ -17,6 +17,9 @@ import { Progression } from './Progression';
 import { Legal } from './Legal';
 import { OnlineLobby } from './OnlineLobby';
 import { Ranks } from './Ranks';
+import { Account } from './Account';
+import { AccountConflict } from './AccountConflict';
+import { initAccount } from '../game/account/sync';
 import { MapSelect } from './MapSelect';
 import { About } from './About';
 import { Boot } from './Boot';
@@ -29,6 +32,7 @@ import { Chat } from './Chat';
 export function App() {
   const screen = useGameStore((s) => s.screen);
   const lang = useGameStore((s) => s.lang);
+  const accountConflict = useGameStore((s) => s.accountConflict);
 
   // index.html fixe lang="fr" au chargement (page statique) : ce n'est plus
   // exact des que le joueur choisit l'anglais, important pour les lecteurs
@@ -36,6 +40,12 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  // Compte joueur : retrouve la session conservee, s'il y en a une (ne charge
+  // le service que dans ce cas, cf. account/sync.ts::initAccount).
+  useEffect(() => {
+    void initAccount();
+  }, []);
 
   // Musique d'ambiance : demarree sur le tout premier geste du joueur, ou
   // qu'il ait lieu (menu, ecran de regles...) — meme contrainte de geste que
@@ -72,6 +82,8 @@ export function App() {
       {screen === 'about' && <About />}
       {screen === 'online' && <OnlineLobby />}
       {screen === 'ranks' && <Ranks />}
+      {screen === 'account' && <Account />}
+      {accountConflict && screen !== 'match' && <AccountConflict />}
       {screen === 'map-select' && <MapSelect />}
     </div>
   );

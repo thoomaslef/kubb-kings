@@ -10,6 +10,7 @@ import { isShopRefOwned, SHOP_ITEMS, type ShopCategory } from '../game/shop';
 import { LADDER, getBestStage } from '../game/roguelite';
 import { useT } from '../i18n/useT';
 import { RankBadge, useRankName } from './RankBadge';
+import { accountAvailable } from '../game/account/sync';
 import type { Lang } from '../i18n/translate';
 
 const LEVELS = Object.keys(AI_PROFILES) as Difficulty[];
@@ -25,6 +26,7 @@ export function Menu() {
   const t = useT();
   const setScreen = useGameStore((s) => s.setScreen);
   const rank = useGameStore((s) => s.rank);
+  const account = useGameStore((s) => s.account);
   const lastRankChange = useGameStore((s) => s.lastRankChange);
   const clearRankChange = useGameStore((s) => s.clearRankChange);
   const rankName = useRankName();
@@ -107,6 +109,15 @@ export function Menu() {
           KUBB<span className="title__accent">: Kings</span>
         </h1>
         <p className="subtitle">{t('menu.subtitle')}</p>
+
+        {/* Sans service configure (build local, tests), pas de compte a proposer. */}
+        {accountAvailable() && (
+          <button type="button" className="btn btn--ghost btn--account" onClick={() => setScreen('account')}>
+            {account.status === 'signedIn' && account.email
+              ? t('menu.account.signedIn', { email: account.email })
+              : t('menu.account.signedOut')}
+          </button>
+        )}
 
         {/* Un mouvement de rang hors fin de partie normale (forfait, onglet ferme) : annonce, une fois. */}
         {lastRankChange && lastRankChange.reason !== 'match' && (

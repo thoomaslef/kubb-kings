@@ -150,10 +150,10 @@ export function OnlineLobby() {
     });
   };
 
-  const host = (roomCode?: string, ranked = false) => {
+  const host = (roomCode?: string, ranked = false, matchmade = false) => {
     setError(null);
     const code = roomCode ?? createRoomCode();
-    startOnline(code, 'host', ranked);
+    startOnline(code, 'host', ranked, matchmade);
     wire(
       OnlineSession.host(
         createMatchTransport(code, onTransportError),
@@ -169,14 +169,14 @@ export function OnlineLobby() {
     );
   };
 
-  const join = (roomCode?: string, ranked = false) => {
+  const join = (roomCode?: string, ranked = false, matchmade = false) => {
     const code = (roomCode ?? joinCode).trim().toUpperCase();
     if (code.length < 3) {
       setError(t('online.badCode'));
       return;
     }
     setError(null);
-    startOnline(code, 'guest', ranked);
+    startOnline(code, 'guest', ranked, matchmade);
     wire(
       OnlineSession.join(createMatchTransport(code, onTransportError), `invite-${code}`, ranked ? 'base' : batonId, card)
     );
@@ -220,8 +220,8 @@ export function OnlineLobby() {
         matchmakerRef.current = null;
         setSearching(null);
         setQuickRoom(true);
-        if (role === 'host') host(code, ranked);
-        else join(code, ranked);
+        if (role === 'host') host(code, ranked, true);
+        else join(code, ranked, true);
         // Une course rare peut laisser un salon sans invite : au bout d'un
         // moment, on abandonne ce salon et on retourne en file.
         roomTimerRef.current = setTimeout(() => {

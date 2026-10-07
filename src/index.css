@@ -1301,3 +1301,12 @@ body {
   justify-content: center;
   gap: 10px;
 }
+
+.btn--account {
+  margin: 0 0 12px;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}

@@ -20,6 +20,8 @@ import { loadTerrainWins, saveTerrainWins } from '../game/terrainWinsPersistence
 import { loadOnlineStreak, saveOnlineStreak } from '../game/onlineStreakPersistence';
 import { applyRankedResult, type RankState, type RankedOutcome } from '../game/ranks';
 import { hasPendingRankedMatch, loadRank, saveRank, setPendingRankedMatch } from '../game/rankPersistence';
+import type { ProfileSnapshot } from '../game/account/profileSnapshot';
+import { forceBestStage } from '../game/roguelite';
 import { getInitialLang, persistLang } from '../i18n/langPersistence';
 import type { Lang } from '../i18n/translate';
 
@@ -41,6 +43,7 @@ export type Screen =
   | 'about'
   | 'online'
   | 'ranks'
+  | 'account'
   | 'map-select';
 
 /** Phase du tour courant, pilotee par MatchScene. */
@@ -74,6 +77,23 @@ export type OnlineStatus =
   /** Terminee : l'adversaire est parti, s'est desynchronise, ou on a quitte. */
   | 'terminee';
 
+/** Etat du compte joueur, cote interface (cf. game/account/sync.ts). */
+export interface AccountState {
+  /** `checking` : une session conservee est en cours de verification au demarrage. */
+  status: 'signedOut' | 'checking' | 'signedIn';
+  email: string | null;
+  /** `error` : la derniere synchronisation a echoue — la progression reste sur l'appareil, et sera reessayee. */
+  sync: 'idle' | 'syncing' | 'ok' | 'error';
+  lastSyncAt: number | null;
+}
+
+/** Premier rapprochement d'un appareil et d'un compte qui ont chacun leur histoire : au joueur de trancher. */
+export interface AccountConflict {
+  local: ProfileSnapshot;
+  remote: ProfileSnapshot;
+  remoteRevision: number;
+}
+
 /** Partie en ligne en cours, cote interface. null hors mode 'online'. */
 export interface OnlineState {
   roomCode: string;
@@ -87,6 +107,12 @@ export interface OnlineState {
   rematch: RematchState;
   /** Partie classee : conditions imposees, rang en jeu, pas de revanche. */
   ranked: boolean;
+  /**
+   * Adversaire tire au sort (partie rapide ou classee) plutot qu'un ami a qui
+   * on a donne un code. Pas de tchat : du texte libre non modere avec un
+   * inconnu n'est pas un risque qu'on prend (cf. docs/comptes-joueurs.md).
+   */
+  matchmade: boolean;
 }
 
 /** Pourquoi le rang a bouge — l'ecran de resultat n'annonce pas la meme chose. */
@@ -288,6 +314,14 @@ interface GameState {
    */
   mapIntent: MatchIntent | null;
 
+  /** Compte joueur (facultatif : le jeu reste entierement jouable sans). */
+  account: AccountState;
+  accountConflict: AccountConflict | null;
+  setAccount: (patch: Partial<AccountState>) => void;
+  setAccountConflict: (conflict: AccountConflict | null) => void;
+  /** Remplace la progression locale par ce profil, ET l'ecrit dans le stockage de l'appareil. */
+  applyProfileSnapshot: (snapshot: ProfileSnapshot) => void;
+
   setScreen: (screen: Screen) => void;
   /** Ouvre le choix de terrain en memorisant ce qu'il faudra lancer ensuite. */
   openMapSelect: (intent: MatchIntent) => void;
@@ -316,7 +350,7 @@ interface GameState {
   /** Consomme le bonus "Sursis" de la run en cours ; no-op hors run active. */
   useSursis: () => void;
   /** Ouvre un salon en ligne (avant meme que l'adversaire arrive). */
-  startOnline: (roomCode: string, role: 'host' | 'guest', ranked?: boolean) => void;
+  startOnline: (roomCode: string, role: 'host' | 'guest', ranked?: boolean, matchmade?: boolean) => void;
   /** Rang du joueur (cf. ranks.ts) et dernier mouvement, a annoncer une fois. */
   rank: RankState;
   lastRankChange: RankChange | null;
@@ -425,6 +459,8 @@ export const useGameStore = create<GameState>((set) => ({
   onlineWinStreak: loadOnlineStreak(),
   ...settleRankAtStartup(),
   rankedLobby: false,
+  account: { status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null },
+  accountConflict: null,
 
   mapIntent: null,
 
@@ -451,9 +487,9 @@ export const useGameStore = create<GameState>((set) => ({
     set((state) => (state.run ? { run: { ...state.run, perks: [...state.run.perks, id] } } : state)),
   useSursis: () =>
     set((state) => (state.run ? { run: { ...state.run, sursisUsed: true } } : state)),
-  startOnline: (roomCode, role, ranked = false) =>
+  startOnline: (roomCode, role, ranked = false, matchmade = false) =>
     set({
-      online: { roomCode, role, status: 'attente', team: null, endedBecause: null, rematch: 'aucune', ranked },
+      online: { roomCode, role, status: 'attente', team: null, endedBecause: null, rematch: 'aucune', ranked, matchmade },
       // L'hote tient Bleue, l'invite Rouge — la session le confirmera, mais
       // l'interface doit deja savoir de quel cote se placer.
       profileTeam: role === 'host' ? 'blue' : 'red'
@@ -529,6 +565,32 @@ export const useGameStore = create<GameState>((set) => ({
       saveOnlineStreak(onlineWinStreak);
       return { onlineWinStreak };
     }),
+  setAccount: (patch) => set((state) => ({ account: { ...state.account, ...patch } })),
+  setAccountConflict: (accountConflict) => set({ accountConflict }),
+  applyProfileSnapshot: (snapshot) => {
+    const progression = { ...snapshot.progression };
+    const ownedItems = [...snapshot.ownedItems];
+    const unlockedAchievements = [...snapshot.unlockedAchievements] as AchievementId[];
+    const terrainWins = [...snapshot.terrainWins] as FieldPresetId[];
+    const rank = { ...snapshot.rank };
+    saveProgression(progression);
+    saveCurrency({ coins: snapshot.coins });
+    saveOwnedItems(ownedItems);
+    saveUnlockedAchievements(unlockedAchievements);
+    saveTerrainWins(terrainWins);
+    saveOnlineStreak(snapshot.onlineWinStreak);
+    saveRank(rank);
+    forceBestStage(snapshot.bestStage);
+    set({
+      progression,
+      coins: snapshot.coins,
+      ownedItems,
+      unlockedAchievements,
+      terrainWins,
+      onlineWinStreak: snapshot.onlineWinStreak,
+      rank
+    });
+  },
   setRankedLobby: (ranked) => set({ rankedLobby: ranked }),
   beginRankedMatch: () => setPendingRankedMatch(true),
   recordRankedMatch: (outcome, reason) =>
