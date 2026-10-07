@@ -44,6 +44,7 @@ const serveur = {
   profils: new Map(), // id -> { data, revision }
   confirmerEmail: false,
   limiter: false,
+  oauthEchec: false,
   journal: [],
   suivant: 1
 };
@@ -101,6 +102,27 @@ async function gerer(route) {
     /* pas de corps */
   }
   serveur.journal.push(`${req.method()} ${chemin}${url.search}`);
+
+  // Connexion Google (PKCE) : le navigateur est envoye a /authorize, qui le renvoie sur le jeu avec un code
+  // a usage unique — ou une erreur, si le joueur annule chez Google.
+  if (chemin === '/auth/v1/authorize') {
+    const retour = url.searchParams.get('redirect_to');
+    const cible = serveur.oauthEchec
+      ? `${retour}?error=access_denied&error_code=access_denied&error_description=Annule`
+      : `${retour}?code=gcode-${serveur.suivant++}`;
+    return route.fulfill({ status: 302, headers: { location: cible }, body: '' });
+  }
+  if (chemin === '/auth/v1/token' && url.searchParams.get('grant_type') === 'pkce') {
+    if (!corps.auth_code || !corps.code_verifier) {
+      return repondre(route, 400, { code: 400, error_code: 'validation_failed', msg: 'pkce' });
+    }
+    let user = serveur.users.get('google@example.com');
+    if (!user) {
+      user = { id: `u-${serveur.suivant++}`, email: 'google@example.com', password: null };
+      serveur.users.set(user.email, user);
+    }
+    return repondre(route, 200, session(user));
+  }
 
   if (chemin === '/auth/v1/signup') {
     if (serveur.limiter) return repondre(route, 429, { code: 429, error_code: 'over_request_rate_limit', msg: 'rate limit' });
@@ -483,6 +505,46 @@ const B = await appareil('B');
   await remplir(A.page, { email: 'joueur@example.com', mdp: 'motdepasse1' });
   await A.page.locator('button[type="submit"]').click();
   resultats.onNePeutPlusSeConnecter = /incorrect/.test((await message(A.page)) ?? '');
+}
+
+// ------------------------------------------------------------------ 9. connexion avec Google
+{
+  const G = await appareil('G', {
+    'kubb-kings.progression': { totalXp: 700, winStreak: 0, gamesPlayed: 9, totalWins: 5 },
+    'kubb-kings.currency': { coins: 55 }
+  });
+  await ouvrirCompte(G.page);
+  const bouton = await G.page.locator('button', { hasText: /Continuer avec Google/ }).count();
+  resultats.leBoutonGoogleExiste = bouton === 1;
+
+  // Annulation chez Google : le jeu l'explique, ne plante pas, et nettoie l'adresse.
+  serveur.oauthEchec = true;
+  await G.page.locator('button', { hasText: /Continuer avec Google/ }).click();
+  await G.page.waitForURL(/kubb-kings/, { timeout: 30000 });
+  await G.page.waitForSelector('.panel--menu', { timeout: 30000 });
+  await ouvrirCompte(G.page);
+  resultats.googleAnnule_LeJeuLExplique = (await G.page.locator('[data-testid="account-notice"]').count()) === 1;
+  resultats.googleAnnule_LAdresseEstNettoyee = !/error/.test(G.page.url());
+  resultats.googleAnnule_PasConnecte = (await etat(G.page)).compte.status === 'signedOut';
+
+  // Reussite : retour avec un code, echange (PKCE), connexion, synchronisation.
+  serveur.oauthEchec = false;
+  await G.page.locator('button', { hasText: /Continuer avec Google/ }).click();
+  await G.page.waitForURL(/kubb-kings/, { timeout: 30000 });
+  await G.page.waitForSelector('.panel--menu', { timeout: 30000 });
+  const connecte = await attendre(G.page, () => {
+    const s = window.__kubbStoreApi.getState();
+    return s.account.status === 'signedIn' && s.account.sync === 'ok';
+  }, undefined, 30000);
+  const eg = await etat(G.page);
+  console.log({ google: eg.compte, url: G.page.url() });
+  resultats.googleConnecte = connecte && eg.compte.email === 'google@example.com';
+  resultats.leFluxEstEnPKCE = serveur.journal.some((l) => l.includes('/auth/v1/authorize') && l.includes('code_challenge=')) &&
+    serveur.journal.some((l) => l.includes('grant_type=pkce'));
+  resultats.googleLAdresseNePorteAucunCode = !/[?&]code=/.test(G.page.url());
+  const profilG = [...serveur.profils.values()].find((p) => p.data.progression.totalXp === 700);
+  resultats.googleLaProgressionEstEnvoyee = !!profilG && profilG.data.coins === 55;
+  await G.contexte.close();
 }
 
 conclure(resultats, erreurs);

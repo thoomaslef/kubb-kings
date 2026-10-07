@@ -1310,3 +1310,18 @@ body {
   white-space: nowrap;
   max-width: 100%;
 }
+
+.btn--google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #ffffff;
+  color: #1f1f1f;
+  border-color: #dadce0;
+}
+
+.account-or {
+  text-align: center;
+  margin: 2px 0 10px;
+}

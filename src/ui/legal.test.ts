@@ -191,6 +191,13 @@ describe("le reseau reellement present est divulgue", () => {
       }
     }
     expect(texteJoueur(CGU)).toContain("Compte joueur");
+    // La connexion par Google existe dans le code : Google et ce que Supabase en conserve doivent etre dits.
+    expect(backendSource).toContain("signInWithOAuth");
+    for (const chemin of [POLITIQUE, ECRAN]) {
+      const texte = texteJoueur(chemin);
+      expect(texte, `${chemin} ne parle pas de Google`).toContain("Google");
+      expect(texte, `${chemin} tait la photo de profil`).toContain("photo de profil");
+    }
   });
 
   it("le compte ne stocke que la progression : le code n'ecrit que par les trois fonctions prevues", () => {

@@ -43,7 +43,11 @@ export function getSupabaseClient(config: SupabaseConfig): Promise<SupabaseClien
   if (!clientPromise) {
     clientPromise = import('@supabase/supabase-js').then(({ createClient }) =>
       createClient(config.url, config.anonKey, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+        // PKCE : le retour d'une connexion Google (ou d'un lien e-mail) arrive avec
+        // un `?code=` a usage unique, echange contre la session ; rien de secret ne
+        // transite dans l'adresse. `detectSessionInUrl` ne fait rien tant que
+        // l'adresse ne porte pas ce code.
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' },
         realtime: { params: { eventsPerSecond: 20 } }
       })
     );

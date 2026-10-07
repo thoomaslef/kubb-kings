@@ -71,7 +71,11 @@ export function Legal() {
           messages, ni nom ni pseudonyme. Ces donnees ne servent qu&apos;a restaurer votre
           progression et ne sont ni vendues ni partagees. Vous pouvez supprimer votre compte a
           tout moment depuis le jeu : adresse e-mail et progression en ligne sont alors effacees
-          definitivement.
+          definitivement. La connexion avec Google est aussi proposee : Google transmet alors
+          votre adresse e-mail, et Supabase peut conserver avec elle le nom et la photo de
+          profil que Google lui communique ; le jeu ne les affiche ni ne les utilise, aucun mot
+          de passe n&apos;est enregistre, et la connexion est traitee par Google selon sa propre
+          politique.
         </p>
         <p className="panel__text">
           Comme pour toute connexion Internet, l&apos;adresse IP de votre appareil est

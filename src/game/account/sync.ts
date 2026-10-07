@@ -273,7 +273,7 @@ function setSignedOut() {
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = null;
   store().setAccountConflict(null);
-  store().setAccount({ status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null });
+  store().setAccount({ status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null });
 }
 
 /** Un compte est possible : le service est configure. */
@@ -302,7 +302,9 @@ export async function initAccount(): Promise<void> {
   if (!backend) return;
   offStore = watchProgress();
 
-  if (!hasStoredSession()) return;
+  const comeback = oauthComeback();
+  if (comeback === 'error') store().setAccount({ notice: 'oauth-error' });
+  if (!hasStoredSession() && comeback !== 'code') return;
   store().setAccount({ status: 'checking' });
   try {
     const user = await backend.restore();
@@ -317,6 +319,26 @@ export async function initAccount(): Promise<void> {
     // Hors ligne au demarrage : on reste « connecte » d'apres la session conservee, sans synchroniser.
     store().setAccount({ status: 'signedOut' });
   }
+}
+
+/**
+ * Retour d'une connexion Google : l'adresse porte `?code=` (a echanger contre la
+ * session) ou, si le joueur a refuse / annule, `?error_description=...`. On
+ * nettoie l'adresse dans le second cas : le SDK, lui, n'est pas charge.
+ */
+function oauthComeback(): 'code' | 'error' | null {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    if (params.has('error_description') || params.has('error') || hash.has('error_description')) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return 'error';
+    }
+    if (params.has('code')) return 'code';
+  } catch {
+    // Pas d'adresse lisible : pas de retour a traiter.
+  }
+  return null;
 }
 
 /** Une session Supabase conservee laisse une cle `sb-...-auth-token` dans le stockage du navigateur. */
@@ -358,6 +380,21 @@ async function authenticate(kind: 'signIn' | 'signUp', email: string, password: 
     void reconcile(result.user);
   }
   return { ok: true, needsEmailConfirmation: result.needsEmailConfirmation };
+}
+
+/** Adresse du jeu, sans reste d'URL : la ou Google doit nous renvoyer. */
+function returnUrl(): string {
+  return `${window.location.origin}${import.meta.env.BASE_URL}`;
+}
+
+/** Lance la connexion par Google : le navigateur quitte la page, puis revient avec un code. */
+export async function signInWithGoogle(): Promise<AuthOutcome> {
+  ensureBackend();
+  if (!backend) return { ok: false, error: 'unavailable' };
+  if (!offStore) offStore = watchProgress();
+  store().setAccount({ notice: null });
+  const result = await backend.signInWithGoogle(returnUrl());
+  return result.ok ? { ok: true, needsEmailConfirmation: false } : { ok: false, error: result.error };
 }
 
 export const signInAccount = (email: string, password: string) => authenticate('signIn', email, password);

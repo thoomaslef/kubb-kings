@@ -35,6 +35,47 @@ Sans le script SQL, la connexion fonctionne mais la synchronisation echoue : l'e
 affiche alors « Synchronisation impossible pour l'instant » et la progression reste sur
 l'appareil.
 
+## Connexion avec Google
+
+Bouton « Continuer avec Google » sur l'ecran Compte. Meme compte, meme progression : seule la
+facon de s'authentifier change (`backend.ts::signInWithGoogle`, `sync.ts::oauthComeback`).
+
+**Flux (PKCE).** Le jeu envoie le navigateur chez Google ; Google renvoie sur le jeu avec un
+`?code=` a usage unique, que le SDK echange contre la session (`flowType: 'pkce'`,
+`detectSessionInUrl`). Rien de secret ne transite dans l'adresse, et le code est retire de la barre
+d'adresse. Si le joueur annule chez Google, le retour porte `?error_description=` : le jeu l'explique
+sur l'ecran Compte et nettoie l'adresse.
+
+### Mise en place (une fois, par vous) — a faire sur ordinateur de preference
+
+**A. Chez Google** (console.cloud.google.com)
+1. Creer un projet (nom libre, ex. « Kubb Kings »).
+2. *APIs & Services -> OAuth consent screen* (ou « Google Auth Platform ») : type **External**, nom de
+   l'application, e-mail d'assistance, e-mail du developpeur. Scopes par defaut (email, profile, openid) :
+   rien a ajouter.
+3. **Publier l'application** (« Publish app » / statut « In production »). Piege courant : en statut
+   *Testing*, seuls les comptes listes comme « utilisateurs test » peuvent se connecter. Pour ces scopes
+   de base, Google n'exige aucune verification.
+4. *Credentials -> Create credentials -> OAuth client ID* -> type **Web application** ->
+   *Authorized redirect URIs* : l'adresse de rappel **que Supabase affiche** sur sa page Google
+   (de la forme `https://<identifiant-du-projet>.supabase.co/auth/v1/callback`).
+5. Copier l'**ID client** et le **secret client**.
+
+**B. Chez Supabase**
+1. *Authentication -> Sign In / Providers -> Google* : activer, coller l'ID client et le secret, **Save**.
+2. *Authentication -> URL Configuration* :
+   - **Site URL** : `https://thoomaslef.github.io/kubb-kings/`
+   - **Redirect URLs** : ajouter la meme adresse (avec le `/` final). Sans cela, Supabase refuse de
+     renvoyer le joueur sur le jeu apres Google.
+
+**Meme adresse e-mail que votre compte existant.** Supabase relie normalement l'identite Google au compte
+e-mail existant de meme adresse (meme joueur, meme progression). Non verifie ici — a controler lors de votre
+premier essai ; sinon un deuxieme compte, vide, serait cree.
+
+**Ce que Google transmet.** L'adresse e-mail ; Supabase peut aussi conserver le nom et la photo de profil
+que Google lui envoie (le jeu ne les utilise pas). C'est dit dans la politique de confidentialite, et
+`legal.test.ts` verrouille cette mention sur le code. Un compte Google n'a pas de mot de passe chez nous.
+
 ## Comment la synchronisation fonctionne
 
 `src/game/account/` — **local d'abord** : le jeu lit et ecrit toujours le stockage de l'appareil
@@ -103,10 +144,10 @@ Le tchat reste dans les parties privees (par code de salon), entre gens qui se c
 - `profileSnapshot.test.ts` : validation, fusion, symetrie, « ne perd rien ».
 - `legal.test.ts` : les textes legaux disent la verite sur le compte et sur le tchat.
 - `tests/browser/comptes.mjs` (`npm run test:comptes`) : la chaine complete contre un **faux
-  Supabase** — le vrai SDK, de vraies requetes interceptees, deux « appareils » a stockage separe
+  Supabase** (y compris la connexion Google en PKCE : retour avec code, annulation, adresse nettoyee) — le vrai SDK, de vraies requetes interceptees, deux « appareils » a stockage separe
   et un serveur commun. Couvre la creation, un appareil vierge qui retrouve tout, les erreurs
   (mauvais mot de passe, adresse prise, trop de tentatives, service injoignable), une progression
   qui voyage d'un appareil a l'autre, deux appareils qui ecrivent **en meme temps** sans rien perdre,
   les trois choix du dialogue, la deconnexion, la confirmation d'e-mail et la suppression.
-- **Non verifie** : le vrai service Supabase (non joignable depuis l'atelier) — notamment que votre
+- **Non verifie** : le vrai service Supabase ET le vrai Google (ecran de consentement, liaison avec un compte e-mail de meme adresse) (non joignable depuis l'atelier) — notamment que votre
   projet a bien le script SQL et le reglage « Confirm email » voulus.

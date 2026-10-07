@@ -85,6 +85,8 @@ export interface AccountState {
   /** `error` : la derniere synchronisation a echoue — la progression reste sur l'appareil, et sera reessayee. */
   sync: 'idle' | 'syncing' | 'ok' | 'error';
   lastSyncAt: number | null;
+  /** Retour d'une connexion Google qui a echoue ou ete annulee, a annoncer sur l'ecran Compte. */
+  notice: 'oauth-error' | null;
 }
 
 /** Premier rapprochement d'un appareil et d'un compte qui ont chacun leur histoire : au joueur de trancher. */
@@ -459,7 +461,7 @@ export const useGameStore = create<GameState>((set) => ({
   onlineWinStreak: loadOnlineStreak(),
   ...settleRankAtStartup(),
   rankedLobby: false,
-  account: { status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null },
+  account: { status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null },
   accountConflict: null,
 
   mapIntent: null,
