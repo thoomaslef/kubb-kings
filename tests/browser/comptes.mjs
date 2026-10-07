@@ -35,6 +35,32 @@ const FAUX = 'fake.supabase.test';
 
 // ------------------------------------------------------------------ le faux serveur
 
+/** Colonnes de rang tirees du profil, avec la meme coherence minimale que supabase/comptes.sql::save_profile. */
+function colonnesRang(data) {
+  const r = (data && data.rank) || {};
+  const index = Math.min(17, Math.max(0, Math.floor(Number(r.index)) || 0));
+  const peak = Math.min(17, Math.max(0, Math.floor(Number(r.peak)) || 0));
+  const wins = Math.max(0, Math.floor(Number(r.wins)) || 0);
+  const losses = Math.max(0, Math.floor(Number(r.losses)) || 0);
+  return index <= wins && peak <= wins && peak >= index ? { index, peak, wins, losses } : null;
+}
+const rangVide = { index: 0, peak: 0, wins: 0, losses: 0 };
+
+function classement(idMoi) {
+  const lignes = [...serveur.profils.entries()]
+    .filter(([, p]) => p.visible !== false && p.pseudo && p.r.wins + p.r.losses > 0)
+    .sort(([ia, a], [ib, b]) => b.r.index - a.r.index || b.r.peak - a.r.peak || b.r.wins - a.r.wins || (ia < ib ? -1 : 1));
+  return lignes.map(([id, p], i) => ({
+    place: i + 1,
+    pseudo: p.pseudo,
+    rank_index: p.r.index,
+    rank_peak: p.r.peak,
+    wins: p.r.wins,
+    losses: p.r.losses,
+    is_me: id === idMoi
+  }));
+}
+
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 const jwt = (sub, exp) => `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub, role: 'authenticated', exp })}.sig`;
 
@@ -159,6 +185,11 @@ async function gerer(route) {
     return user ? repondre(route, 200, session(user).user) : repondre(route, 401, { code: 401, msg: 'jwt' });
   }
 
+  if (chemin === '/rest/v1/rpc/get_leaderboard') {
+    // Lisible sans compte (cle anonyme) ; `is_me` n'est vrai que pour un joueur connecte.
+    return repondre(route, 200, classement(idDuJeton(req)).slice(0, Math.min(100, corps.p_limit ?? 20)));
+  }
+
   if (chemin.startsWith('/rest/v1/rpc/')) {
     const id = idDuJeton(req);
     if (!id) return repondre(route, 401, { code: 'PGRST301', message: 'JWT invalide' });
@@ -170,14 +201,45 @@ async function gerer(route) {
     if (nom === 'save_profile') {
       const courant = serveur.profils.get(id);
       const attendu = corps.p_expected_revision;
+      const rang = colonnesRang(corps.p_data);
       if (!courant) {
         if (attendu !== 0) return repondre(route, 200, -1);
-        serveur.profils.set(id, { data: corps.p_data, revision: 1 });
+        serveur.profils.set(id, {
+          data: corps.p_data,
+          revision: 1,
+          pseudo: `Pseudo${serveur.suivant++}`,
+          visible: true,
+          r: rang ?? { ...rangVide }
+        });
         return repondre(route, 200, 1);
       }
       if (courant.revision !== attendu) return repondre(route, 200, -1);
-      serveur.profils.set(id, { data: corps.p_data, revision: courant.revision + 1 });
+      serveur.profils.set(id, {
+        ...courant,
+        data: corps.p_data,
+        revision: courant.revision + 1,
+        pseudo: courant.pseudo ?? `Pseudo${serveur.suivant++}`,
+        r: rang ?? courant.r
+      });
       return repondre(route, 200, courant.revision + 1);
+    }
+    if (nom === 'my_standing') {
+      const p = serveur.profils.get(id);
+      if (!p) return repondre(route, 200, []);
+      const c = classement(id);
+      const moi = c.find((l) => l.is_me);
+      return repondre(route, 200, [{ pseudo: p.pseudo, visible: p.visible !== false, place: moi?.place ?? null, total: c.length }]);
+    }
+    if (nom === 'reroll_pseudo') {
+      const p = serveur.profils.get(id);
+      if (!p) return repondre(route, 200, null);
+      p.pseudo = `Nouveau${serveur.suivant++}`;
+      return repondre(route, 200, p.pseudo);
+    }
+    if (nom === 'set_leaderboard_visible') {
+      const p = serveur.profils.get(id);
+      if (p) p.visible = corps.p_visible === true;
+      return repondre(route, 204);
     }
     if (nom === 'delete_my_account') {
       for (const [email, u] of serveur.users) if (u.id === id) serveur.users.delete(email);
@@ -545,6 +607,106 @@ const B = await appareil('B');
   const profilG = [...serveur.profils.values()].find((p) => p.data.progression.totalXp === 700);
   resultats.googleLaProgressionEstEnvoyee = !!profilG && profilG.data.coins === 55;
   await G.contexte.close();
+}
+
+// ------------------------------------------------------------------ 10. classement des parties classees
+{
+  const semer = (id, pseudo, r) => serveur.profils.set(id, { data: { rank: r }, revision: 1, pseudo, visible: true, r });
+  serveur.profils.clear();
+  semer('seed-1', 'AigleViking11', { index: 14, peak: 14, wins: 20, losses: 6 });
+  semer('seed-2', 'LoupRapide22', { index: 5, peak: 6, wins: 8, losses: 9 });
+  semer('seed-3', 'CerfBrave33', { index: 10, peak: 10, wins: 15, losses: 5 });
+
+  const lignes = (page) =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('[data-testid="leaderboard"] li')].map((li) => ({
+        texte: li.textContent,
+        moi: li.classList.contains('leaderboard__row--me')
+      }))
+    );
+  const ouvrirRangs = async (page) => {
+    await focus(page);
+    if ((await page.locator('.btn--ranked').count()) > 0) await page.locator('.btn--ranked').click();
+    await page.waitForSelector('.panel--ranks');
+    await page.waitForFunction(
+      () => document.querySelector('[data-testid="leaderboard"], [data-testid="board-empty"]'),
+      null,
+      { timeout: 15000 }
+    );
+  };
+
+  // Un visiteur SANS compte lit le classement.
+  const I = await appareil('I');
+  await ouvrirRangs(I.page);
+  const visiteur = await lignes(I.page);
+  console.log({ visiteur: visiteur.map((l) => l.texte) });
+  resultats.classement_LisibleSansCompte = visiteur.length === 3 && /AigleViking11/.test(visiteur[0].texte);
+  resultats.classement_PasDeSectionPseudoSansCompte = (await I.page.locator('[data-testid="my-standing"]').count()) === 0;
+  resultats.classement_InviteALaConnexion = /Connectez-vous pour apparaitre/.test(
+    (await I.page.locator('.panel--ranks').textContent()) ?? ''
+  );
+  await I.contexte.close();
+
+  // H : un joueur connecte, rang Or 1 (marche 10), 12 victoires.
+  const H = await appareil('H', { 'kubb-kings.rank': { index: 10, wins: 12, losses: 3, peak: 10 } });
+  await ouvrirCompte(H.page);
+  await H.page.locator('button', { hasText: /^Creer un compte$/ }).click();
+  await remplir(H.page, { email: 'classe@example.com', mdp: 'motdepasse1', confirmation: 'motdepasse1' });
+  await H.page.locator('button[type="submit"]').click();
+  await attendre(H.page, () => window.__kubbStoreApi.getState().account.sync === 'ok');
+  await H.page.locator('button', { hasText: /^Retour$/ }).click();
+  await ouvrirRangs(H.page);
+  const l1 = await lignes(H.page);
+  console.log({ classement: l1.map((l) => l.texte) });
+  resultats.classement_OrdreParRangPuisVictoires =
+    l1.length === 4 &&
+    /AigleViking11/.test(l1[0].texte) &&
+    /CerfBrave33/.test(l1[1].texte) &&
+    /Pseudo/.test(l1[2].texte) &&
+    /LoupRapide22/.test(l1[3].texte);
+  resultats.classement_MaLigneEstMiseEnEvidence = l1.filter((l) => l.moi).length === 1 && l1[2]?.moi === true;
+  const standing = await H.page.locator('[data-testid="my-standing"]').textContent();
+  resultats.classement_MaPlace = /3e sur 4/.test(standing ?? '');
+  resultats.classement_LEmailNApparaitJamais = !((await H.page.locator('.panel--ranks').textContent()) ?? '').includes('classe@example.com');
+
+  // Le pseudo est genere : changer de pseudo en donne un autre, sans rien saisir.
+  const avant = await H.page.locator('[data-testid="my-pseudo"]').textContent();
+  await H.page.locator('button', { hasText: /Changer de pseudo/ }).click();
+  await attendre(H.page, (a) => document.querySelector('[data-testid="my-pseudo"]')?.textContent !== a, avant);
+  const apres = await H.page.locator('[data-testid="my-pseudo"]').textContent();
+  resultats.classement_NouveauPseudoGenere = !!apres && apres !== avant;
+  resultats.classement_AucunChampDeSaisieDePseudo = (await H.page.locator('.panel--ranks input').count()) === 0;
+
+  // Un rang joue : il monte au classement (envoi immediat avant la lecture).
+  await H.page.evaluate(() => window.__kubbStoreApi.getState().recordRankedMatch('win', 'match'));
+  await H.page.locator('button', { hasText: /^Retour$/ }).click();
+  await ouvrirRangs(H.page);
+  const l2 = await lignes(H.page);
+  resultats.classement_LeRangJoueMonte = /Platine 3/.test(l2.find((l) => l.moi)?.texte ?? '');
+
+  // Se retirer du classement, puis y revenir.
+  await H.page.locator('button', { hasText: /Ne plus apparaitre/ }).click();
+  await attendre(H.page, () => /masque du classement/.test(document.querySelector('[data-testid="my-standing"]')?.textContent ?? ''));
+  const l3 = await lignes(H.page);
+  resultats.classement_OnPeutSeRetirer = l3.length === 3 && !l3.some((l) => l.moi);
+  await H.page.locator('button', { hasText: /^Apparaitre au classement$/ }).click();
+  await attendre(H.page, () => !/masque/.test(document.querySelector('[data-testid="my-standing"]')?.textContent ?? 'masque'));
+  resultats.classement_OnPeutRevenir = (await lignes(H.page)).some((l) => l.moi);
+  await H.contexte.close();
+
+  // X : un rang INCOHERENT (marche 17 avec 3 victoires) ne passe pas au classement.
+  const X = await appareil('X', { 'kubb-kings.rank': { index: 17, wins: 3, losses: 1, peak: 17 } });
+  await ouvrirCompte(X.page);
+  await X.page.locator('button', { hasText: /^Creer un compte$/ }).click();
+  await remplir(X.page, { email: 'tricheur@example.com', mdp: 'motdepasse1', confirmation: 'motdepasse1' });
+  await X.page.locator('button[type="submit"]').click();
+  await attendre(X.page, () => window.__kubbStoreApi.getState().account.sync === 'ok');
+  await X.page.locator('button', { hasText: /^Retour$/ }).click();
+  await ouvrirRangs(X.page);
+  const lx = await lignes(X.page);
+  console.log({ tricheur: lx.map((l) => l.texte) });
+  resultats.classement_UnRangIncoherentEstRefuse = !lx.some((l) => /Master 3/.test(l.texte)) && !lx.some((l) => l.moi);
+  await X.contexte.close();
 }
 
 conclure(resultats, erreurs);

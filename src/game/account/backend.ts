@@ -1,5 +1,6 @@
 import type { AuthError, Session, SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseClient, supabaseConfig } from '../online/supabaseClient';
+import { sanitizeEntries, sanitizeStanding, cleanPseudo, type LeaderboardEntry, type Standing } from './leaderboard';
 
 /**
  * Le compte joueur contre un service : une interface, et rien d'autre.
@@ -54,6 +55,14 @@ export interface AccountBackend {
   loadProfile(): Promise<RemoteProfile | null>;
   /** Ecriture optimiste : n'aboutit que si la revision attendue est encore la bonne. */
   saveProfile(data: unknown, expectedRevision: number): Promise<SaveResult>;
+  /** Les meilleurs rangs. Lisible SANS compte ; leve en cas de panne reseau. */
+  getLeaderboard(limit: number): Promise<LeaderboardEntry[]>;
+  /** Ma place au classement ; null si je n'ai pas encore de profil en ligne. */
+  myStanding(): Promise<Standing | null>;
+  /** Nouveau pseudo GENERE par le serveur (le joueur ne saisit rien) ; null en cas d'echec. */
+  rerollPseudo(): Promise<string | null>;
+  /** Apparaitre ou non au classement. */
+  setLeaderboardVisible(visible: boolean): Promise<boolean>;
   /** Supprime le compte ET son profil (cf. supabase/comptes.sql). */
   deleteAccount(): Promise<boolean>;
   /** Appelee quand la session change hors de nos actions (jeton revoque, compte supprime ailleurs). */
@@ -152,6 +161,36 @@ export function createSupabaseBackend(): AccountBackend | null {
         return { ok: true, revision };
       } catch {
         return { ok: false, conflict: false, error: 'network' };
+      }
+    },
+
+    async getLeaderboard(limit) {
+      const { data, error } = await (await client()).rpc('get_leaderboard', { p_limit: limit });
+      if (error) throw new Error(error.message);
+      return sanitizeEntries(data);
+    },
+
+    async myStanding() {
+      const { data, error } = await (await client()).rpc('my_standing');
+      if (error) return null;
+      return sanitizeStanding(data);
+    },
+
+    async rerollPseudo() {
+      try {
+        const { data, error } = await (await client()).rpc('reroll_pseudo');
+        return error ? null : cleanPseudo(data);
+      } catch {
+        return null;
+      }
+    },
+
+    async setLeaderboardVisible(visible) {
+      try {
+        const { error } = await (await client()).rpc('set_leaderboard_visible', { p_visible: visible });
+        return !error;
+      } catch {
+        return false;
       }
     },
 

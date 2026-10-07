@@ -127,7 +127,10 @@ cascade`). La progression gardee sur l'appareil, elle, reste.
 - **Mot de passe oublie : pas de reinitialisation** pour l'instant (elle repose sur l'envoi
   d'e-mails, dont l'offre gratuite est tres limitee). Un mot de passe perdu = un compte perdu ; la
   progression, elle, reste sur l'appareil.
-- **Pas de pseudo, pas de classement mondial** : le compte ne porte que l'e-mail et la progression.
+- **Pseudo genere, pas de nom libre** : le compte porte l'e-mail, la progression et un pseudo attribue par
+  le serveur, utilise uniquement pour le classement des parties classees (cf. `parties-classees.md`). Le
+  classement est amical : les rangs sont declares par les clients, avec pour seule defense un controle de
+  coherence cote serveur.
 - **Pause du projet** apres 7 jours d'inactivite (offre gratuite) : les comptes deviennent alors
   indisponibles jusqu'a la reprise du projet, mais la progression locale continue de fonctionner.
 

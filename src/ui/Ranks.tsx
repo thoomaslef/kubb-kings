@@ -1,4 +1,12 @@
+import { useCallback, useEffect, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
+import {
+  fetchLeaderboard,
+  fetchStanding,
+  rerollMyPseudo,
+  setMyLeaderboardVisible
+} from '../game/account/sync';
+import type { LeaderboardEntry, Standing } from '../game/account/leaderboard';
 import { DIVISIONS_PER_TIER, RANK_COLORS, RANK_COUNT, RANK_TIERS, rankPosition } from '../game/ranks';
 import { useT } from '../i18n/useT';
 import { RankBadge, useRankName } from './RankBadge';
@@ -8,6 +16,15 @@ import { RankBadge, useRankName } from './RankBadge';
  * actuel, le chemin a parcourir, les regles — puis le bouton qui lance la
  * recherche d'un adversaire classe (OnlineLobby.tsx, mode classe).
  */
+type Board =
+  | { state: 'loading' }
+  | { state: 'unavailable' }
+  | { state: 'error' }
+  | { state: 'ok'; entries: LeaderboardEntry[] };
+
+/** Nombre de lignes du classement affichees. */
+const BOARD_SIZE = 20;
+
 export function Ranks() {
   const t = useT();
   const rankName = useRankName();
@@ -16,6 +33,42 @@ export function Ranks() {
   const rank = useGameStore((s) => s.rank);
   const lastRankChange = useGameStore((s) => s.lastRankChange);
   const clearRankChange = useGameStore((s) => s.clearRankChange);
+
+  const account = useGameStore((s) => s.account);
+  const [board, setBoard] = useState<Board>({ state: 'loading' });
+  const [standing, setStanding] = useState<Standing | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const loadBoard = useCallback(async () => {
+    setBoard({ state: 'loading' });
+    try {
+      const entries = await fetchLeaderboard(BOARD_SIZE);
+      setBoard(entries === null ? { state: 'unavailable' } : { state: 'ok', entries });
+      setStanding(await fetchStanding());
+    } catch {
+      setBoard({ state: 'error' });
+    }
+  }, []);
+
+  // Au chargement de l'ecran, et quand on se connecte ou deconnecte.
+  useEffect(() => {
+    void loadBoard();
+  }, [loadBoard, account.status]);
+
+  const reroll = async () => {
+    setBusy(true);
+    const pseudo = await rerollMyPseudo();
+    setBusy(false);
+    if (pseudo) await loadBoard();
+  };
+
+  const toggleVisible = async () => {
+    if (!standing) return;
+    setBusy(true);
+    const ok = await setMyLeaderboardVisible(!standing.visible);
+    setBusy(false);
+    if (ok) await loadBoard();
+  };
 
   const current = rankPosition(rank.index);
   const total = rank.wins + rank.losses;
@@ -90,6 +143,78 @@ export function Ranks() {
             );
           })}
         </ol>
+
+        <h3 className="legal-heading">{t('ranks.board.title')}</h3>
+        {board.state === 'loading' && <p className="footnote">{t('ranks.board.loading')}</p>}
+        {board.state === 'unavailable' && <p className="footnote">{t('ranks.board.unavailable')}</p>}
+        {board.state === 'error' && (
+          <>
+            <p className="footnote">{t('ranks.board.error')}</p>
+            <button className="btn btn--ghost" onClick={() => void loadBoard()}>
+              {t('ranks.board.retry')}
+            </button>
+          </>
+        )}
+        {board.state === 'ok' && (
+          <>
+            {board.entries.length === 0 ? (
+              <p className="footnote" data-testid="board-empty">
+                {t('ranks.board.empty')}
+              </p>
+            ) : (
+              <ol className="leaderboard" data-testid="leaderboard">
+                {board.entries.map((e) => (
+                  <li key={e.place} className={`leaderboard__row${e.isMe ? ' leaderboard__row--me' : ''}`}>
+                    <span className="leaderboard__place">{e.place}</span>
+                    <RankBadge index={e.rankIndex} size="sm" />
+                    <span className="leaderboard__name">
+                      {e.pseudo}
+                      {e.isMe && <em> — {t('ranks.you')}</em>}
+                    </span>
+                    <span className="leaderboard__rank">{rankName(e.rankIndex)}</span>
+                    <span className="leaderboard__score">{t('ranks.board.score', { wins: e.wins, losses: e.losses })}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <p className="footnote">{t('ranks.board.unverified')}</p>
+          </>
+        )}
+
+        {account.status === 'signedIn' ? (
+          <div className="ranks-me" data-testid="my-standing">
+            {standing ? (
+              <>
+                <p className="panel__text">
+                  {t('ranks.board.yourPseudo')} <strong data-testid="my-pseudo">{standing.pseudo ?? '—'}</strong>
+                  {standing.place !== null
+                    ? ` — ${t('ranks.board.yourPlace', { place: standing.place, total: standing.total })}`
+                    : ` — ${t(standing.visible ? 'ranks.board.notRanked' : 'ranks.board.hidden')}`}
+                </p>
+                <div className="button-column">
+                  <button className="btn btn--ghost" onClick={reroll} disabled={busy}>
+                    {t('ranks.board.reroll')}
+                  </button>
+                  <button className="btn btn--ghost" onClick={toggleVisible} disabled={busy}>
+                    {t(standing.visible ? 'ranks.board.hide' : 'ranks.board.show')}
+                  </button>
+                </div>
+                <p className="footnote">{t('ranks.board.pseudoNote')}</p>
+              </>
+            ) : (
+              <p className="footnote">{t('ranks.board.noProfile')}</p>
+            )}
+          </div>
+        ) : (
+          board.state !== 'unavailable' && (
+            <div className="ranks-me">
+              <p className="footnote">{t('ranks.board.signIn')}</p>
+              <button className="btn btn--ghost" onClick={() => setScreen('account')}>
+                {t('menu.account.signedOut')}
+              </button>
+            </div>
+          )
+        )}
 
         <ul className="rules-list">
           <li>{t('ranks.rule.step')}</li>

@@ -200,12 +200,33 @@ describe("le reseau reellement present est divulgue", () => {
     }
   });
 
-  it("le compte ne stocke que la progression : le code n'ecrit que par les trois fonctions prevues", () => {
+  it("le compte ne stocke que la progression : le code n'ecrit que par les fonctions prevues", () => {
     // Pas de table ecrite directement, pas de stockage de fichiers : seulement
     // les trois fonctions SQL de supabase/comptes.sql.
     expect(backendSource).not.toMatch(/\.from\(|\.insert\(|\.upsert\(|\.storage/);
     const appels = [...backendSource.matchAll(/\.rpc\(\s*'([a-z_]+)'/g)].map((m) => m[1]).sort();
-    expect(appels).toEqual(["delete_my_account", "load_profile", "save_profile"]);
+    expect(appels).toEqual([
+      "delete_my_account",
+      "get_leaderboard",
+      "load_profile",
+      "my_standing",
+      "reroll_pseudo",
+      "save_profile",
+      "set_leaderboard_visible",
+    ]);
+  });
+
+  it("le classement est public : le texte le dit, avec ce qu'il montre et ce qu'il ne montre pas", () => {
+    // Ancrage sur le CODE : tant que l'ecran lit un classement, ces faits doivent etre ecrits.
+    expect(backendSource).toContain("get_leaderboard");
+    for (const chemin of [POLITIQUE, ECRAN]) {
+      const texte = texteJoueur(chemin);
+      for (const fait of ["classement", "public", "pseudo genere", "ne plus y apparaitre|ne plus apparaitre"]) {
+        const ok = fait.split("|").some((variante) => texte.includes(variante));
+        expect(ok, `"${fait}" manque dans ${chemin}`).toBe(true);
+      }
+    }
+    expect(texteJoueur(CGU)).toContain("classement");
   });
 
   it("partie rapide et partie classee : adversaire tire au sort, et pas de tchat", () => {

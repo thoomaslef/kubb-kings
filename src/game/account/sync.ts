@@ -1,5 +1,6 @@
 import { useGameStore } from '../../store/useGameStore';
 import { getBestStage } from '../roguelite';
+import type { LeaderboardEntry, Standing } from './leaderboard';
 import { createSupabaseBackend, type AccountBackend, type AccountErrorCode, type AccountUser } from './backend';
 import {
   emptySnapshot,
@@ -217,21 +218,38 @@ export function resolveAccountConflict(choice: 'local' | 'remote' | 'merge'): Pr
 
 // ------------------------------------------------------------------ envoi automatique
 
+/** Envoie ce qui a change depuis le dernier envoi, s'il y a quelque chose. */
+function pushIfChanged(): Promise<void> {
+  return enqueue(async () => {
+    const user = currentUser();
+    if (!user || !backend || store().accountConflict) return;
+    const meta = loadMeta();
+    if (!meta || meta.userId !== user.id) return; // pas encore rapproche : reconcile s'en charge
+    const local = readProfileSnapshot();
+    if (fingerprint(local) === meta.hash) return;
+    store().setAccount({ sync: 'syncing' });
+    await push(user, local, meta.revision);
+  });
+}
+
 function schedulePush() {
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(() => {
     pushTimer = null;
-    void enqueue(async () => {
-      const user = currentUser();
-      if (!user || !backend || store().accountConflict) return;
-      const meta = loadMeta();
-      if (!meta || meta.userId !== user.id) return; // pas encore rapproche : reconcile s'en charge
-      const local = readProfileSnapshot();
-      if (fingerprint(local) === meta.hash) return;
-      store().setAccount({ sync: 'syncing' });
-      await push(user, local, meta.revision);
-    });
+    void pushIfChanged();
   }, PUSH_DELAY_MS);
+}
+
+/**
+ * Envoie TOUT DE SUITE ce qui attend (le delai de 2 s est une economie, pas une
+ * regle) : avant de lire le classement, pour que la partie qu'on vient de jouer y soit.
+ */
+export async function flushProfile(): Promise<void> {
+  if (pushTimer) {
+    clearTimeout(pushTimer);
+    pushTimer = null;
+  }
+  await pushIfChanged();
 }
 
 /** Les seuls champs dont le changement vaut un envoi : le store bouge tout le temps pendant un match. */
@@ -419,6 +437,30 @@ export async function deleteAccount(): Promise<boolean> {
     setSignedOut();
   }
   return ok;
+}
+
+// ------------------------------------------------------------------ classement
+
+/** Les meilleurs rangs. Sans compte aussi ; null si le service n'est pas configure, leve si injoignable. */
+export async function fetchLeaderboard(limit = 20): Promise<LeaderboardEntry[] | null> {
+  ensureBackend();
+  if (!backend) return null;
+  if (store().account.status === 'signedIn') await flushProfile();
+  return backend.getLeaderboard(limit);
+}
+
+export async function fetchStanding(): Promise<Standing | null> {
+  ensureBackend();
+  if (!backend || store().account.status !== 'signedIn') return null;
+  return backend.myStanding();
+}
+
+export async function rerollMyPseudo(): Promise<string | null> {
+  return backend && store().account.status === 'signedIn' ? backend.rerollPseudo() : null;
+}
+
+export async function setMyLeaderboardVisible(visible: boolean): Promise<boolean> {
+  return backend && store().account.status === 'signedIn' ? backend.setLeaderboardVisible(visible) : false;
 }
 
 /** Pour les verifications : relance un rapprochement a la demande. */

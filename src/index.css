@@ -1325,3 +1325,64 @@ body {
   text-align: center;
   margin: 2px 0 10px;
 }
+
+.leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.leaderboard__row {
+  display: grid;
+  grid-template-columns: 28px 24px 1fr auto;
+  grid-template-areas: 'place badge name score' '. . rank score';
+  align-items: center;
+  column-gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 14px;
+}
+
+.leaderboard__row--me {
+  border-color: var(--gold);
+  background: rgba(242, 193, 78, 0.1);
+}
+
+.leaderboard__place {
+  grid-area: place;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.leaderboard__row .rank-badge {
+  grid-area: badge;
+}
+
+.leaderboard__name {
+  grid-area: name;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard__rank {
+  grid-area: rank;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.leaderboard__score {
+  grid-area: score;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.ranks-me {
+  margin: 8px 0 14px;
+}
