@@ -177,6 +177,8 @@ export class MatchScene extends Phaser.Scene {
   /** "Second souffle" ne rembourse qu'un seul lancer par manche. */
   private secondSouffleUsed = false;
   private elanUsed = false;
+  /** Partie classee en ligne : le rang est en jeu (cf. ranks.ts). */
+  private ranked = false;
   /** Le lancer en cours a-t-il deja fait tomber un kubb ? Remis a zero a chaque tir. */
   private knockedThisThrow = false;
   /**
@@ -335,6 +337,11 @@ export class MatchScene extends Phaser.Scene {
         }
       : null;
     this.mode = mode;
+    // Partie classee : le rang est en jeu. On pose le marqueur d'abandon tout de
+    // suite — fermer l'onglet en cours de partie comptera comme une defaite
+    // (cf. rankPersistence.ts).
+    this.ranked = mode === 'online' && !!gameStore.getState().online?.ranked;
+    if (this.ranked) gameStore.getState().beginRankedMatch();
     // En Defi, le niveau et le terrain viennent de l'echelle (roguelite.ts),
     // pas des selecteurs du menu casual — mais l'IA reste exactement la
     // meme machine qu'en solo, juste sur un profil plus dur.
@@ -441,6 +448,13 @@ export class MatchScene extends Phaser.Scene {
       // allee a son terme (les deux joueurs ont deja leur resultat), et
       // notre propre depart (le joueur sait qu'il vient de partir).
       if (this.phase === 'over' || reason === 'quitte') return;
+      // Classe : l'adversaire qui part nous donne la victoire. Les autres
+      // interruptions (liaison perdue, desynchronisation) ne designent pas de
+      // fautif — personne ne gagne ni ne perd de rang.
+      if (this.ranked) {
+        if (reason === 'parti') gameStore.getState().recordRankedMatch('win', 'forfeit-win');
+        else gameStore.getState().clearRankedMatch();
+      }
       gameStore.getState().patchOnline({ status: 'terminee', endedBecause: reason });
       // Partie interrompue : on ne peut pas la faire finir "normalement"
       // (l'adversaire ne jouera plus), on rend donc la main au joueur.
@@ -1605,6 +1619,10 @@ export class MatchScene extends Phaser.Scene {
     // decision qui suit lit donc bien la partie du jour incluse.
     if (won) gameStore.getState().recordTerrainWin(this.fieldPreset);
     if (this.mode === 'online' && result.winner !== 'draw') gameStore.getState().recordOnlineWin(won);
+    if (this.ranked) {
+      if (result.winner === 'draw') gameStore.getState().clearRankedMatch();
+      else gameStore.getState().recordRankedMatch(won ? 'win' : 'loss', 'match');
+    }
 
     const store = gameStore.getState();
     const earned = endOfMatchAchievements({
@@ -2096,6 +2114,11 @@ export class MatchScene extends Phaser.Scene {
       // plateau fige jusqu'a l'expiration du battement de coeur.
       this.session.leave();
       setCurrentSession(null);
+      // Classe : partir en cours de partie est une defaite (la partie finie
+      // a deja ete comptee a sa fin).
+      if (voluntary && this.ranked && this.phase !== 'over') {
+        gameStore.getState().recordRankedMatch('loss', 'forfeit-loss');
+      }
       if (voluntary) gameStore.getState().endOnline();
     }
     this.scene.start('MenuScene');

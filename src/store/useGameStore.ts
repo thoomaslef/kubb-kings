@@ -18,6 +18,8 @@ import { loadOwnedItems, saveOwnedItems } from '../game/shopPersistence';
 import { loadUnlockedAchievements, saveUnlockedAchievements } from '../game/achievementsPersistence';
 import { loadTerrainWins, saveTerrainWins } from '../game/terrainWinsPersistence';
 import { loadOnlineStreak, saveOnlineStreak } from '../game/onlineStreakPersistence';
+import { applyRankedResult, type RankState, type RankedOutcome } from '../game/ranks';
+import { hasPendingRankedMatch, loadRank, saveRank, setPendingRankedMatch } from '../game/rankPersistence';
 import { getInitialLang, persistLang } from '../i18n/langPersistence';
 import type { Lang } from '../i18n/translate';
 
@@ -38,6 +40,7 @@ export type Screen =
   | 'legal'
   | 'about'
   | 'online'
+  | 'ranks'
   | 'map-select';
 
 /** Phase du tour courant, pilotee par MatchScene. */
@@ -82,6 +85,26 @@ export interface OnlineState {
   endedBecause: string | null;
   /** Ou en est la revanche, une fois la partie finie. */
   rematch: RematchState;
+  /** Partie classee : conditions imposees, rang en jeu, pas de revanche. */
+  ranked: boolean;
+}
+
+/** Pourquoi le rang a bouge — l'ecran de resultat n'annonce pas la meme chose. */
+export type RankChangeReason =
+  /** Fin de partie normale. */
+  | 'match'
+  /** L'adversaire est parti : victoire par forfait. */
+  | 'forfeit-win'
+  /** On est parti en cours de partie. */
+  | 'forfeit-loss'
+  /** L'onglet a ete ferme en pleine partie classee. */
+  | 'abandon';
+
+export interface RankChange {
+  before: number;
+  after: number;
+  outcome: RankedOutcome;
+  reason: RankChangeReason;
 }
 
 /**
@@ -293,7 +316,20 @@ interface GameState {
   /** Consomme le bonus "Sursis" de la run en cours ; no-op hors run active. */
   useSursis: () => void;
   /** Ouvre un salon en ligne (avant meme que l'adversaire arrive). */
-  startOnline: (roomCode: string, role: 'host' | 'guest') => void;
+  startOnline: (roomCode: string, role: 'host' | 'guest', ranked?: boolean) => void;
+  /** Rang du joueur (cf. ranks.ts) et dernier mouvement, a annoncer une fois. */
+  rank: RankState;
+  lastRankChange: RankChange | null;
+  /** Le salon en ligne cherche une partie CLASSEE plutot qu'une partie privee. */
+  rankedLobby: boolean;
+  setRankedLobby: (ranked: boolean) => void;
+  /** Une partie classee commence : l'abandon par fermeture d'onglet devient detectable. */
+  beginRankedMatch: () => void;
+  /** Une partie classee s'acheve (ou est abandonnee) : le rang bouge. */
+  recordRankedMatch: (outcome: RankedOutcome, reason: RankChangeReason) => void;
+  /** Une partie classee s'acheve sans effet sur le rang (liaison perdue...). */
+  clearRankedMatch: () => void;
+  clearRankChange: () => void;
   /** Met a jour la partie en ligne en cours ; no-op s'il n'y en a pas. */
   patchOnline: (patch: Partial<OnlineState>) => void;
   /** Referme la partie en ligne (retour au menu). */
@@ -387,6 +423,8 @@ export const useGameStore = create<GameState>((set) => ({
   lastAchievementsUnlocked: [],
   terrainWins: loadTerrainWins() as FieldPresetId[],
   onlineWinStreak: loadOnlineStreak(),
+  ...settleRankAtStartup(),
+  rankedLobby: false,
 
   mapIntent: null,
 
@@ -413,9 +451,9 @@ export const useGameStore = create<GameState>((set) => ({
     set((state) => (state.run ? { run: { ...state.run, perks: [...state.run.perks, id] } } : state)),
   useSursis: () =>
     set((state) => (state.run ? { run: { ...state.run, sursisUsed: true } } : state)),
-  startOnline: (roomCode, role) =>
+  startOnline: (roomCode, role, ranked = false) =>
     set({
-      online: { roomCode, role, status: 'attente', team: null, endedBecause: null, rematch: 'aucune' },
+      online: { roomCode, role, status: 'attente', team: null, endedBecause: null, rematch: 'aucune', ranked },
       // L'hote tient Bleue, l'invite Rouge — la session le confirmera, mais
       // l'interface doit deja savoir de quel cote se placer.
       profileTeam: role === 'host' ? 'blue' : 'red'
@@ -490,8 +528,32 @@ export const useGameStore = create<GameState>((set) => ({
       const onlineWinStreak = won ? state.onlineWinStreak + 1 : 0;
       saveOnlineStreak(onlineWinStreak);
       return { onlineWinStreak };
-    })
+    }),
+  setRankedLobby: (ranked) => set({ rankedLobby: ranked }),
+  beginRankedMatch: () => setPendingRankedMatch(true),
+  recordRankedMatch: (outcome, reason) =>
+    set((state) => {
+      const rank = applyRankedResult(state.rank, outcome);
+      saveRank(rank);
+      setPendingRankedMatch(false);
+      return { rank, lastRankChange: { before: state.rank.index, after: rank.index, outcome, reason } };
+    }),
+  clearRankedMatch: () => setPendingRankedMatch(false),
+  clearRankChange: () => set({ lastRankChange: null })
 }));
+
+/**
+ * Au chargement : une partie classee restee « en cours » est un onglet ferme
+ * en pleine partie, donc un abandon — une defaite, annoncee au prochain menu.
+ */
+function settleRankAtStartup(): { rank: RankState; lastRankChange: RankChange | null } {
+  const rank = loadRank();
+  if (!hasPendingRankedMatch()) return { rank, lastRankChange: null };
+  const after = applyRankedResult(rank, 'loss');
+  saveRank(after);
+  setPendingRankedMatch(false);
+  return { rank: after, lastRankChange: { before: rank.index, after: after.index, outcome: 'loss', reason: 'abandon' } };
+}
 
 /** Acces hors composant React (depuis les scenes Phaser). */
 export const gameStore = useGameStore;

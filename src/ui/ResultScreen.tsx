@@ -6,6 +6,8 @@ import { levelFromXp } from '../game/progression';
 import { LADDER, setBestStageIfHigher } from '../game/roguelite';
 import { downloadBlob, shareCardBlob } from '../game/shareCard';
 import { translate, type Lang } from '../i18n/translate';
+import { rankPosition } from '../game/ranks';
+import { RankBadge, useRankName } from './RankBadge';
 import { useT } from '../i18n/useT';
 import { getCurrentSession } from '../game/online/currentSession';
 import type { MatchResult } from '../store/useGameStore';
@@ -64,6 +66,18 @@ export function ResultScreen() {
   const isOnline = mode === 'online';
   const online = useGameStore((s) => s.online);
   const patchOnline = useGameStore((s) => s.patchOnline);
+  const lastRankChange = useGameStore((s) => s.lastRankChange);
+  const clearRankChange = useGameStore((s) => s.clearRankChange);
+  const setRankedLobby = useGameStore((s) => s.setRankedLobby);
+  const rankName = useRankName();
+  // Le mouvement de rang d'une partie normale s'annonce ICI, une fois : il ne
+  // doit pas reparaitre au menu.
+  useEffect(
+    () => () => {
+      if (useGameStore.getState().lastRankChange?.reason === 'match') clearRankChange();
+    },
+    [clearRankChange]
+  );
   // En ligne comme en solo, le joueur n'a qu'un camp : le titre se lit de son
   // point de vue ("Victoire") et non de celui d'un arbitre ("Bleue gagne").
   const soloLike = mode === 'solo' || isDefi || isOnline;
@@ -269,6 +283,28 @@ export function ResultScreen() {
           </div>
         )}
 
+        {online?.ranked && lastRankChange?.reason === 'match' && (
+          <div className="rank-line">
+            <RankBadge index={lastRankChange.before} size="sm" />
+            <span>
+              {lastRankChange.before === lastRankChange.after
+                ? t('ranks.result.same', { to: rankName(lastRankChange.after) })
+                : t(lastRankChange.outcome === 'win' ? 'ranks.result.win' : 'ranks.result.loss', {
+                    from: rankName(lastRankChange.before),
+                    to: rankName(lastRankChange.after)
+                  })}
+            </span>
+            <RankBadge index={lastRankChange.after} size="sm" />
+          </div>
+        )}
+        {online?.ranked &&
+          lastRankChange?.reason === 'match' &&
+          rankPosition(lastRankChange.before).tier !== rankPosition(lastRankChange.after).tier && (
+            <p className="footnote">
+              {t(lastRankChange.after > lastRankChange.before ? 'ranks.result.promotion' : 'ranks.result.demotion')}
+            </p>
+          )}
+
         <div className="button-column">
           {isTournamentMatch ? (
             tournamentWinnerName ? (
@@ -310,6 +346,31 @@ export function ResultScreen() {
                 </button>
               </>
             )
+          ) : isOnline && online?.ranked ? (
+            // Classe : pas de revanche (le rang est deja joue), mais on peut
+            // enchainer sur une nouvelle recherche.
+            <>
+              <button
+                className="btn btn--primary"
+                onClick={() => {
+                  bridge.send('leave-match');
+                  // La scene du menu repose l'ecran « menu » en demarrant : on
+                  // attend ce passage, puis on entre dans la recherche — sinon
+                  // elle ecraserait notre changement d'ecran.
+                  const off = useGameStore.subscribe((state) => {
+                    if (state.screen !== 'menu') return;
+                    off();
+                    setRankedLobby(true);
+                    setScreen('online');
+                  });
+                }}
+              >
+                {t('ranks.again')}
+              </button>
+              <button className="btn btn--ghost" onClick={quitRun}>
+                {t('result.menu')}
+              </button>
+            </>
           ) : isOnline ? (
             // Pas de "Rejouer" solitaire en ligne : relancer de son seul cote
             // laisserait l'adversaire sur une autre partie. On DEMANDE donc la

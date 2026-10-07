@@ -34,6 +34,8 @@ export const QUEUE_HEARTBEAT_MS = 2_000;
 export const QUEUE_PEER_TTL_MS = 7_000;
 /** Canal de la file. Plus long que tout code de salon saisissable : on ne peut pas s'y tromper. */
 export const QUEUE_CHANNEL = 'MATCHMAKING-QUEUE';
+/** File des parties CLASSEES : separee, pour qu'un joueur classe ne tombe jamais sur une partie amicale. */
+export const QUEUE_CHANNEL_RANKED = 'MATCHMAKING-RANKED';
 
 export type QueueMessage =
   | { kind: 'waiting'; playerId: string; since: number }

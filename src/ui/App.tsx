@@ -16,6 +16,7 @@ import { Achievements } from './Achievements';
 import { Progression } from './Progression';
 import { Legal } from './Legal';
 import { OnlineLobby } from './OnlineLobby';
+import { Ranks } from './Ranks';
 import { MapSelect } from './MapSelect';
 import { About } from './About';
 import { Boot } from './Boot';
@@ -70,6 +71,7 @@ export function App() {
       {screen === 'legal' && <Legal />}
       {screen === 'about' && <About />}
       {screen === 'online' && <OnlineLobby />}
+      {screen === 'ranks' && <Ranks />}
       {screen === 'map-select' && <MapSelect />}
     </div>
   );

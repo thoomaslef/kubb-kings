@@ -9,6 +9,7 @@ import { THROW_EFFECT_IDS } from '../game/throwEffects';
 import { isShopRefOwned, SHOP_ITEMS, type ShopCategory } from '../game/shop';
 import { LADDER, getBestStage } from '../game/roguelite';
 import { useT } from '../i18n/useT';
+import { RankBadge, useRankName } from './RankBadge';
 import type { Lang } from '../i18n/translate';
 
 const LEVELS = Object.keys(AI_PROFILES) as Difficulty[];
@@ -23,6 +24,10 @@ function stars(n: number): string {
 export function Menu() {
   const t = useT();
   const setScreen = useGameStore((s) => s.setScreen);
+  const rank = useGameStore((s) => s.rank);
+  const lastRankChange = useGameStore((s) => s.lastRankChange);
+  const clearRankChange = useGameStore((s) => s.clearRankChange);
+  const rankName = useRankName();
   const difficulty = useGameStore((s) => s.difficulty);
   const setDifficulty = useGameStore((s) => s.setDifficulty);
   const kubbSkin = useGameStore((s) => s.kubbSkin);
@@ -103,6 +108,16 @@ export function Menu() {
         </h1>
         <p className="subtitle">{t('menu.subtitle')}</p>
 
+        {/* Un mouvement de rang hors fin de partie normale (forfait, onglet ferme) : annonce, une fois. */}
+        {lastRankChange && lastRankChange.reason !== 'match' && (
+          <button type="button" className="footnote ranks-change" onClick={clearRankChange}>
+            {t(`ranks.change.${lastRankChange.reason}`, {
+              from: rankName(lastRankChange.before),
+              to: rankName(lastRankChange.after)
+            })}
+          </button>
+        )}
+
         <button
           type="button"
           className="xp-panel xp-panel--compact xp-panel--clickable"
@@ -159,6 +174,10 @@ export function Menu() {
           </button>
           <button className="btn" onClick={() => openMapSelect('online')}>
             {t('menu.online')}
+          </button>
+          <button className="btn btn--ranked" onClick={() => setScreen('ranks')}>
+            <RankBadge index={rank.index} size="sm" />
+            {t('menu.ranked', { rank: rankName(rank.index) })}
           </button>
           {bestStage > 0 && (
             <p className="footnote footnote--tight">

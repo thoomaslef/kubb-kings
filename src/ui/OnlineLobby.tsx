@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { createRoomCode } from '../game/online/localTransport';
-import { Matchmaker, QUEUE_BOT_AFTER_MS, QUEUE_CHANNEL, type QueueMessage } from '../game/online/matchmaking';
+import {
+  Matchmaker,
+  QUEUE_BOT_AFTER_MS,
+  QUEUE_CHANNEL,
+  QUEUE_CHANNEL_RANKED,
+  type QueueMessage
+} from '../game/online/matchmaking';
 import { createMatchTransport, transportKind } from '../game/online/transportFactory';
 import { setCurrentSession } from '../game/online/currentSession';
 import { OnlineSession } from '../game/online/session';
@@ -10,6 +16,7 @@ import { PROTOCOL_VERSION, type MatchSetup, type PlayerCard } from '../game/onli
 import { WIND_DIRECTIONS, drawStartingTeam, type FieldPresetId } from '../game/rules';
 import type { BatonId } from '../game/batons';
 import { levelFromXp } from '../game/progression';
+import { useRankName } from './RankBadge';
 import { useT } from '../i18n/useT';
 
 /**
@@ -47,6 +54,10 @@ function drawSetup(
 
 export function OnlineLobby() {
   const t = useT();
+  const rankName = useRankName();
+  const rankedLobby = useGameStore((s) => s.rankedLobby);
+  const setRankedLobby = useGameStore((s) => s.setRankedLobby);
+  const rank = useGameStore((s) => s.rank);
   const setScreen = useGameStore((s) => s.setScreen);
   const setMode = useGameStore((s) => s.setMode);
   const startOnline = useGameStore((s) => s.startOnline);
@@ -68,7 +79,7 @@ export function OnlineLobby() {
 
   // Recherche rapide (cf. game/online/matchmaking.ts).
   /** Recherche en cours : heure d'arrivee en file (pour garder son rang si on la relance). */
-  const [searching, setSearching] = useState<{ since: number } | null>(null);
+  const [searching, setSearching] = useState<{ since: number; ranked: boolean } | null>(null);
   const [waitedMs, setWaitedMs] = useState(0);
   const [queueSize, setQueueSize] = useState(1);
   /** Salon ouvert par la recherche : on n'affiche pas un code a partager, personne n'en a besoin. */
@@ -139,29 +150,36 @@ export function OnlineLobby() {
     });
   };
 
-  const host = (roomCode?: string) => {
+  const host = (roomCode?: string, ranked = false) => {
     setError(null);
     const code = roomCode ?? createRoomCode();
-    startOnline(code, 'host');
+    startOnline(code, 'host', ranked);
     wire(
       OnlineSession.host(
         createMatchTransport(code, onTransportError),
-        drawSetup(fieldPreset, windEnabled, fieldKubbsEnabled, batonId),
+        // Partie classee : conditions fixes, les memes pour tous (terrain
+        // classique, sans vent ni kubb de champ, projectile de base). Rien de
+        // ce qu'on a achete ou regle au menu n'entre en jeu.
+        ranked
+          ? drawSetup('classique', false, false, 'base')
+          : drawSetup(fieldPreset, windEnabled, fieldKubbsEnabled, batonId),
         `hote-${code}`,
         card
       )
     );
   };
 
-  const join = (roomCode?: string) => {
+  const join = (roomCode?: string, ranked = false) => {
     const code = (roomCode ?? joinCode).trim().toUpperCase();
     if (code.length < 3) {
       setError(t('online.badCode'));
       return;
     }
     setError(null);
-    startOnline(code, 'guest');
-    wire(OnlineSession.join(createMatchTransport(code, onTransportError), `invite-${code}`, batonId, card));
+    startOnline(code, 'guest', ranked);
+    wire(
+      OnlineSession.join(createMatchTransport(code, onTransportError), `invite-${code}`, ranked ? 'base' : batonId, card)
+    );
   };
 
   /** Arrete la recherche : minuteurs, file d'attente (qui previent les autres) et salon d'attente. */
@@ -182,11 +200,11 @@ export function OnlineLobby() {
    * recherche apres un couplage qui n'a pas abouti — on ne perd pas son rang,
    * et le bot arrive a l'heure prevue depuis le TOUT premier clic.
    */
-  const startSearch = (since?: number) => {
+  const startSearch = (since?: number, ranked = false) => {
     stopSearch();
     setError(null);
     setQuickRoom(false);
-    const transport = createMatchTransport<QueueMessage>(QUEUE_CHANNEL, () => {
+    const transport = createMatchTransport<QueueMessage>(ranked ? QUEUE_CHANNEL_RANKED : QUEUE_CHANNEL, () => {
       stopSearch();
       setSearching(null);
       setError(t('online.connectionFailed'));
@@ -202,8 +220,8 @@ export function OnlineLobby() {
         matchmakerRef.current = null;
         setSearching(null);
         setQuickRoom(true);
-        if (role === 'host') host(code);
-        else join(code);
+        if (role === 'host') host(code, ranked);
+        else join(code, ranked);
         // Une course rare peut laisser un salon sans invite : au bout d'un
         // moment, on abandonne ce salon et on retourne en file.
         roomTimerRef.current = setTimeout(() => {
@@ -212,7 +230,7 @@ export function OnlineLobby() {
           sessionRef.current = null;
           setCurrentSession(null);
           endOnline();
-          startSearch(arrivedAt);
+          startSearch(arrivedAt, ranked);
         }, ROOM_WAIT_MS);
       },
       onBot: () => {
@@ -220,13 +238,15 @@ export function OnlineLobby() {
         searchTimerRef.current = null;
         matchmakerRef.current = null;
         setSearching(null);
-        // Personne n'est venu en une minute : un bot, en difficile.
+        // Personne n'est venu en une minute : un bot, en difficile. En classe,
+        // c'est de l'entrainement : le rang n'est jamais en jeu (aucune partie
+        // en ligne n'a lieu, rien n'est enregistre).
         useGameStore.getState().startBotMatch();
         bridge.send('start-match');
       }
     });
     matchmakerRef.current = matchmaker;
-    setSearching({ since: matchmaker.since });
+    setSearching({ since: matchmaker.since, ranked });
     setWaitedMs(Date.now() - matchmaker.since);
     setQueueSize(1);
     searchTimerRef.current = setInterval(() => {
@@ -236,10 +256,18 @@ export function OnlineLobby() {
     }, 1000);
   };
 
+  // Arrive par l'ecran des rangs : la recherche classee demarre d'elle-meme.
+  useEffect(() => {
+    if (rankedLobby && kind !== 'aucun' && !useGameStore.getState().online) startSearch(undefined, true);
+    // Une seule fois a l'arrivee sur l'ecran.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const back = () => {
     stopSearch();
     setSearching(null);
     setQuickRoom(false);
+    setRankedLobby(false);
     sessionRef.current?.leave();
     sessionRef.current = null;
     setCurrentSession(null);
@@ -275,7 +303,7 @@ export function OnlineLobby() {
         <div className="panel">
           <h2 className="panel__title">{t('online.waitingTitle')}</h2>
           {quickRoom ? (
-            <p className="panel__text">{t('online.quickFound')}</p>
+            <p className="panel__text">{t(online?.ranked ? 'online.rankedFound' : 'online.quickFound')}</p>
           ) : online.role === 'host' ? (
             <>
               <p className="panel__text">{t('online.shareCode')}</p>
@@ -303,8 +331,12 @@ export function OnlineLobby() {
     return (
       <div className="overlay overlay--solid">
         <div className="panel">
-          <h2 className="panel__title">{t('online.searchingTitle')}</h2>
-          <p className="panel__text">{t('online.searchingText', { n: queueSize, s: leftS })}</p>
+          <h2 className="panel__title">{t(searching.ranked ? 'online.rankedTitle' : 'online.searchingTitle')}</h2>
+          <p className="panel__text">
+            {searching.ranked
+              ? t('online.rankedText', { rank: rankName(rank.index), n: queueSize, s: leftS })
+              : t('online.searchingText', { n: queueSize, s: leftS })}
+          </p>
           <div className="button-column">
             <button className="btn btn--ghost" onClick={back}>
               {t('online.cancel')}

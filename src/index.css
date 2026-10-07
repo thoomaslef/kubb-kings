@@ -1162,3 +1162,142 @@ body {
   font-size: 12px;
   white-space: nowrap;
 }
+
+
+/* ---------- Rangs (classe) ---------- */
+
+.rank-badge {
+  --rank-color: var(--gold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 34px;
+  height: 38px;
+  color: #0d1a14;
+  font-weight: 800;
+  background: linear-gradient(160deg, var(--rank-color), color-mix(in srgb, var(--rank-color) 55%, #0d1a14));
+  clip-path: polygon(50% 0, 100% 16%, 100% 62%, 50% 100%, 0 62%, 0 16%);
+}
+
+.rank-badge--sm {
+  width: 22px;
+  height: 25px;
+  font-size: 11px;
+}
+
+.rank-badge--md {
+  font-size: 16px;
+}
+
+.rank-badge--lg {
+  width: 64px;
+  height: 72px;
+  font-size: 28px;
+}
+
+.panel--ranks {
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.ranks-current {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.ranks-current__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ranks-current__name {
+  font-size: 22px;
+}
+
+.ranks-change {
+  padding: 8px 10px;
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+}
+
+.ranks-stats {
+  font-size: 14px;
+}
+
+.ranks-ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.ranks-tier {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--rank-color);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ranks-tier--current {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--rank-color);
+}
+
+.ranks-tier__name {
+  font-weight: 700;
+  color: var(--rank-color);
+}
+
+.ranks-tier__divisions {
+  display: flex;
+  gap: 6px;
+}
+
+.ranks-division {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.ranks-division--done {
+  background: color-mix(in srgb, var(--rank-color) 30%, transparent);
+  color: var(--text);
+}
+
+.ranks-division--here {
+  background: var(--rank-color);
+  border-color: var(--rank-color);
+  color: #0d1a14;
+  font-weight: 800;
+}
+
+.rank-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.btn--ranked {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}

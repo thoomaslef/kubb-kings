@@ -43,6 +43,8 @@ export function MapSelect() {
   const lancer = () => {
     setFieldPreset(valide);
     if (intent === 'online') {
+      // Le salon prive : jamais la recherche classee (qui passe par l'ecran des rangs).
+      useGameStore.getState().setRankedLobby(false);
       setScreen('online');
       return;
     }

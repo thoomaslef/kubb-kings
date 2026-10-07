@@ -183,6 +183,7 @@ export function HUD() {
         <div className="overlay">
           <div className="panel">
             <h2 className="panel__title">{t('hud.pause')}</h2>
+            {online?.ranked && <p className="footnote">{t('hud.leaveRankedWarning')}</p>}
             <div className="button-column">
               <button className="btn btn--primary" onClick={() => setPaused(false)}>
                 {t('hud.resume')}
