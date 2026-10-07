@@ -217,7 +217,7 @@ derniere manche, detection correcte de fin de run). **Une defaite, un match nul 
 timeout terminent la run immediatement** — c'est le ressort roguelite : pas de
 sauvegarde en cours de route.
 
-**Treize bonus**, chacun applicable au joueur uniquement (jamais a l'IA) :
+**Dix-sept bonus**, chacun applicable au joueur uniquement (jamais a l'IA) :
 
 | Bonus             | Effet                                                                     |
 | ------------------ | -------------------------------------------------------------------------- |
@@ -234,6 +234,15 @@ sauvegarde en cours de route.
 | Longue haleine     | +30 secondes sur l'horloge de la manche                                    |
 | Renfort            | Un kubb adverse au hasard est deja abattu avant le premier lancer          |
 | Calme plat         | La meteo (vent) est desactivee pour la manche, si elle etait active        |
+| Poignet souple     | Effet lu sur le geste x1,5 (plafonne a +/-1) : un arc plus discret suffit  |
+| Effet appuye       | Force de la courbe x1,25 pour un meme effet (au-dela du maximum)           |
+| Elan               | Le premier lancer qui renverse 2 kubbs ou plus d'un coup n'est pas compte  |
+| Grand renfort      | Deux kubbs adverses au hasard sont deja abattus avant le premier lancer (jamais le dernier debout) |
+
+Les quatre derniers (Poignet souple, Effet appuye, Elan, Grand renfort) ont ete
+verifies en vraie manche de Defi par `tests/browser/bonus-defi.mjs`. "Poignet souple" et
+"Effet appuye" sont deux leviers distincts de l'effet : l'un change l'arc a tracer,
+l'autre la force de la courbe — jamais l'effet que voit l'IA, qui tire toujours droit.
 
 Chaque nouveau bonus modifie un reglage deja existant du meme sous-systeme qu'un des
 trois premiers (deviation/vent/seuil de chute deja lus par `ai.ts` pour l'IA, mais
@@ -244,9 +253,9 @@ finir la run) : purement cote scene (`MatchScene::resolveKingHit`, redemarrage d
 scene), l'IA ne sait meme pas que ce bonus existe.
 
 Un seul bonus est propose deux fois : `pickPerkChoices` tire deux options parmi ceux non
-encore debloques. Avec treize bonus a decouvrir, l'ecran de choix continue de proposer
+encore debloques. Avec dix-sept bonus a decouvrir, l'ecran de choix continue de proposer
 de vraies options sur la quasi-totalite des 30 manches de l'echelle ; ce n'est qu'une
-fois les treize acquis que la manche suivante s'enchaine directement, sans faux choix a
+fois les dix-sept acquis que la manche suivante s'enchaine directement, sans faux choix a
 l'ecran.
 
 La meilleure serie (nombre de manches franchies) est retenue en `localStorage`, affichee

@@ -26,6 +26,10 @@ import {
   LADDER,
   LANCER_BONUS_THROWS,
   LONGUE_HALEINE_BONUS_MS,
+  POIGNET_SOUPLE_SPIN_MULTIPLIER,
+  EFFET_APPUYE_FORCE_MULTIPLIER,
+  GRAND_RENFORT_KUBBS,
+  ELAN_MIN_KNOCKED,
   OEIL_DE_LYNX_DEVIATION_MULTIPLIER,
   POIGNE_FERME_THRESHOLD_MULTIPLIER,
   SANG_FROID_WIND_MULTIPLIER,
@@ -171,6 +175,7 @@ export class MatchScene extends Phaser.Scene {
   private runPerks: PerkId[] = [];
   /** "Second souffle" ne rembourse qu'un seul lancer par manche. */
   private secondSouffleUsed = false;
+  private elanUsed = false;
   /** Le lancer en cours a-t-il deja fait tomber un kubb ? Remis a zero a chaque tir. */
   private knockedThisThrow = false;
   /**
@@ -348,6 +353,7 @@ export class MatchScene extends Phaser.Scene {
     // "Longue haleine" (Defi) : temps supplementaire pour la manche entiere.
     if (this.runPerks.includes('longue-haleine')) this.timeLeftMs += LONGUE_HALEINE_BONUS_MS;
     this.secondSouffleUsed = false;
+    this.elanUsed = false;
     this.knockedThisThrow = false;
     this.bouncedWallThisThrow = false;
     this.kingTouchedThisThrow = false;
@@ -381,6 +387,15 @@ export class MatchScene extends Phaser.Scene {
       const standing = this.teams[OPPONENT[this.profileTeam]].kubbs.filter((k) => k.isInPlay);
       const target = standing[Math.floor(Math.random() * standing.length)];
       target?.knockDown(this);
+    }
+    // "Grand renfort" (Defi) : plusieurs kubbs adverses deja abattus. Jamais tous :
+    // il en reste au moins un debout, sinon la manche n'aurait plus d'enjeu.
+    if (this.runPerks.includes('grand-renfort')) {
+      for (let i = 0; i < GRAND_RENFORT_KUBBS; i += 1) {
+        const standing = this.teams[OPPONENT[this.profileTeam]].kubbs.filter((k) => k.isInPlay);
+        if (standing.length <= 1) break;
+        standing[Math.floor(Math.random() * standing.length)]?.knockDown(this);
+      }
     }
 
     // Enregistrement de la partie : ouvert ici, une fois le terrain, le vent
@@ -553,6 +568,11 @@ export class MatchScene extends Phaser.Scene {
       this.dragPath.push({ x: pointer.worldX, y: pointer.worldY });
     }
     this.aimSpin = spinFromDragPath(this.dragPath);
+    // "Poignet souple" (Defi) : un arc plus discret suffit. Joueur uniquement ;
+    // la fleche de visee montre l'effet reellement obtenu.
+    if (this.isProfileTeam(this.activeTeam) && this.runPerks.includes('poignet-souple')) {
+      this.aimSpin = Phaser.Math.Clamp(this.aimSpin * POIGNET_SOUPLE_SPIN_MULTIPLIER, -1, 1);
+    }
 
     const distance = Phaser.Math.Distance.Between(origin.x, origin.y, pointer.worldX, pointer.worldY);
     let power = Phaser.Math.Clamp(distance / AIM.maxDragDistance, AIM.minPower, 1);
@@ -711,6 +731,11 @@ export class MatchScene extends Phaser.Scene {
     // exact, y compris son controle anti-suicide (ai.ts::curvedKingDanger).
     const spin = imposed ? imposed.spin : this.aimSpin;
     this.flightSpin = spin;
+    // "Effet appuye" (Defi) : courbe plus forte pour un meme effet. L'enregistrement
+    // garde l'effet saisi (spin), pas cette force de vol.
+    if (!imposed && this.isProfileTeam(this.activeTeam) && this.runPerks.includes('effet-appuye')) {
+      this.flightSpin = spin * EFFET_APPUYE_FORCE_MULTIPLIER;
+    }
     const roll = this.baton.launch(
       this.aimAngle,
       this.aimPower,
@@ -923,19 +948,29 @@ export class MatchScene extends Phaser.Scene {
 
     // "Second souffle" (Defi) : le tout premier lancer du joueur qui ne
     // renverse rien de la manche n'est pas compte. Une seule fois par manche.
-    const refunded =
+    const refundedSecondSouffle =
       this.isProfileTeam(this.activeTeam) &&
       !this.knockedThisThrow &&
       !this.secondSouffleUsed &&
       this.runPerks.includes('second-souffle');
+    // "Elan" (Defi) : le premier lancer du joueur qui renverse au moins
+    // ELAN_MIN_KNOCKED kubbs d'un coup n'est pas compte non plus.
+    const refundedElan =
+      !refundedSecondSouffle &&
+      this.isProfileTeam(this.activeTeam) &&
+      !this.elanUsed &&
+      this.knockedThisThrowCount >= ELAN_MIN_KNOCKED &&
+      this.runPerks.includes('elan');
+    const refunded = refundedSecondSouffle || refundedElan;
 
     if (refunded) {
-      this.secondSouffleUsed = true;
+      if (refundedElan) this.elanUsed = true;
+      else this.secondSouffleUsed = true;
       if (lastBatonPos) {
         this.juice.floatingText(
           lastBatonPos.x,
           lastBatonPos.y,
-          translate(gameStore.getState().lang, 'match.secondSouffle'),
+          translate(gameStore.getState().lang, refundedElan ? 'match.elan' : 'match.secondSouffle'),
           '#f2c14e'
         );
       }

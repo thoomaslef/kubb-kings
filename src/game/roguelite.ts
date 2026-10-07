@@ -24,7 +24,11 @@ export type PerkId =
   | 'sursis'
   | 'longue-haleine'
   | 'renfort'
-  | 'calme-plat';
+  | 'calme-plat'
+  | 'poignet-souple'
+  | 'effet-appuye'
+  | 'elan'
+  | 'grand-renfort';
 
 /** Libelles et descriptions : src/i18n/dictionaries.ts (perk.<id>.label / .description). */
 export const PERK_IDS: readonly PerkId[] = [
@@ -40,7 +44,11 @@ export const PERK_IDS: readonly PerkId[] = [
   'sursis',
   'longue-haleine',
   'renfort',
-  'calme-plat'
+  'calme-plat',
+  'poignet-souple',
+  'effet-appuye',
+  'elan',
+  'grand-renfort'
 ];
 
 /** Lancers supplementaires offerts par "Bras infatigable". */
@@ -61,6 +69,22 @@ export const BOURSE_PLEINE_COINS_MULTIPLIER = 1.5;
 export const ETUDE_RAPIDE_XP_MULTIPLIER = 1.5;
 /** Temps supplementaire (ms) offert par "Longue haleine". */
 export const LONGUE_HALEINE_BONUS_MS = 30000;
+
+/**
+ * Multiplicateur de l'effet LU sur le geste, offert par "Poignet souple" : un arc
+ * plus discret suffit pour courber (le resultat reste plafonne a +/-1).
+ */
+export const POIGNET_SOUPLE_SPIN_MULTIPLIER = 1.5;
+/**
+ * Multiplicateur de la force de l'effet en vol, offert par "Effet appuye" :
+ * distinct de "Poignet souple" — celui-ci ne change pas l'arc qu'il faut
+ * tracer, il renforce la courbe qu'un effet donne (au-dela du maximum).
+ */
+export const EFFET_APPUYE_FORCE_MULTIPLIER = 1.25;
+/** Kubbs adverses deja abattus avant le premier lancer, offerts par "Grand renfort". */
+export const GRAND_RENFORT_KUBBS = 2;
+/** Kubbs renverses d'un meme lancer a partir desquels "Elan" rembourse le lancer. */
+export const ELAN_MIN_KNOCKED = 2;
 
 /**
  * Echelle des manches. Seuls le niveau de l'IA et le terrain changent d'une
