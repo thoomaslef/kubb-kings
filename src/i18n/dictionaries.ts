@@ -82,6 +82,12 @@ const fr: Record<string, string> = {
   'online.rankedBot': 'Entrainement contre un bot : cette partie ne change pas votre rang.',
 
   // ---- Compte joueur (src/game/account/)
+  'menu.share.button': 'Inviter un ami : partager le lien',
+  'menu.share.title': 'KUBB: Kings',
+  'menu.share.text': 'Viens jouer a KUBB: Kings, un jeu de kubb sur telephone ! Gratuit, sans installation.',
+  'menu.share.copied': 'Lien copie ! Collez-le dans un message a votre ami.',
+  'menu.share.shared': 'Lien partage.',
+  'menu.share.manual': 'Copiez ce lien pour le partager :',
   'menu.account.signedOut': 'Se connecter / Creer un compte',
   'menu.account.signedIn': 'Compte : {email}',
   'account.title': 'Compte joueur',
@@ -655,6 +661,12 @@ const en: Record<string, string> = {
   'online.rankedBot': 'Practice against a bot: this match does not change your rank.',
 
   // ---- Player account (src/game/account/)
+  'menu.share.button': 'Invite a friend: share the link',
+  'menu.share.title': 'KUBB: Kings',
+  'menu.share.text': 'Come play KUBB: Kings, a kubb game on your phone! Free, nothing to install.',
+  'menu.share.copied': 'Link copied! Paste it into a message to your friend.',
+  'menu.share.shared': 'Link shared.',
+  'menu.share.manual': 'Copy this link to share it:',
   'menu.account.signedOut': 'Log in / Create an account',
   'menu.account.signedIn': 'Account: {email}',
   'account.title': 'Player account',

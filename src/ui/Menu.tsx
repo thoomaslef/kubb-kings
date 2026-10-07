@@ -10,6 +10,7 @@ import { isShopRefOwned, SHOP_ITEMS, type ShopCategory } from '../game/shop';
 import { LADDER, getBestStage } from '../game/roguelite';
 import { useT } from '../i18n/useT';
 import { RankBadge, useRankName } from './RankBadge';
+import { gameUrl, shareGame, type ShareData, type ShareOutcome } from '../game/shareLink';
 import { accountAvailable } from '../game/account/sync';
 import type { Lang } from '../i18n/translate';
 
@@ -27,6 +28,20 @@ export function Menu() {
   const setScreen = useGameStore((s) => s.setScreen);
   const rank = useGameStore((s) => s.rank);
   const account = useGameStore((s) => s.account);
+  // Partage du lien du jeu : `null` tant que rien n'a ete tente.
+  const [shareState, setShareState] = useState<ShareOutcome | null>(null);
+  const shareUrl = gameUrl(window.location.origin, import.meta.env.BASE_URL);
+  const shareWithFriend = async () => {
+    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
+    const outcome = await shareGame(
+      { title: t('menu.share.title'), text: t('menu.share.text'), url: shareUrl },
+      {
+        share: typeof nav.share === 'function' ? (d) => nav.share!(d) : undefined,
+        writeText: navigator.clipboard?.writeText ? (text) => navigator.clipboard.writeText(text) : undefined
+      }
+    );
+    setShareState(outcome === 'cancelled' ? null : outcome);
+  };
   const lastRankChange = useGameStore((s) => s.lastRankChange);
   const clearRankChange = useGameStore((s) => s.clearRankChange);
   const rankName = useRankName();
@@ -117,6 +132,32 @@ export function Menu() {
               ? t('menu.account.signedIn', { email: account.email })
               : t('menu.account.signedOut')}
           </button>
+        )}
+
+        <button type="button" className="btn btn--ghost btn--account" onClick={shareWithFriend}>
+          {t('menu.share.button')}
+        </button>
+        {shareState === 'copied' && (
+          <p className="footnote footnote--tight" role="status" data-testid="share-status">
+            {t('menu.share.copied')}
+          </p>
+        )}
+        {shareState === 'shared' && (
+          <p className="footnote footnote--tight" role="status" data-testid="share-status">
+            {t('menu.share.shared')}
+          </p>
+        )}
+        {shareState === 'manual' && (
+          <div role="status" data-testid="share-status">
+            <p className="footnote footnote--tight">{t('menu.share.manual')}</p>
+            <input
+              className="input"
+              readOnly
+              value={shareUrl}
+              aria-label={t('menu.share.button')}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+          </div>
         )}
 
         {/* Un mouvement de rang hors fin de partie normale (forfait, onglet ferme) : annonce, une fois. */}
