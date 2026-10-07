@@ -448,3 +448,38 @@ point d&apos;entree vises par le code sont donc les bons.
 > exactement ce message — ce qui est le bon comportement.
 
 ---
+
+### La recherche rapide
+
+Le bouton **Partie rapide** du salon en ligne apparie deux inconnus, sans serveur et
+sans base de donnees : le deploiement reste un site statique, et le service reste
+dans l'offre gratuite de Supabase (un message de presence toutes les 2 secondes par
+joueur en file, rien d'autre).
+
+`src/game/online/matchmaking.ts` — module pur, horloge injectee, teste a la seconde
+pres sans attendre (`matchmaking.test.ts`, 8 tests) :
+
+- Tous les joueurs en recherche se parlent sur UN canal (`MATCHMAKING-QUEUE`, plus
+  long que tout code de salon saisissable : on ne peut pas tomber dessus par erreur)
+  et s'y signalent toutes les 2 s. Un joueur silencieux plus de 7 s est oublie —
+  un onglet ferme ne laisse pas de fantome en file.
+- La file est triee par heure d'arrivee (puis par identifiant) et se couple deux a
+  deux. Le plus ANCIEN du couple est l'hote : il tire un code de salon, l'annonce
+  (`match`), puis les deux quittent la file et suivent le flux d'une partie privee
+  existante — meme protocole, memes verifications.
+- **Seul au bout d'une minute** (`QUEUE_BOT_AFTER_MS`), le joueur est envoye contre
+  le bot, en **difficile** quel que soit le niveau regle au menu. Ce niveau est un
+  `difficultyOverride` du store, efface au prochain depart de partie ordinaire : le
+  choix du menu n'est jamais modifie. Le bot est l'IA habituelle (solo, Bleue).
+- Une course rare (deux hotes pour un meme invite) peut laisser un salon sans
+  invite : au bout de 15 s, il est abandonne et le joueur retourne en file en
+  gardant son heure d'arrivee d'origine — le bot arrive donc a l'heure prevue
+  depuis le tout premier clic.
+- Annuler previent les autres (`left`) et ferme le canal ; un depart sans adieu est
+  rattrape par le delai de 7 s.
+
+`tests/browser/recherche-rapide.mjs` verifie la chaine reelle (deux pages qui se
+retrouvent, camps opposes, meme salon ; annulation qui libere la file ; bot en
+difficile apres la VRAIE minute, choix du menu intact). Il tourne sur le transport
+local : c'est le meme code que sur Supabase, seul le tuyau change. Non verifie : la
+file avec de vrais joueurs sur Supabase (latence, plusieurs inconnus a la fois).

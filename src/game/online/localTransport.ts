@@ -33,11 +33,11 @@ export function isLocalTransportAvailable(): boolean {
   return typeof BroadcastChannel !== 'undefined';
 }
 
-export function createLocalTransport(roomCode: string): Transport {
+export function createLocalTransport<M = OnlineMessage>(roomCode: string): Transport<M> {
   const channel = new BroadcastChannel(CHANNEL_PREFIX + roomCode.toUpperCase());
-  const handlers = new Set<(message: OnlineMessage) => void>();
+  const handlers = new Set<(message: M) => void>();
 
-  channel.onmessage = (event: MessageEvent<OnlineMessage>) => {
+  channel.onmessage = (event: MessageEvent<M>) => {
     // Copie : un handler peut se desabonner pendant l'iteration.
     for (const handler of [...handlers]) handler(event.data);
   };

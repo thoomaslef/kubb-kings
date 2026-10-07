@@ -1,4 +1,4 @@
-import type { Transport } from './transport';
+import type { OnlineMessage, Transport } from './transport';
 import { createLocalTransport, isLocalTransportAvailable } from './localTransport';
 import { createSupabaseTransport, isSupabaseConfigured } from './supabaseTransport';
 
@@ -29,8 +29,8 @@ export function transportKind(): TransportKind {
  * @param onError signale une liaison qui n'a pas pu s'etablir. Le transport
  * local, lui, ne peut pas echouer : il n'a personne a joindre.
  */
-export function createMatchTransport(roomCode: string, onError?: () => void): Transport {
+export function createMatchTransport<M = OnlineMessage>(roomCode: string, onError?: () => void): Transport<M> {
   return transportKind() === 'supabase'
-    ? createSupabaseTransport(roomCode, onError)
-    : createLocalTransport(roomCode);
+    ? createSupabaseTransport<M>(roomCode, onError)
+    : createLocalTransport<M>(roomCode);
 }

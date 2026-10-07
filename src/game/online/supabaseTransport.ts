@@ -81,8 +81,8 @@ function getClient(config: SupabaseConfig): Promise<SupabaseClient> {
  * injoignable, cle invalide). Sans lui, le salon tournerait indefiniment sur
  * « en attente de l'adversaire » alors que personne n'ecoute.
  */
-export function createSupabaseTransport(roomCode: string, onError?: () => void): Transport {
-  const handlers = new Set<(message: OnlineMessage) => void>();
+export function createSupabaseTransport<M = OnlineMessage>(roomCode: string, onError?: () => void): Transport<M> {
+  const handlers = new Set<(message: M) => void>();
   /**
    * Messages emis avant que le canal soit pret. Indispensable ici, alors que
    * le transport local n'en avait pas besoin : l'abonnement Supabase est
@@ -90,7 +90,7 @@ export function createSupabaseTransport(roomCode: string, onError?: () => void):
    * construction. Sans cette file, le tout premier message — celui qui
    * declenche la partie — serait perdu.
    */
-  const pending: OnlineMessage[] = [];
+  const pending: M[] = [];
   let channel: RealtimeChannel | null = null;
   let closed = false;
 
@@ -122,7 +122,7 @@ export function createSupabaseTransport(roomCode: string, onError?: () => void):
       });
       opened.on('broadcast', { event: EVENT }, ({ payload }) => {
         // Copie : un handler peut se desabonner pendant l'iteration.
-        for (const handler of [...handlers]) handler(payload as OnlineMessage);
+        for (const handler of [...handlers]) handler(payload as M);
       });
       opened.subscribe((status) => {
         if (closed) return;

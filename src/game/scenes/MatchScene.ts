@@ -309,8 +309,9 @@ export class MatchScene extends Phaser.Scene {
     this.aiTimer = null;
     this.aiTween = null;
 
-    const { mode, difficulty, fieldPreset, kubbSkin, kingSkin, batonId, windEnabled, fieldKubbsEnabled, profileTeam, run } =
+    const { mode, difficulty: chosenDifficulty, difficultyOverride, fieldPreset, kubbSkin, kingSkin, batonId, windEnabled, fieldKubbsEnabled, profileTeam, run } =
       gameStore.getState();
+    const difficulty = difficultyOverride ?? chosenDifficulty;
     this.batonStats = BATONS[batonId];
     this.batonId = batonId;
     this.fieldKubbsEnabled = fieldKubbsEnabled;

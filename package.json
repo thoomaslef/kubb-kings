@@ -12,7 +12,7 @@
     "icons": "node scripts/make-icons.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:browser": "node tests/browser/pages-legales.mjs && node tests/browser/resolution-ecran.mjs && node tests/browser/menu-reglages.mjs && node tests/browser/mise-en-veille.mjs && node tests/browser/choix-du-terrain.mjs && node tests/browser/depart-de-partie.mjs && node tests/browser/kubb-redresse.mjs && node tests/browser/effet.mjs && node tests/browser/bonus-defi.mjs && node tests/browser/ia-roi.mjs && node tests/browser/partie-en-ligne.mjs && node tests/browser/tchat.mjs && node tests/browser/coupure-et-reprise.mjs && node tests/browser/revanche-et-succes.mjs"
+    "test:browser": "node tests/browser/pages-legales.mjs && node tests/browser/resolution-ecran.mjs && node tests/browser/menu-reglages.mjs && node tests/browser/mise-en-veille.mjs && node tests/browser/choix-du-terrain.mjs && node tests/browser/depart-de-partie.mjs && node tests/browser/kubb-redresse.mjs && node tests/browser/effet.mjs && node tests/browser/bonus-defi.mjs && node tests/browser/ia-roi.mjs && node tests/browser/recherche-rapide.mjs && node tests/browser/partie-en-ligne.mjs && node tests/browser/tchat.mjs && node tests/browser/coupure-et-reprise.mjs && node tests/browser/revanche-et-succes.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.1",

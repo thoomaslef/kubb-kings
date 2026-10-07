@@ -165,6 +165,13 @@ interface GameState {
   /** Choix du menu : ils survivent a `resetHud`, contrairement au HUD. */
   mode: GameMode;
   difficulty: Difficulty;
+  /**
+   * Niveau impose a l'IA pour la partie en cours, sans toucher au choix du
+   * menu : le « bot » de la recherche rapide joue en difficile quel que soit le
+   * niveau regle par le joueur. Efface par `setMode` — tout autre depart de
+   * partie repart du choix du menu.
+   */
+  difficultyOverride: Difficulty | null;
   fieldPreset: FieldPresetId;
   /** Habillage visuel des kubbs — purement cosmetique, sans effet sur l'IA. */
   kubbSkin: KubbSkin;
@@ -266,6 +273,8 @@ interface GameState {
   resetHud: () => void;
   setResult: (result: MatchResult) => void;
   setMode: (mode: GameMode) => void;
+  /** Partie solo contre un bot en difficile (repli de la recherche rapide). */
+  startBotMatch: () => void;
   setDifficulty: (difficulty: Difficulty) => void;
   setFieldPreset: (preset: FieldPresetId) => void;
   setKubbSkin: (skin: KubbSkin) => void;
@@ -355,6 +364,7 @@ export const useGameStore = create<GameState>((set) => ({
   result: null,
   mode: 'solo',
   difficulty: 'moyen',
+  difficultyOverride: null,
   fieldPreset: 'classique',
   kubbSkin: 'bois',
   kingSkin: 'or',
@@ -386,7 +396,8 @@ export const useGameStore = create<GameState>((set) => ({
   patchHud: (patch) => set((state) => ({ hud: { ...state.hud, ...patch } })),
   resetHud: () => set({ hud: initialHud(), result: null, paused: false }),
   setResult: (result) => set({ result }),
-  setMode: (mode) => set({ mode }),
+  setMode: (mode) => set({ mode, difficultyOverride: null }),
+  startBotMatch: () => set({ mode: 'solo', difficultyOverride: 'difficile', profileTeam: 'blue' }),
   setDifficulty: (difficulty) => set({ difficulty }),
   setFieldPreset: (preset) => set({ fieldPreset: preset }),
   setKubbSkin: (skin) => set({ kubbSkin: skin }),

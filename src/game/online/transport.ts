@@ -73,9 +73,13 @@ export type OnlineMessage =
    */
   | { kind: 'chat'; playerId: string; text: string };
 
-export interface Transport {
-  send(message: OnlineMessage): void;
+/**
+ * `M` : le type des messages du canal. Par defaut ceux d'une partie ; la file
+ * d'attente (matchmaking.ts) y met les siens — meme tuyau, autre canal.
+ */
+export interface Transport<M = OnlineMessage> {
+  send(message: M): void;
   /** Renvoie de quoi se desabonner. */
-  onMessage(handler: (message: OnlineMessage) => void): () => void;
+  onMessage(handler: (message: M) => void): () => void;
   close(): void;
 }

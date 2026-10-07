@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { createRoomCode } from '../game/online/localTransport';
+import { Matchmaker, QUEUE_BOT_AFTER_MS, QUEUE_CHANNEL, type QueueMessage } from '../game/online/matchmaking';
 import { createMatchTransport, transportKind } from '../game/online/transportFactory';
 import { setCurrentSession } from '../game/online/currentSession';
 import { OnlineSession } from '../game/online/session';
@@ -64,6 +65,17 @@ export function OnlineLobby() {
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const sessionRef = useRef<OnlineSession | null>(null);
+
+  // Recherche rapide (cf. game/online/matchmaking.ts).
+  /** Recherche en cours : heure d'arrivee en file (pour garder son rang si on la relance). */
+  const [searching, setSearching] = useState<{ since: number } | null>(null);
+  const [waitedMs, setWaitedMs] = useState(0);
+  const [queueSize, setQueueSize] = useState(1);
+  /** Salon ouvert par la recherche : on n'affiche pas un code a partager, personne n'en a besoin. */
+  const [quickRoom, setQuickRoom] = useState(false);
+  const matchmakerRef = useRef<Matchmaker | null>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const roomTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const kind = transportKind();
 
   // Liaison impossible a etablir (projet injoignable, cle invalide) : sans
@@ -84,6 +96,7 @@ export function OnlineLobby() {
   // sans reintroduire de dependance.
   useEffect(
     () => () => {
+      stopSearch();
       // Statut lu dans le store AU DEMONTAGE, pas via une valeur capturee
       // au rendu : quand la partie demarre, l'ecran bascule sur le match
       // avant que React ait re-rendu ce composant — une valeur de rendu
@@ -126,9 +139,9 @@ export function OnlineLobby() {
     });
   };
 
-  const host = () => {
+  const host = (roomCode?: string) => {
     setError(null);
-    const code = createRoomCode();
+    const code = roomCode ?? createRoomCode();
     startOnline(code, 'host');
     wire(
       OnlineSession.host(
@@ -140,8 +153,8 @@ export function OnlineLobby() {
     );
   };
 
-  const join = () => {
-    const code = joinCode.trim().toUpperCase();
+  const join = (roomCode?: string) => {
+    const code = (roomCode ?? joinCode).trim().toUpperCase();
     if (code.length < 3) {
       setError(t('online.badCode'));
       return;
@@ -151,7 +164,82 @@ export function OnlineLobby() {
     wire(OnlineSession.join(createMatchTransport(code, onTransportError), `invite-${code}`, batonId, card));
   };
 
+  /** Arrete la recherche : minuteurs, file d'attente (qui previent les autres) et salon d'attente. */
+  function stopSearch() {
+    if (searchTimerRef.current) clearInterval(searchTimerRef.current);
+    searchTimerRef.current = null;
+    if (roomTimerRef.current) clearTimeout(roomTimerRef.current);
+    roomTimerRef.current = null;
+    matchmakerRef.current?.stop();
+    matchmakerRef.current = null;
+  }
+
+  /** Delai laisse a l'autre joueur pour rejoindre le salon qu'on vient d'annoncer. */
+  const ROOM_WAIT_MS = 15_000;
+
+  /**
+   * Entre en file. `since` : heure d'arrivee d'origine, quand on relance la
+   * recherche apres un couplage qui n'a pas abouti — on ne perd pas son rang,
+   * et le bot arrive a l'heure prevue depuis le TOUT premier clic.
+   */
+  const startSearch = (since?: number) => {
+    stopSearch();
+    setError(null);
+    setQuickRoom(false);
+    const transport = createMatchTransport<QueueMessage>(QUEUE_CHANNEL, () => {
+      stopSearch();
+      setSearching(null);
+      setError(t('online.connectionFailed'));
+    });
+    const matchmaker = new Matchmaker({
+      playerId: `file-${createRoomCode(8)}`,
+      transport,
+      since,
+      onMatch: ({ role, code }) => {
+        const arrivedAt = matchmakerRef.current?.since ?? since ?? Date.now();
+        if (searchTimerRef.current) clearInterval(searchTimerRef.current);
+        searchTimerRef.current = null;
+        matchmakerRef.current = null;
+        setSearching(null);
+        setQuickRoom(true);
+        if (role === 'host') host(code);
+        else join(code);
+        // Une course rare peut laisser un salon sans invite : au bout d'un
+        // moment, on abandonne ce salon et on retourne en file.
+        roomTimerRef.current = setTimeout(() => {
+          if (useGameStore.getState().online?.status !== 'attente') return;
+          sessionRef.current?.leave();
+          sessionRef.current = null;
+          setCurrentSession(null);
+          endOnline();
+          startSearch(arrivedAt);
+        }, ROOM_WAIT_MS);
+      },
+      onBot: () => {
+        if (searchTimerRef.current) clearInterval(searchTimerRef.current);
+        searchTimerRef.current = null;
+        matchmakerRef.current = null;
+        setSearching(null);
+        // Personne n'est venu en une minute : un bot, en difficile.
+        useGameStore.getState().startBotMatch();
+        bridge.send('start-match');
+      }
+    });
+    matchmakerRef.current = matchmaker;
+    setSearching({ since: matchmaker.since });
+    setWaitedMs(Date.now() - matchmaker.since);
+    setQueueSize(1);
+    searchTimerRef.current = setInterval(() => {
+      matchmaker.tick();
+      setWaitedMs(Date.now() - matchmaker.since);
+      setQueueSize(matchmaker.queueSize);
+    }, 1000);
+  };
+
   const back = () => {
+    stopSearch();
+    setSearching(null);
+    setQuickRoom(false);
     sessionRef.current?.leave();
     sessionRef.current = null;
     setCurrentSession(null);
@@ -186,7 +274,9 @@ export function OnlineLobby() {
       <div className="overlay overlay--solid">
         <div className="panel">
           <h2 className="panel__title">{t('online.waitingTitle')}</h2>
-          {online.role === 'host' ? (
+          {quickRoom ? (
+            <p className="panel__text">{t('online.quickFound')}</p>
+          ) : online.role === 'host' ? (
             <>
               <p className="panel__text">{t('online.shareCode')}</p>
               <p className="title" style={{ letterSpacing: '0.35em' }}>
@@ -196,7 +286,25 @@ export function OnlineLobby() {
           ) : (
             <p className="panel__text">{t('online.joining', { code: online.roomCode })}</p>
           )}
-          <p className="footnote">{t(hintKey)}</p>
+          {!quickRoom && <p className="footnote">{t(hintKey)}</p>}
+          <div className="button-column">
+            <button className="btn btn--ghost" onClick={back}>
+              {t('online.cancel')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Recherche rapide : on attend qu'un autre joueur arrive, ou le bot.
+  if (searching) {
+    const leftS = Math.max(0, Math.ceil((QUEUE_BOT_AFTER_MS - waitedMs) / 1000));
+    return (
+      <div className="overlay overlay--solid">
+        <div className="panel">
+          <h2 className="panel__title">{t('online.searchingTitle')}</h2>
+          <p className="panel__text">{t('online.searchingText', { n: queueSize, s: leftS })}</p>
           <div className="button-column">
             <button className="btn btn--ghost" onClick={back}>
               {t('online.cancel')}
@@ -215,7 +323,12 @@ export function OnlineLobby() {
         <p className="footnote">{t(hintKey)}</p>
 
         <div className="button-column">
-          <button className="btn" onClick={host}>
+          <button className="btn btn--primary" onClick={() => startSearch()}>
+            {t('online.quick')}
+          </button>
+          <p className="footnote footnote--tight">{t('online.quickHint')}</p>
+
+          <button className="btn" onClick={() => host()}>
             {t('online.create')}
           </button>
 
@@ -227,7 +340,7 @@ export function OnlineLobby() {
             placeholder={t('online.codePlaceholder')}
             aria-label={t('online.codePlaceholder')}
           />
-          <button className="btn" onClick={join}>
+          <button className="btn" onClick={() => join()}>
             {t('online.join')}
           </button>
           {error && <p className="footnote">{error}</p>}
