@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import {
   fetchLeaderboard,
@@ -38,13 +38,22 @@ export function Ranks() {
   const [board, setBoard] = useState<Board>({ state: 'loading' });
   const [standing, setStanding] = useState<Standing | null>(null);
   const [busy, setBusy] = useState(false);
+  const pseudoRequested = useRef(false);
 
   const loadBoard = useCallback(async () => {
     setBoard({ state: 'loading' });
     try {
       const entries = await fetchLeaderboard(BOARD_SIZE);
       setBoard(entries === null ? { state: 'unavailable' } : { state: 'ok', entries });
-      setStanding(await fetchStanding());
+      let current = await fetchStanding();
+      // Un profil cree AVANT l'arrivee du classement n'a pas encore de pseudo (le serveur n'en
+      // attribue qu'a la sauvegarde suivante) : on en demande un tout de suite, une seule fois,
+      // plutot que d'afficher « — » au joueur.
+      if (current && current.pseudo === null && !pseudoRequested.current) {
+        pseudoRequested.current = true;
+        if (await rerollMyPseudo()) current = await fetchStanding();
+      }
+      setStanding(current);
     } catch {
       setBoard({ state: 'error' });
     }

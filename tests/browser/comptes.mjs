@@ -694,6 +694,36 @@ const B = await appareil('B');
   resultats.classement_OnPeutRevenir = (await lignes(H.page)).some((l) => l.moi);
   await H.contexte.close();
 
+  // Y : un compte cree AVANT l'arrivee du classement (profil sans pseudo) en recoit un a l'ouverture de
+  // l'ecran, sans rien cliquer — il ne doit pas voir « — ».
+  serveur.users.set('ancien@example.com', { id: 'u-ancien', email: 'ancien@example.com', password: 'motdepasse1' });
+  serveur.profils.set('u-ancien', {
+    data: { v: 1, progression: { totalXp: 0, winStreak: 0, gamesPlayed: 0, totalWins: 0 }, coins: 0, ownedItems: [],
+      unlockedAchievements: [], terrainWins: [], onlineWinStreak: 0, rank: { index: 0, wins: 0, losses: 0, peak: 0 }, bestStage: 0 },
+    revision: 1,
+    pseudo: null,
+    visible: true,
+    r: { ...rangVide }
+  });
+  const Y = await appareil('Y');
+  await ouvrirCompte(Y.page);
+  await remplir(Y.page, { email: 'ancien@example.com', mdp: 'motdepasse1' });
+  await Y.page.locator('button[type="submit"]').click();
+  await attendre(Y.page, () => window.__kubbStoreApi.getState().account.sync === 'ok');
+  await Y.page.locator('button', { hasText: /^Retour$/ }).click();
+  await ouvrirRangs(Y.page);
+  const pseudoY = await attendre(
+    Y.page,
+    () => {
+      const t = document.querySelector('[data-testid="my-pseudo"]')?.textContent ?? '';
+      return t.length > 1 && t !== '—';
+    },
+    undefined,
+    15000
+  );
+  resultats.classement_UnAncienCompteRecoitUnPseudoSansRienCliquer = pseudoY;
+  await Y.contexte.close();
+
   // X : un rang INCOHERENT (marche 17 avec 3 victoires) ne passe pas au classement.
   const X = await appareil('X', { 'kubb-kings.rank': { index: 17, wins: 3, losses: 1, peak: 17 } });
   await ouvrirCompte(X.page);
