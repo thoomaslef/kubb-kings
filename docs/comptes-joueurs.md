@@ -46,6 +46,12 @@ facon de s'authentifier change (`backend.ts::signInWithGoogle`, `sync.ts::oauthC
 d'adresse. Si le joueur annule chez Google, le retour porte `?error_description=` : le jeu l'explique
 sur l'ecran Compte et nettoie l'adresse.
 
+**Le bouton est CACHE tant que Google n'est pas configure** (`src/game/account/config.ts`) : un bouton
+visible mais sans effet renverrait le joueur sur une page d'erreur brute de Supabase. Une fois les
+etapes ci-dessous faites, il suffit de passer `GOOGLE_READY` a `true` (une ligne) — ou de me le demander.
+Un build peut aussi l'allumer sans toucher au code avec `VITE_GOOGLE_AUTH=1` (c'est ce que fait
+`npm run test:comptes` ; `GOOGLE_AUTH_TEST=0 npm run test:comptes` verifie que le bouton reste cache).
+
 ### Mise en place (une fois, par vous) — a faire sur ordinateur de preference
 
 **A. Chez Google** (console.cloud.google.com)

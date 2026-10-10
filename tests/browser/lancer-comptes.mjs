@@ -13,7 +13,10 @@ const env = {
   ...process.env,
   VITE_SUPABASE_URL: 'http://fake.supabase.test',
   VITE_SUPABASE_ANON_KEY: 'fake-key',
-  VITE_EXPOSE_TEST_HANDLE: '1'
+  VITE_EXPOSE_TEST_HANDLE: '1',
+  // Le bouton Google est cache tant que Google n'est pas configure (account/config.ts) : on l'allume pour le test.
+  // (GOOGLE_AUTH_TEST=0 : verifie au contraire que le bouton reste cache quand Google n'est pas configure.)
+  VITE_GOOGLE_AUTH: process.env.GOOGLE_AUTH_TEST ?? '1'
 };
 
 const build = spawnSync('npx', ['vite', 'build', '--outDir', 'dist-comptes'], { env, stdio: 'inherit' });

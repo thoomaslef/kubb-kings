@@ -9,6 +9,7 @@ import {
   signUpAccount,
   type AuthOutcome
 } from '../game/account/sync';
+import { GOOGLE_SIGN_IN_ENABLED } from '../game/account/config';
 import { useT } from '../i18n/useT';
 
 /** Longueur minimale d'un mot de passe, controlee ici AVANT l'envoi (le service impose son propre minimum, plus bas). */
@@ -164,13 +165,15 @@ export function Account() {
         <h2 className="panel__title">{t('account.title')}</h2>
         <p className="panel__text">{t('account.intro')}</p>
 
-        <div className="button-column">
-          <button type="button" className="btn btn--google" onClick={google} disabled={busy || account.status === 'checking'}>
-            <GoogleLogo />
-            {t('account.google')}
-          </button>
-          <p className="footnote footnote--tight account-or">{t('account.or')}</p>
-        </div>
+        {GOOGLE_SIGN_IN_ENABLED && (
+          <div className="button-column">
+            <button type="button" className="btn btn--google" onClick={google} disabled={busy || account.status === 'checking'}>
+              <GoogleLogo />
+              {t('account.google')}
+            </button>
+            <p className="footnote footnote--tight account-or">{t('account.or')}</p>
+          </div>
+        )}
         {account.notice === 'oauth-error' && (
           <p className="footnote" role="alert" data-testid="account-notice">
             {t('account.error.oauth')}

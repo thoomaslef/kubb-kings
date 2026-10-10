@@ -577,7 +577,14 @@ const B = await appareil('B');
   });
   await ouvrirCompte(G.page);
   const bouton = await G.page.locator('button', { hasText: /Continuer avec Google/ }).count();
-  resultats.leBoutonGoogleExiste = bouton === 1;
+  // Le bouton n'est propose que si Google est configure (account/config.ts) : present quand le build
+  // l'active, ABSENT sinon — un bouton visible mais sans effet renverrait sur une page d'erreur brute.
+  const googleActive = process.env.VITE_GOOGLE_AUTH === '1';
+  resultats.leBoutonGoogleSuitLeDrapeau = bouton === (googleActive ? 1 : 0);
+  if (!googleActive) {
+    await G.contexte.close();
+    console.log('Google desactive dans ce build : section de connexion Google ignoree.');
+  } else {
 
   // Annulation chez Google : le jeu l'explique, ne plante pas, et nettoie l'adresse.
   serveur.oauthEchec = true;
@@ -607,6 +614,7 @@ const B = await appareil('B');
   const profilG = [...serveur.profils.values()].find((p) => p.data.progression.totalXp === 700);
   resultats.googleLaProgressionEstEnvoyee = !!profilG && profilG.data.coins === 55;
   await G.contexte.close();
+  }
 }
 
 // ------------------------------------------------------------------ 10. classement des parties classees
