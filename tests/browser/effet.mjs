@@ -71,7 +71,10 @@ const armerEnregistreur = () =>
     window.__trajet = [];
     const tick = () => {
       if (window.__gen !== moi) return;
-      if (scene.baton) window.__trajet.push({ x: scene.baton.sprite.x, y: scene.baton.sprite.y });
+      if (scene.baton) {
+        const b = scene.baton.sprite;
+        window.__trajet.push({ x: b.x, y: b.y, vx: b.body?.velocity.x ?? 0, vy: b.body?.velocity.y ?? 0 });
+      }
       if (window.__trajet.length < 900) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -147,15 +150,31 @@ async function lancerAvecGeste(fleche) {
 function courbure(trajet) {
   if (trajet.length < 6) return { ecart: 0, longueur: 0 };
   const a = trajet[0];
-  // Direction de depart, prise sur les premiers releves (le baton file droit
-  // avant que l'effet n'ait eu le temps d'agir).
-  const ref = trajet[Math.min(3, trajet.length - 1)];
-  const dx = ref.x - a.x;
-  const dy = ref.y - a.y;
-  const d0 = Math.hypot(dx, dy);
-  if (d0 < 1) return { ecart: 0, longueur: 0 };
-  const ux = dx / d0;
-  const uy = dy / d0;
+  // Direction de depart : la VITESSE reelle du projectile des son premier releve en mouvement.
+  //
+  // La premiere version l'estimait a partir de la POSITION des trois premiers releves. Or ces
+  // releves sont pris a 20 images par seconde dans un navigateur sans carte graphique : quelques
+  // pixels d'erreur sur une base de ~60 px font quelques degres, soit des dizaines de pixels a
+  // 800 px. Un tir DROIT « courbait » alors de 70 px, et un vrai demi-effet de 77 px se
+  // confondait avec ce bruit. La vitesse, elle, est exacte : c'est ce que Matter vient de donner
+  // au baton (deviation aleatoire du lancer comprise), avant que l'effet n'ait agi.
+  const mobile = trajet.find((p) => Math.hypot(p.vx ?? 0, p.vy ?? 0) > 5);
+  let ux;
+  let uy;
+  if (mobile) {
+    const v = Math.hypot(mobile.vx, mobile.vy);
+    ux = mobile.vx / v;
+    uy = mobile.vy / v;
+  } else {
+    // Repli (releves sans vitesse) : direction prise sur les premiers releves.
+    const ref = trajet[Math.min(3, trajet.length - 1)];
+    const dx = ref.x - a.x;
+    const dy = ref.y - a.y;
+    const d0 = Math.hypot(dx, dy);
+    if (d0 < 1) return { ecart: 0, longueur: 0 };
+    ux = dx / d0;
+    uy = dy / d0;
+  }
 
   // L'aller seul : on s'arrete au point le plus eloigne du depart.
   let iLoin = 0;
@@ -265,8 +284,18 @@ const resultats = {
   arcOrdinaireCourbeVraiment: ordinaire.effetLu > 0.45 && Math.abs(cOrdinaire.ecart) > 90,
 
   demiGesteDonneUnDemiEffet: moyen.effetLu > 0.15 && moyen.effetLu < 0.85,
-  demiGesteDonneUneDemiCourbe:
-    Math.abs(cMoyen.ecart) > Math.abs(cDroit.ecart) + 20 && Math.abs(cMoyen.ecart) < Math.abs(cGauche.ecart) - 20,
+  // Une demi-courbe est ENTRE « presque rien » et la courbe pleine, mesuree dans le SENS du geste.
+  //
+  // La premiere version comparait le demi-geste au tir droit (« plus de 20 px de plus »). Or le tir
+  // droit porte la deviation aleatoire du lancer (jusqu'a ~70 px mesures, dans un sens ou dans
+  // l'autre) : un vrai demi-effet de 77 px ne depassait pas 70 + 20, et la verification echouait
+  // sans que le jeu ait rien de casse. On compare donc a un plancher FIXE, au-dessus du bruit
+  // habituel du seul sens utile, et au plafond de la courbe pleine.
+  demiGesteDonneUneDemiCourbe: (() => {
+    const sens = Math.sign(cGauche.ecart) || 1;
+    const moyenne = cMoyen.ecart * sens;
+    return moyenne > 30 && moyenne < cGauche.ecart * sens - 20;
+  })(),
 
   iaObservee: coupsIa.length >= 2,
   iaTireToujoursDroit: coupsIa.length >= 2 && coupsIa.every((s) => s === 0),
