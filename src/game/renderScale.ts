@@ -1,3 +1,4 @@
+import { isSafeMode } from './safeMode';
 import type Phaser from 'phaser';
 import { DESIGN_HEIGHT, DESIGN_WIDTH } from './rules';
 
@@ -39,6 +40,8 @@ const FACTEUR_MAX = 2;
 
 /** Facteur de rendu retenu pour cet appareil. 1 sur un ecran classique. */
 export function renderScaleFactor(): number {
+  // Mode compatibilite : definition 1x, jamais de super-resolution (safeMode.ts).
+  if (typeof window !== 'undefined' && isSafeMode()) return 1;
   const dpr = typeof window === 'undefined' ? 1 : (window.devicePixelRatio ?? 1);
   // Jamais en dessous de 1 : un ecran qui annonce moins ne gagnerait rien a
   // ce qu'on dessine plus petit que sa propre definition.

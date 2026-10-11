@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { gameSize } from './renderScale';
+import { isSafeMode } from './safeMode';
 import { matterWorldConfig } from './physics/matterConfig';
 import { BootScene } from './scenes/BootScene';
 import { MenuScene } from './scenes/MenuScene';
@@ -10,7 +11,8 @@ export const GAME_BACKGROUND = '#0d1a14';
 
 export function createGameConfig(parent: HTMLElement): Phaser.Types.Core.GameConfig {
   return {
-    type: Phaser.AUTO,
+    // Mode compatibilite (safeMode.ts) : Canvas 2D, sans WebGL.
+    type: isSafeMode() ? Phaser.CANVAS : Phaser.AUTO,
     parent,
     backgroundColor: GAME_BACKGROUND,
     scale: {

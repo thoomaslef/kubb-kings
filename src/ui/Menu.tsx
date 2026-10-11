@@ -10,6 +10,7 @@ import { isShopRefOwned, SHOP_ITEMS, type ShopCategory } from '../game/shop';
 import { LADDER, getBestStage } from '../game/roguelite';
 import { useT } from '../i18n/useT';
 import { RankBadge, useRankName } from './RankBadge';
+import { isSafeMode, leaveSafeMode, safeModeReason } from '../game/safeMode';
 import { gameUrl, shareGame, type ShareData, type ShareOutcome } from '../game/shareLink';
 import { accountAvailable } from '../game/account/sync';
 import type { Lang } from '../i18n/translate';
@@ -157,6 +158,18 @@ export function Menu() {
               aria-label={t('menu.share.button')}
               onFocus={(e) => e.currentTarget.select()}
             />
+          </div>
+        )}
+
+        {/* Mode compatibilite (safeMode.ts) : le jeu a plante au demarrage, ou le joueur l'a demande. */}
+        {isSafeMode() && (
+          <div className="ranks-change" role="status" data-testid="safe-mode-notice">
+            <p className="footnote footnote--tight">
+              {t(safeModeReason() === 'crash' ? 'menu.safeMode.crash' : 'menu.safeMode.text')}
+            </p>
+            <button type="button" className="btn btn--ghost" onClick={leaveSafeMode}>
+              {t('menu.safeMode.retry')}
+            </button>
           </div>
         )}
 

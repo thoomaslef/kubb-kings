@@ -82,6 +82,9 @@ const fr: Record<string, string> = {
   'online.rankedBot': 'Entrainement contre un bot : cette partie ne change pas votre rang.',
 
   // ---- Compte joueur (src/game/account/)
+  'menu.safeMode.text': "Mode compatibilite : graphismes simplifies, pour que le jeu fonctionne sur cet appareil.",
+  'menu.safeMode.crash': "Le jeu a plante au dernier demarrage : le mode compatibilite (graphismes simplifies) a ete active automatiquement.",
+  'menu.safeMode.retry': 'Reessayer en mode normal',
   'menu.share.button': 'Inviter un ami : partager le lien',
   'menu.share.title': 'KUBB: Kings',
   'menu.share.text': 'Viens jouer a KUBB: Kings, un jeu de kubb sur telephone ! Gratuit, sans installation.',
@@ -661,6 +664,9 @@ const en: Record<string, string> = {
   'online.rankedBot': 'Practice against a bot: this match does not change your rank.',
 
   // ---- Player account (src/game/account/)
+  'menu.safeMode.text': 'Compatibility mode: simplified graphics, so the game runs on this device.',
+  'menu.safeMode.crash': 'The game crashed on its last start: compatibility mode (simplified graphics) was turned on automatically.',
+  'menu.safeMode.retry': 'Try normal mode again',
   'menu.share.button': 'Invite a friend: share the link',
   'menu.share.title': 'KUBB: Kings',
   'menu.share.text': 'Come play KUBB: Kings, a kubb game on your phone! Free, nothing to install.',

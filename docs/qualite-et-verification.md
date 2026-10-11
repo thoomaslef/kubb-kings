@@ -392,3 +392,24 @@ telechargement declenche dans les deux cas (headless sans Web Share API), zero e
 console, image relue et inspectee visuellement.
 
 ---
+
+## Quand le jeu fait planter un navigateur : le mode compatibilite
+
+Signale sur un iPhone 13 mini : Safari affichait « Un probleme recurrent est survenu » — l'onglet plantait a
+repetition au chargement (et, dans le navigateur integre d'Instagram, un ecran vide). Ce message est celui de
+Safari quand le processus de la page est tue (memoire, acceleration graphique) : notre code n'a pas la main.
+**Cause exacte inconnue** : on ne peut pas reproduire ce plantage hors d'un vrai iPhone (la memoire mesuree est
+modeste : ~19 Mo de canevas hors canevas du jeu, 22 Mo de JavaScript).
+
+Le jeu se rattrape donc seul (`src/game/safeMode.ts`) :
+
+- au demarrage du moteur graphique, il pose une note ; il l'efface quand le jeu est stable depuis 4 s, ou
+  a la fermeture normale de la page (`pagehide`). Si la note est ENCORE LA au chargement suivant, le
+  demarrage precedent n'est jamais alle au bout : **mode compatibilite**, retenu ensuite ;
+- mode compatibilite : rendu Canvas 2D (pas de WebGL), definition 1x, aucun effet (halo du roi, vignette) —
+  le MEME jeu, moins beau ;
+- le menu l'explique et propose « Reessayer en mode normal » ; `?safe=1` le force, `?safe=0` le retire.
+
+Pour un ami dont le jeu plante : lui envoyer le lien avec `?safe=1` a la fin.
+Verifie par `tests/browser/mode-compatibilite.mjs`, y compris une vraie manche en mode simplifie.
+**Non verifie** : que ce mode corrige VRAIMENT le plantage de cet iPhone — a confirmer sur l'appareil.
