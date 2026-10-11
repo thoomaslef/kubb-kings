@@ -45,9 +45,123 @@
     <meta name="twitter:title" content="KUBB: Kings" />
     <meta name="twitter:description" content="Le duel de lancer suedois, sur un seul telephone." />
     <meta name="twitter:image" content="https://thoomaslef.github.io/kubb-kings/icon-512.png" />
+    <!--
+      Ecran d'attente AVANT tout JavaScript : tant que le jeu n'a pas demarre, la page etait
+      totalement vide (un ecran uni, sans un mot). Sur un telephone lent, ou dans le navigateur
+      integre d'Instagram/Facebook/TikTok, le joueur ne savait meme pas si quelque chose se
+      passait. Ce bloc est ecrit en dur dans la page — style compris, rien d'externe a attendre —
+      et React le remplace des qu'il demarre.
+    -->
+    <style>
+      html, body { margin: 0; height: 100%; background: #0d1a14; color: #eef4ef; }
+      #kubb-splash { box-sizing: border-box; min-height: 100%; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center;
+        font-family: 'Trebuchet MS', 'Segoe UI', system-ui, -apple-system, sans-serif; }
+      #kubb-splash h1 { margin: 0; font-size: 40px; letter-spacing: 0.02em; }
+      #kubb-splash h1 span { color: #f2c14e; }
+      #kubb-splash p { margin: 0; max-width: 420px; font-size: 15px; line-height: 1.45; color: #9fb3a7; }
+      #kubb-splash button { margin-top: 4px; padding: 12px 18px; border-radius: 12px; border: 1px solid #f2c14e;
+        background: transparent; color: #f2c14e; font-size: 15px; font-weight: 700; }
+      #kubb-splash pre { max-width: 90vw; margin: 0; white-space: pre-wrap; word-break: break-word;
+        font-size: 12px; color: #ff9b8a; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="kubb-splash" role="status">
+        <h1>KUBB<span>: Kings</span></h1>
+        <p id="kubb-splash-msg">Chargement…</p>
+        <p id="kubb-splash-inapp" style="display: none"></p>
+        <p id="kubb-splash-slow" style="display: none"></p>
+        <button id="kubb-splash-copy" type="button" style="display: none"></button>
+        <pre id="kubb-splash-error" style="display: none"></pre>
+      </div>
+    </div>
+    <script>
+      /*
+       * Surveillance du demarrage, en JavaScript CLASSIQUE (pas un module) : elle doit s'executer
+       * meme si le module du jeu ne se charge pas, ou plante a la lecture sur un vieux navigateur.
+       * Elle n'agit que tant que l'ecran d'attente est la ; des que React le remplace, elle se tait.
+       */
+      (function () {
+        var ua = navigator.userAgent || '';
+        var en = /^en/i.test(navigator.language || '');
+        var T = en
+          ? {
+              loading: 'Loading…',
+              inapp: 'You are in the built-in browser of another app. If the game does not show up, tap the ••• menu and choose “Open in browser” (or “Open in Safari”), or copy the link and open it in Safari or Chrome.',
+              slow: 'This is taking a while. Check your connection; if nothing happens, open this link in Safari or Chrome.',
+              copy: 'Copy the link',
+              copied: 'Link copied!',
+              prompt: 'Copy this link:',
+              err: 'Could not start the game: ',
+              res: 'Could not load: '
+            }
+          : {
+              loading: 'Chargement…',
+              inapp: "Vous etes dans le navigateur integre d'une autre application. Si le jeu ne s'affiche pas, touchez le menu ••• puis « Ouvrir dans le navigateur » (ou « Ouvrir dans Safari »), ou copiez le lien et ouvrez-le dans Safari ou Chrome.",
+              slow: "Le chargement est long. Verifiez votre connexion ; si rien ne se passe, ouvrez ce lien dans Safari ou Chrome.",
+              copy: 'Copier le lien',
+              copied: 'Lien copie !',
+              prompt: 'Copiez ce lien :',
+              err: 'Impossible de demarrer le jeu : ',
+              res: 'Impossible de charger : '
+            };
+        var el = function (id) { return document.getElementById(id); };
+        var alive = function () { return !!el('kubb-splash'); };
+        var show = function (id, text) {
+          var node = el(id);
+          if (!node) return;
+          if (text) node.textContent = text;
+          node.style.display = '';
+        };
+        el('kubb-splash-msg').textContent = T.loading;
+
+        // Navigateurs integres (Instagram, Facebook, TikTok, Snapchat, LinkedIn, Line...) : souvent limites.
+        var inApp = /Instagram|FBAN|FBAV|FB_IAB|musical_ly|BytedanceWebview|Snapchat|LinkedInApp|Line\//i.test(ua);
+        if (inApp) show('kubb-splash-inapp', T.inapp);
+
+        var copyButton = el('kubb-splash-copy');
+        copyButton.textContent = T.copy;
+        copyButton.onclick = function () {
+          var url = location.origin + location.pathname;
+          var done = function () { copyButton.textContent = T.copied; };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(done, function () { window.prompt(T.prompt, url); });
+          } else {
+            window.prompt(T.prompt, url);
+          }
+        };
+        if (inApp) show('kubb-splash-copy');
+
+        // Toujours la apres 8 secondes : on le dit, et on propose le lien.
+        setTimeout(function () {
+          if (!alive()) return;
+          show('kubb-splash-slow', T.slow);
+          show('kubb-splash-copy');
+        }, 8000);
+
+        // Un plantage au demarrage s'AFFICHE : sans cela, le joueur voit un ecran vide et nous ne
+        // savons rien. Une capture d'ecran du message suffit ensuite a comprendre.
+        var report = function (text) {
+          if (!alive()) return;
+          show('kubb-splash-error', text);
+          show('kubb-splash-copy');
+        };
+        window.addEventListener('error', function (event) {
+          var target = event.target;
+          if (target && target !== window && (target.src || target.href)) {
+            report(T.res + (target.src || target.href));
+          } else {
+            report(T.err + (event.message || 'erreur inconnue'));
+          }
+        }, true);
+        window.addEventListener('unhandledrejection', function (event) {
+          var reason = event.reason;
+          report(T.err + ((reason && reason.message) || String(reason)));
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
