@@ -104,13 +104,53 @@ const moteur = (page) =>
 
 // ------------------------------------------------------------ 2. un demarrage jamais abouti => mode compatibilite
 {
-  const { page, contexte } = await ouvrir('plantage', '', () => localStorage.setItem('kubb-kings.boot-attempt', String(Date.now())));
+  // (a) la note de l'ONGLET est restee : cet onglet a plante.
+  const { page, contexte } = await ouvrir('plantage-onglet', '', () => sessionStorage.setItem('kubb-kings.boot-attempt', String(Date.now())));
   await page.waitForTimeout(1500);
   const e = await moteur(page);
   console.log({ plantage: e });
   resultats.plantage_PasseEnModeCompatibilite = e.rendu === 1 && e.avis;
   resultats.plantage_LExplique = /plant/i.test(e.texteAvis);
   resultats.plantage_EstRetenu = e.souvenir === '1';
+  await contexte.close();
+}
+{
+  // (b) l'onglet a perdu sa note en plantant, mais la note PARTAGEE est ancienne : meme conclusion.
+  const { page, contexte } = await ouvrir('plantage-partage', '', () =>
+    localStorage.setItem('kubb-kings.boot-attempt', String(Date.now() - 10000))
+  );
+  await page.waitForTimeout(1500);
+  const e = await moteur(page);
+  resultats.plantage_NotePartageeAncienneAussi = e.rendu === 1 && e.avis;
+  await contexte.close();
+}
+{
+  // (c) une note partagee RECENTE est celle d'un autre onglet en train de demarrer : PAS un plantage.
+  // (Premiere version : le stockage partage seul faisait basculer le second onglet en mode
+  // compatibilite — decouvert parce que deux pages ouvertes a la suite se gênaient.)
+  const { page, contexte } = await ouvrir('autre-onglet', '', () =>
+    localStorage.setItem('kubb-kings.boot-attempt', String(Date.now() - 1000))
+  );
+  await page.waitForTimeout(1500);
+  const e = await moteur(page);
+  resultats.autreOnglet_PasDeFausseAlerte = e.rendu === 2 && !e.avis;
+  await contexte.close();
+}
+{
+  // (d) deux pages ouvertes a quelques secondes d'ecart dans le meme navigateur : aucune ne bascule.
+  const contexte = await navigateur.newContext({ viewport: { width: 390, height: 844 }, locale: 'fr-FR' });
+  const a = await contexte.newPage();
+  const b = await contexte.newPage();
+  await a.goto(JEU);
+  await a.evaluate(() => localStorage.setItem('kubb-kings.tutorial-done', '1'));
+  await a.goto(JEU);
+  await b.goto(JEU);
+  await a.waitForSelector('.panel--menu', { timeout: 60000 });
+  await b.waitForSelector('.panel--menu', { timeout: 60000 });
+  await a.waitForTimeout(1200);
+  const ea = await moteur(a);
+  const eb = await moteur(b);
+  resultats.deuxOnglets_AucunNeBascule = ea.rendu === 2 && eb.rendu === 2 && !ea.avis && !eb.avis;
   await contexte.close();
 }
 

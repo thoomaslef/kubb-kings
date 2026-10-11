@@ -405,7 +405,11 @@ Le jeu se rattrape donc seul (`src/game/safeMode.ts`) :
 
 - au demarrage du moteur graphique, il pose une note ; il l'efface quand le jeu est stable depuis 4 s, ou
   a la fermeture normale de la page (`pagehide`). Si la note est ENCORE LA au chargement suivant, le
-  demarrage precedent n'est jamais alle au bout : **mode compatibilite**, retenu ensuite ;
+  demarrage precedent n'est jamais alle au bout : **mode compatibilite**, retenu ensuite. La note est
+  ecrite dans le stockage de L'ONGLET (aucun autre onglet ne peut la confondre avec un plantage — une premiere
+  version utilisait le stockage partage et deux onglets ouverts a quelques secondes d'ecart faisaient
+  basculer le second) et, au cas ou l'onglet la perdrait en plantant, dans le stockage partage, ou on ne la
+  croit qu'apres 6 s ;
 - mode compatibilite : rendu Canvas 2D (pas de WebGL), definition 1x, aucun effet (halo du roi, vignette) —
   le MEME jeu, moins beau ;
 - le menu l'explique et propose « Reessayer en mode normal » ; `?safe=1` le force, `?safe=0` le retire.
