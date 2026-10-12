@@ -246,63 +246,37 @@ classique, a distance parcourue egale (10,84 contre 9,29) — zero erreur consol
 
 ## Batons
 
-Contrairement aux skins, un vrai effet de jeu — la progression du joueur passe par le
-style plutot que par la puissance brute : chaque baton est un compromis, pas un strict
-progres. Choisi librement au menu ([`src/game/batons.ts`](../src/game/batons.ts)), 3 stats
-affichees en etoiles (1 a 5, 3 = le baton de base) :
+**Des skins, rien d'autre.** Tous les batons lancent exactement pareil : memes stats
+(3/3/3), meme corps physique (le rectangle allonge), meme vitesse, meme deviation, meme prise
+au vent, meme friction. Un baton plus cher ou de niveau plus haut n'est jamais un avantage,
+seulement un habillage ([`src/game/batons.ts`](../src/game/batons.ts) ; textures dans
+[`BootScene::buildBatonSkins`](../src/game/scenes/BootScene.ts), meme silhouette 16 x 66 que
+le baton de base). Une ancienne version donnait a chacun des stats differentes (puissance,
+precision, controle) et des formes (boule, disque) : retirees, parce qu'un choix de
+boutique ne doit pas changer l'equite d'une partie. Les identifiants, eux, n'ont pas bouge :
+les achats deja faits restent valides, seul le nom affiche a change.
 
-| Baton            | Puissance | Precision | Controle | Forme  | Niveau requis     |
-| ---------------- | :-------: | :-------: | :------: | :----: | :---------------: |
-| **De base**      | ★★★☆☆     | ★★★☆☆     | ★★★☆☆    | Baton  | 1 (des le debut)  |
-| **Nordique**      | ★★★★☆     | ★★☆☆☆     | ★★★☆☆    | Baton  | 3                 |
-| **Sniper**        | ★★☆☆☆     | ★★★★★     | ★★★☆☆    | Baton  | 7                 |
-| **Lourd**         | ★★★★★     | ★★☆☆☆     | ★★★☆☆    | Baton  | 11                |
-| **Stabilise**     | ★★★☆☆     | ★★★☆☆     | ★★★★★    | Baton  | 17                |
-| **Boule**         | ★★★☆☆     | ★★★★☆     | ★★☆☆☆    | Boule  | 14                |
-| **Boule de fer**  | ★★★★☆     | ★★★★☆     | ★☆☆☆☆    | Boule  | 20                |
-| **Disque**        | ★★★☆☆     | ★★★★☆     | ★★★★☆    | Disque | 23                |
-| **Plume**         | ★☆☆☆☆     | ★★★★★     | ★☆☆☆☆    | Baton  | 25                |
-| **Enclume**       | ★★★★★     | ★☆☆☆☆     | ★★★☆☆    | Baton  | 27                |
-| **Fouet**         | ★★★☆☆     | ★★☆☆☆     | ★★★★★    | Baton  | 29                |
+| Skin (id)            | Aspect                       | Niveau requis    |
+| -------------------- | ---------------------------- | :--------------: |
+| **De base**          | Bois naturel                 | 1 (des le debut) |
+| **Bouleau** (`nordique`)   | Bois clair, bagues bleues  | 3                |
+| **Chasseur** (`sniper`)    | Vert sombre, bagues orange | 7                |
+| **Ebene** (`lourd`)        | Noir, bagues dorees        | 11               |
+| **Cerise** (`boule`)       | Rouge, bagues creme        | 14               |
+| **Sapin** (`stabilise`)    | Vert, bagues blanches      | 17               |
+| **Acier** (`boulefer`)     | Metal poli                 | 20               |
+| **Ardoise** (`disque`)     | Gris ardoise               | 23               |
+| **Ivoire** (`plume`)       | Blanc casse, bagues dorees | 25               |
+| **Obsidienne** (`enclume`) | Violet sombre              | 27               |
+| **Cuivre** (`fouet`)       | Cuivre, bagues brunes      | 29               |
 
-Seul "De base" reste disponible d&apos;office : les 10 autres sont tous des articles de
-boutique (`src/game/shop.ts`, categorie `'baton'`) — niveau ET pieces necessaires, cf.
-section "Boutique" plus bas. Plume/Enclume/Fouet reprennent la forme "Baton" par defaut
-(memes corps physique et texture que De base/Nordique/Sniper/Lourd/Stabilise) : de purs
-compromis de stats, sans nouveau rendu — Plume est l&apos;inverse d&apos;Enclume (l&apos;un
-maximise la Precision en sacrifiant tout le reste, l&apos;autre maximise la Puissance en
-gardant un peu de Controle), et Fouet ouvre une 2e voie vers l&apos;immunite au vent a
-cote de Stabilise, en sacrifiant la Precision plutot que de tout garder au baseline.
+Seul "De base" reste disponible d&apos;office : les 10 autres sont des articles de boutique
+(`src/game/shop.ts`, categorie `'baton'`) — niveau ET pieces necessaires, cf. section
+"Boutique" plus bas. Le menu et la boutique l'annoncent : « Aspect seulement : tous les
+batons lancent exactement pareil. » (`contenu.test.ts` verrouille que les stats restent
+identiques et que chaque skin a sa propre texture.)
 
-- **Puissance** module la vitesse max du baton (+/-6% par etoile au-dessus/en-dessous de
-  la baseline).
-- **Precision** module la deviation aleatoire du jeu (+/-18% par etoile, MOINS de
-  deviation pour PLUS d&apos;etoiles).
-- **Controle** module l&apos;effet du vent ressenti par ce baton (+/-15% par etoile, MOINS
-  d&apos;effet pour PLUS d&apos;etoiles) — donne un vrai enjeu strategique au vent : un
-  baton bien controle est un atout par jour de tempete.
-
-**Forme du projectile.** Au-dela des 3 stats, un baton a une forme (`BatonStats.shape`) :
-le rectangle allonge par defaut, ou un corps Matter circulaire — Boule, Boule de fer et
-Disque sont tous les trois des cercles, mais de deux rayons differents
-(`HITBOX.ballRadius`/`discRadius`, [`src/game/rules.ts`](../src/game/rules.ts)) et avec des
-rendus distincts (`textureKey`, separe de `shape` : Boule et Boule de fer partagent
-exactement le meme corps physique, juste une texture bois/fer differente — cf.
-[`src/game/scenes/BootScene.ts`](../src/game/scenes/BootScene.ts)). La forme influence aussi
-la friction terrain (`FieldPreset.frictionMultiplierBall`/`frictionMultiplierDisque`,
-absentes = comportement d&apos;un baton normal) : la Boule (et sa variante de fer)
-s&apos;enfoncent bien plus qu&apos;un baton dans le Sable, le Disque glisse particulierement
-bien sur la Glace.
-
-**Jamais l&apos;IA.** Seules les equipes tenues par un joueur humain beneficient de ces
-multiplicateurs (`MatchScene::activeBatonStats`) — l&apos;IA reste toujours sur le baton
-de base, quel que soit le choix au menu. Ce choix ne touche donc a aucun des reglages de
-securite de l&apos;IA (`decideThrow`) : aucune simulation de
-suicide n&apos;etait necessaire pour cette fonctionnalite (ni pour l&apos;ajout ulterieur
-de Boule de fer et Disque), seulement une verification en navigateur (stats correctement
-appliquees au joueur, jamais a l&apos;IA, meme quand un baton different est choisi ;
-achat en boutique puis lancer reel de Boule de fer et Disque, texture/corps physique
-corrects pour chacun ; zero erreur).
+**Jamais l&apos;IA.** L&apos;IA reste toujours sur le baton de base, quel que soit le choix au menu ; le skin n&apos;a de toute facon aucun effet de jeu, donc aucun des reglages de securite de l&apos;IA (`decideThrow`) n&apos;est concerne.
 
 ---
 
@@ -424,18 +398,6 @@ avec largement assez de pieces, les 17 articles sont tous achetables (aucun bout
 desactive) et aucun n&apos;apparait dans les selecteurs avant d&apos;etre reellement
 achete ; un achat (Chicane, puis Nordique) le fait immediatement apparaitre dans le bon
 selecteur et le rend reellement selectionnable pour un match — zero erreur console.
-
-Le baton **Stabilise** (Controle ★★★★★, Puissance/Precision au baseline ★★★) ne casse
-pas la regle deja posee pour les autres batons (`batons.ts`) : un choix de style, pas
-un strict progres — il ameliore uniquement la resistance au vent, un axe qu&apos;aucun
-autre baton ne touche.
-
-Le baton **Boule** (Precision ★★★★☆, Controle ★★☆☆☆, Puissance au baseline ★★★) est le
-premier a changer de FORME plutot que de simples multiplicateurs : un corps Matter
-circulaire (`HITBOX.ballRadius`, `Baton.ts`) plutot que le rectangle allonge habituel,
-avec sa propre texture (`BootScene::buildBoulTexture`) et sa propre trainee
-(`Juice.trail` accepte desormais une cle de texture). Roule droit (Precision haute) mais
-plus dur a doser sous le vent, sans l&apos;allonge du baton pour compenser (Controle bas).
 
 **Aucun effet sur l&apos;IA ni sur les regles.** Comme les batons et les skins, la
 boutique reste un systeme cote joueur uniquement : l&apos;IA ne possede jamais rien et

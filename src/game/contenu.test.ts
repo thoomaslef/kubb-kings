@@ -47,6 +47,16 @@ describe('projectiles', () => {
     for (const id of BATON_IDS) expect(BATONS[id], id).toBeDefined();
   });
 
+  it("les batons sont purement cosmetiques : memes stats, meme forme, un rendu propre a chacun", () => {
+    const rendus = new Set<string>();
+    for (const id of BATON_IDS) {
+      const { power, precision, control, shape, textureKey } = BATONS[id];
+      expect([power, precision, control, shape], id).toEqual([3, 3, 3, 'baton']);
+      rendus.add(textureKey);
+    }
+    expect(rendus.size).toBe(BATON_IDS.length);
+  });
+
   it('les etoiles restent dans 1-5', () => {
     for (const id of BATON_IDS) {
       const { power, precision, control } = BATONS[id];

@@ -39,14 +39,6 @@ const DISTANCE_LIGNE = Y_LANCEUR - (FIELD.y + BASELINE_INSET);
 const DISTANCE_KUBB_CHAMP = Y_LANCEUR - (FIELD.y + FIELD.height / 2 - FIELD_KUBB_INSET);
 
 /**
- * Penalites tactiques ASSUMEES, pas des oublis : sur Sable, la boule
- * s'enfonce la ou le baton glisse. Ne pas pouvoir traverser le terrain avec
- * elle est precisement le choix qu'on veut imposer au joueur. Toute autre
- * combinaison doit passer.
- */
-const PENALITES_ASSUMEES: ReadonlyArray<`${FieldPresetId}/${BatonId}`> = ['sable/boule', 'sable/boulefer'];
-
-/**
  * Portee UTILE : distance parcourue tant que le baton garde de quoi renverser
  * un kubb. Au-dela de THROW.restSpeed il ne fait plus que ramper, et le jeu
  * clot le tour (cf. rules.ts) — compter cette glissade serait se mentir.
@@ -84,7 +76,6 @@ describe('tout terrain reste traversable', () => {
   it.each(terrains)('%s : la ligne adverse est atteignable a pleine puissance', (id) => {
     const preset = FIELD_PRESETS[id];
     for (const batonId of BATON_IDS) {
-      if (PENALITES_ASSUMEES.includes(`${id}/${batonId}`)) continue;
       const portee = porteeUtile(preset, batonId, 1);
       expect(
         portee,
@@ -133,20 +124,6 @@ describe('hierarchie des terrains', () => {
     // rien) : leur difficulte vient du trajet, pas du freinage.
     for (const id of ['chicane', 'sentinelle', 'nuit', 'ruines', 'verger'] as FieldPresetId[]) {
       expect(porteeDeBase(id), id).toBeCloseTo(porteeDeBase('classique'), 0);
-    }
-  });
-});
-
-describe('penalites tactiques', () => {
-  it('sur Sable, la boule ne traverse effectivement pas', () => {
-    // Si ce test tombe, c'est que la penalite a disparu : le choix
-    // boule-vs-baton qui fait l'interet de Sable n'existerait plus.
-    expect(porteeUtile(FIELD_PRESETS.sable, 'boule', 1)).toBeLessThan(DISTANCE_LIGNE);
-  });
-
-  it('mais elle traverse partout ailleurs', () => {
-    for (const id of terrains.filter((t) => t !== 'sable')) {
-      expect(porteeUtile(FIELD_PRESETS[id], 'boule', 1), `boule sur ${id}`).toBeGreaterThanOrEqual(DISTANCE_LIGNE);
     }
   });
 });

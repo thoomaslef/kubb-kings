@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { TEAMS } from '../entities/Team';
 import { PALETTE, KUBB_SKINS, type KubbSkin, KING_SKINS, KING_SKIN_COLORS } from '../theme';
-import { HITBOX, OBSTACLE_RADIUS } from '../rules';
+import { OBSTACLE_RADIUS } from '../rules';
 import { Pinceau } from '../pinceau';
 import { renderScaleFactor } from '../renderScale';
 
@@ -25,9 +25,7 @@ export class BootScene extends Phaser.Scene {
     this.buildSandTexture();
     this.buildMudTexture();
     this.buildBatonTexture();
-    this.buildBoulTexture();
-    this.buildBoulFerTexture();
-    this.buildDisqueTexture();
+    this.buildBatonSkins();
     this.buildKubbTextures();
     this.buildKingTextures();
     this.buildThrowerTextures();
@@ -250,104 +248,45 @@ export class BootScene extends Phaser.Scene {
   }
 
   /**
-   * Boule (baton de boutique, shape:'boule' dans batons.ts) : meme bois que
-   * le baton, mais un disque plutot qu'un rectangle allonge. La couture en
-   * croix (comme une boule de petanque en bois) donne un repere visuel a la
-   * rotation en vol, sans quoi une simple sphere semble immobile en tournant
-   * sur elle-meme.
+   * Skins de baton (boutique) : la meme silhouette et la meme taille que le
+   * baton de base (16 x 66, cf. HITBOX.batonWidth/batonLength) — seuls les
+   * couleurs et le motif changent, jamais le corps physique.
    */
-  private buildBoulTexture() {
-    const size = HITBOX.ballRadius * 2 + 4;
-    const r = HITBOX.ballRadius;
-    const cx = size / 2;
-    const cy = size / 2;
-    this.texture('boule', size, size, (g) => {
-      g.fillStyle(PALETTE.batonWoodDark, 1);
-      g.fillCircle(cx, cy, r + 2);
+  private buildBatonSkins() {
+    const SKINS: Record<string, { dark: number; mid: number; light: number; band: number }> = {
+      nordique: { dark: 0xb9a98a, mid: 0xe8dcc0, light: 0xf7efdc, band: 0x3a6ea5 },
+      sniper: { dark: 0x2a3d29, mid: 0x3d5a3a, light: 0x5d7f56, band: 0xe08a2e },
+      lourd: { dark: 0x15110f, mid: 0x2b2420, light: 0x4a3e37, band: 0xe0b341 },
+      stabilise: { dark: 0x1d5a36, mid: 0x2e7d4f, light: 0x4fa273, band: 0xf2f2e8 },
+      boule: { dark: 0x7d2323, mid: 0xb83a3a, light: 0xd96a6a, band: 0xf0e4c8 },
+      boulefer: { dark: PALETTE.metalDark, mid: PALETTE.metal, light: PALETTE.metalLight, band: 0x2a2f36 },
+      disque: { dark: PALETTE.slateDark, mid: PALETTE.slate, light: PALETTE.slateLight, band: 0xd9e2ec },
+      plume: { dark: 0xcfc6b0, mid: 0xf1ead8, light: 0xffffff, band: 0xd4a83a },
+      enclume: { dark: 0x241838, mid: 0x3a2a4f, light: 0x5c4780, band: 0xb07be8 },
+      fouet: { dark: 0x7a4120, mid: 0xb86b3a, light: 0xdc9461, band: 0x3b2314 }
+    };
+    for (const [id, c] of Object.entries(SKINS)) {
+      this.texture(`baton-${id}`, 16, 66, (g) => {
+        g.fillStyle(c.dark, 1);
+        g.fillRoundedRect(0, 0, 16, 66, 7);
+        g.degradeLineaire(1, 0, 15, 0, [
+          { stop: 0, color: c.dark },
+          { stop: 0.28, color: c.light },
+          { stop: 0.52, color: c.mid },
+          { stop: 1, color: c.dark }
+        ]).fillRoundedRect(1, 1, 14, 64, 6);
 
-      // Sphere : degrade radial decentre vers la source de lumiere (en haut
-      // a gauche, comme les ombres portees, cf. theme.ts). Un disque plat
-      // surmonte d'un petit cercle clair ne tournait pas vraiment rond.
-      g.degradeRadial(cx - r * 0.3, cy - r * 0.32, r * 1.5, [
-        { stop: 0, color: PALETTE.batonWoodLight },
-        { stop: 0.42, color: PALETTE.batonWood },
-        { stop: 1, color: PALETTE.batonWoodDark }
-      ]).fillCircle(cx, cy, r);
+        // Deux bagues de couleur : le repere qui distingue les skins en vol.
+        g.fillStyle(c.band, 0.92);
+        g.fillRect(1, 15, 14, 5);
+        g.fillRect(1, 46, 14, 5);
 
-      g.lineStyle(1.5, PALETTE.batonWoodDark, 0.55);
-      g.strokeCircle(cx, cy, r * 0.62);
-      g.lineBetween(cx - r * 0.62, cy, cx + r * 0.62, cy);
-      g.lineBetween(cx, cy - r * 0.62, cx, cy + r * 0.62);
-    });
-  }
-
-  /**
-   * Boule de fer (baton de boutique, shape:'boule' dans batons.ts) : meme
-   * corps physique et meme taille que la boule en bois (HITBOX.ballRadius),
-   * juste une texture metallique — cf. PALETTE.metal, deja utilisee par le
-   * skin de kubb "Metal". Rivets plutot que couture en croix : repere
-   * visuel different de la boule en bois, pour rester distinguable au vol.
-   */
-  private buildBoulFerTexture() {
-    const size = HITBOX.ballRadius * 2 + 4;
-    const r = HITBOX.ballRadius;
-    const cx = size / 2;
-    const cy = size / 2;
-    this.texture('boulefer', size, size, (g) => {
-      g.fillStyle(PALETTE.metalDark, 1);
-      g.fillCircle(cx, cy, r + 2);
-
-      // Metal : meme sphere degradee que la boule en bois, mais avec un
-      // reflet franc — c'est le contraste serre qui fait "poli".
-      g.degradeRadial(cx - r * 0.34, cy - r * 0.36, r * 1.4, [
-        { stop: 0, color: 0xffffff, alpha: 0.95 },
-        { stop: 0.18, color: PALETTE.metalLight },
-        { stop: 0.52, color: PALETTE.metal },
-        { stop: 1, color: PALETTE.metalDark }
-      ]).fillCircle(cx, cy, r);
-
-      // Rivets : 4 petits points sombres, comme une boule de canon rivetee.
-      g.fillStyle(PALETTE.metalDark, 0.7);
-      [
-        [cx, cy - r * 0.6],
-        [cx, cy + r * 0.6],
-        [cx - r * 0.6, cy],
-        [cx + r * 0.6, cy]
-      ].forEach(([px, py]) => g.fillCircle(px, py, r * 0.1));
-    });
-  }
-
-  /**
-   * Disque (baton de boutique, shape:'disque' dans batons.ts) : un corps
-   * physique nouveau (HITBOX.discRadius, plus large que la boule), rendu
-   * comme un palet plat vu de dessus — anneau exterieur plus sombre pour
-   * suggerer l'epaisseur, plutot que le degrade spherique de la boule.
-   */
-  private buildDisqueTexture() {
-    const size = HITBOX.discRadius * 2 + 4;
-    const r = HITBOX.discRadius;
-    const cx = size / 2;
-    const cy = size / 2;
-    this.texture('disque', size, size, (g) => {
-      g.fillStyle(PALETTE.slateDark, 1);
-      g.fillCircle(cx, cy, r + 2);
-      // Palet vu de dessus : l'anneau exterieur garde son degrade d'epaisseur,
-      // la face superieure reste franche pour que le palet ne passe pas pour
-      // une bille.
-      g.degradeRadial(cx, cy, r, [
-        { stop: 0, color: PALETTE.slate },
-        { stop: 0.74, color: PALETTE.slate },
-        { stop: 1, color: PALETTE.slateDark }
-      ]).fillCircle(cx, cy, r);
-      g.degradeLineaire(cx, cy - r * 0.72, cx, cy + r * 0.72, [
-        { stop: 0, color: PALETTE.slateLight },
-        { stop: 1, color: PALETTE.slate }
-      ]).fillCircle(cx, cy, r * 0.72);
-
-      g.lineStyle(1.5, PALETTE.slateDark, 0.6);
-      g.strokeCircle(cx, cy, r * 0.72);
-      g.strokeCircle(cx, cy, r * 0.38);
-    });
+        // Bouts, plus sombres que le corps.
+        g.fillStyle(c.dark, 0.45);
+        g.fillRoundedRect(1, 1, 14, 5, 3);
+        g.fillRoundedRect(1, 60, 14, 5, 3);
+      });
+    }
   }
 
   // ------------------------------------------------------------------ kubbs

@@ -1,15 +1,9 @@
 import { useGameStore } from '../store/useGameStore';
 import { SHOP_ITEMS, isShopItemLevelUnlocked, type ShopCategory, type ShopItem } from '../game/shop';
-import { BATONS, type BatonId } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { useT } from '../i18n/useT';
 
 const CATEGORIES: ShopCategory[] = ['terrain', 'baton', 'skin', 'king', 'trail'];
-
-/** "★★★☆☆" pour n etoiles sur 5. */
-function stars(n: number): string {
-  return '★'.repeat(n) + '☆'.repeat(Math.max(0, 5 - n));
-}
 
 /** Cle i18n de l'article : skin.<id>/effect.<id>/baton.<id> selon la categorie. */
 function labelKey(item: ShopItem): string {
@@ -57,13 +51,6 @@ export function Shop() {
                       <div className="shop-item__body">
                         <span className="shop-item__label">{t(labelKey(item))}</span>
                         {hint && <span className="shop-item__hint">{t(hint)}</span>}
-                        {item.category === 'baton' && (
-                          <span className="shop-item__hint">
-                            {t('baton.statPower')} {stars(BATONS[item.refId as BatonId].power)} ·{' '}
-                            {t('baton.statPrecision')} {stars(BATONS[item.refId as BatonId].precision)} ·{' '}
-                            {t('baton.statControl')} {stars(BATONS[item.refId as BatonId].control)}
-                          </span>
-                        )}
                       </div>
                       <div className="shop-item__footer">
                         {owned ? (

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
-import { BATONS, BATON_IDS } from '../game/batons';
+import { BATON_IDS } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { KUBB_SKINS, KING_SKINS } from '../game/theme';
 import { THROW_EFFECT_IDS } from '../game/throwEffects';
@@ -16,11 +16,6 @@ import type { Lang } from '../i18n/translate';
 
 const LANGS: Lang[] = ['fr', 'en'];
 const LANG_AUTONYM: Record<Lang, string> = { fr: 'Français', en: 'English' };
-
-/** "★★★☆☆" pour n etoiles sur 5. */
-function stars(n: number): string {
-  return '★'.repeat(n) + '☆'.repeat(Math.max(0, 5 - n));
-}
 
 export function Menu() {
   const t = useT();
@@ -303,10 +298,7 @@ export function Menu() {
               </button>
             ))}
           </div>
-          <p className="footnote footnote--tight">
-            {t('baton.statPower')} {stars(BATONS[batonId].power)} · {t('baton.statPrecision')}{' '}
-            {stars(BATONS[batonId].precision)} · {t('baton.statControl')} {stars(BATONS[batonId].control)}
-          </p>
+          <p className="footnote footnote--tight">{t('baton.cosmeticNote')}</p>
           {nextBaton && (
             <p className="footnote footnote--tight footnote--locked">
               {t('menu.nextBatonUnlock', { name: t(`baton.${nextBaton.refId}.label`), level: nextBaton.minLevel })}

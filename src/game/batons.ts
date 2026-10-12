@@ -1,28 +1,16 @@
 /**
- * Batons : equipement du joueur (jamais de l'IA, qui reste toujours sur le
- * baton de base), choisi librement au menu comme un skin — sauf qu'ici le
- * choix a un vrai effet de jeu, une progression de style plutot que de
- * puissance pure (chaque baton est un compromis, pas un strict progres).
+ * Batons : skins du projectile du joueur (jamais de l'IA, qui reste toujours
+ * sur le baton de base), choisis librement au menu comme les skins de kubb.
  *
- * 3 stats affichees en etoiles (1 a 5, 3 = le baton de base) :
- * - Puissance : vitesse max du baton (+/-6% par etoile).
- * - Precision : deviation aleatoire du lancer (+/-18% par etoile, MOINS de
- *   deviation pour PLUS d'etoiles).
- * - Controle : resistance au vent (+/-15% par etoile, MOINS d'effet du vent
- *   pour PLUS d'etoiles) — donne un vrai enjeu strategique au vent.
+ * PUREMENT COSMETIQUE : tous les batons ont exactement les memes stats
+ * (3/3/3) et le meme corps physique (rectangle allonge) — meme vitesse, meme
+ * deviation, meme prise au vent, meme friction. Un baton rare n'est jamais un
+ * avantage, seulement un habillage (cf. BootScene::buildBatonSkins).
  *
- * Un baton a aussi une forme (`shape`) : 'baton' (le rectangle allonge par
- * defaut), 'boule' ou 'disque' (deux corps Matter circulaires, cf.
- * HITBOX.ballRadius/discRadius dans rules.ts et Baton.ts) — purement une
- * question de corps physique, les memes multiplicateurs de stats
- * s'appliquent quelle que soit la forme. `textureKey` est separe de `shape` :
- * deux batons peuvent partager le meme corps physique avec un rendu
- * different (Boule et Boule de fer sont toutes deux des cercles de meme
- * rayon, cf. BootScene).
- *
- * L'IA n'utilise jamais ces multiplicateurs ni cette forme (toujours le
- * baton de base) : ce choix ne touche donc a aucun des reglages de securite
- * de l'IA.
+ * Les multiplicateurs (`batonPowerMultiplier`...) et la forme (`shape`) sont
+ * conserves : ils valent 1 / 'baton' pour tous aujourd'hui, mais gardent le
+ * reste du moteur (MatchScene, Baton.ts) inchange et les identifiants
+ * (donc les achats deja faits) valides.
  */
 
 /**
@@ -77,36 +65,21 @@ export interface BatonStats {
   textureKey: string;
 }
 
+/** Stats communes a tous les batons : aucun n'a d'avantage de jeu. */
+const NEUTRE = { power: 3, precision: 3, control: 3, shape: 'baton' } as const;
+
 export const BATONS: Record<BatonId, BatonStats> = {
-  base: { power: 3, precision: 3, control: 3, shape: 'baton', textureKey: 'baton' },
-  nordique: { power: 4, precision: 2, control: 3, shape: 'baton', textureKey: 'baton' },
-  sniper: { power: 2, precision: 5, control: 3, shape: 'baton', textureKey: 'baton' },
-  lourd: { power: 5, precision: 2, control: 3, shape: 'baton', textureKey: 'baton' },
-  // Seul baton a vraiment jouer sur le Controle (les 4 autres restent tous a
-  // 3) : un compromis different, pas un strict progres — baseline ailleurs.
-  stabilise: { power: 3, precision: 3, control: 5, shape: 'baton', textureKey: 'baton' },
-  // Boule : roule droit (Precision haute) mais plus dure a doser sous le
-  // vent, sans l'allonge du baton (Controle bas) — Puissance au baseline.
-  boule: { power: 3, precision: 4, control: 2, shape: 'boule', textureKey: 'boule' },
-  // Boule de fer : variante lourde de la Boule (meme corps physique, roule
-  // tout aussi droit) — plus de Puissance, mais quasi aucune resistance au
-  // vent (trop lourde pour compenser en vol, contrairement au Stabilise).
-  boulefer: { power: 4, precision: 4, control: 1, shape: 'boule', textureKey: 'boulefer' },
-  // Disque : aerodynamique et previsible (Precision et Controle au-dessus
-  // du baseline tous les deux), Puissance neutre — glisse particulierement
-  // bien sur "Glace" (ICE_FRICTION_MULTIPLIER_DISQUE, rules.ts).
-  disque: { power: 3, precision: 4, control: 4, shape: 'disque', textureKey: 'disque' },
-  // Plume : l'inverse du Lourd — ultra precis a vue, mais si legere qu'elle
-  // n'a ni la vitesse ni la resistance au vent pour aller loin.
-  plume: { power: 1, precision: 5, control: 1, shape: 'baton', textureKey: 'baton' },
-  // Enclume : la version extreme du Lourd (Puissance au maximum), qui
-  // garde neanmoins un peu de tenue au vent (Controle au baseline) — un
-  // pur glass cannon de puissance, pas un double desavantage.
-  enclume: { power: 5, precision: 1, control: 3, shape: 'baton', textureKey: 'baton' },
-  // Fouet : 2e voie vers l'immunite au vent (Controle au maximum, comme le
-  // Stabilise), mais qui sacrifie la Precision plutot que de tout garder
-  // au baseline — un compromis plus tranche que le Stabilise.
-  fouet: { power: 3, precision: 2, control: 5, shape: 'baton', textureKey: 'baton' }
+  base: { ...NEUTRE, textureKey: 'baton' },
+  nordique: { ...NEUTRE, textureKey: 'baton-nordique' },
+  sniper: { ...NEUTRE, textureKey: 'baton-sniper' },
+  lourd: { ...NEUTRE, textureKey: 'baton-lourd' },
+  stabilise: { ...NEUTRE, textureKey: 'baton-stabilise' },
+  boule: { ...NEUTRE, textureKey: 'baton-boule' },
+  boulefer: { ...NEUTRE, textureKey: 'baton-boulefer' },
+  disque: { ...NEUTRE, textureKey: 'baton-disque' },
+  plume: { ...NEUTRE, textureKey: 'baton-plume' },
+  enclume: { ...NEUTRE, textureKey: 'baton-enclume' },
+  fouet: { ...NEUTRE, textureKey: 'baton-fouet' }
 };
 
 const STARS_BASELINE = 3;
