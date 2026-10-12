@@ -33,7 +33,8 @@ const present = async (page, motif) => (await page.locator('button', { hasText: 
   resultats.menu_plusDeModeEnVrac =
     !(await present(page, /^Solo/)) && !(await present(page, /1v1 local/)) && !(await present(page, /2v2 local/)) &&
     !(await present(page, /Partie privee/)) && !(await present(page, /Classe —/));
-  resultats.menu_defiEtTournoiRestent = (await present(page, /Defi/)) && (await present(page, /Tournoi/));
+  resultats.menu_defiResteAuMenu = await present(page, /Defi/);
+  resultats.menu_tournoiEstDansLaPageHorsLigne = !(await present(page, /Tournoi/));
   await contexte.close();
 }
 
@@ -43,7 +44,7 @@ const present = async (page, motif) => (await page.locator('button', { hasText: 
   await bouton(page, /Jouer hors ligne/).click();
   await page.waitForTimeout(300);
   resultats.local_ecran = (await ecran(page)) === 'local-hub';
-  resultats.local_troisModes = (await present(page, /^Solo/)) && (await present(page, /1v1 local/)) && (await present(page, /2v2 local/));
+  resultats.local_quatreModes = (await present(page, /^Solo/)) && (await present(page, /1v1 local/)) && (await present(page, /2v2 local/)) && (await present(page, /Tournoi local/));
   const niveaux = await page.locator('.segmented__item').count();
   resultats.local_niveauIA = niveaux >= 2;
   const avant = await page.evaluate(() => window.__kubbStoreApi.getState().difficulty);
@@ -51,7 +52,7 @@ const present = async (page, motif) => (await page.locator('button', { hasText: 
   await cible.click();
   const apres = await page.evaluate(() => window.__kubbStoreApi.getState().difficulty);
   resultats.local_niveauIAChange = apres !== avant;
-  for (const [motif, intention] of [[/^Solo/, 'solo'], [/1v1 local/, 'local'], [/2v2 local/, '2v2']]) {
+  for (const [motif, intention] of [[/^Solo/, 'solo'], [/1v1 local/, 'local'], [/2v2 local/, '2v2'], [/Tournoi local/, 'tournament']]) {
     await bouton(page, motif).click();
     await page.waitForSelector('.map-grid', { timeout: 10000 });
     const intent = await page.evaluate(() => window.__kubbStoreApi.getState().mapIntent);

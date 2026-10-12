@@ -5,7 +5,7 @@ import { RankBadge, useRankName } from './RankBadge';
 
 const LEVELS = Object.keys(AI_PROFILES) as Difficulty[];
 
-/** Les trois modes qui se jouent sur un seul telephone : solo contre l'IA, 1v1, 2v2. */
+/** Les modes qui se jouent sur un seul telephone : solo contre l'IA, 1v1, 2v2, tournoi local. */
 export function LocalHub() {
   const t = useT();
   const setScreen = useGameStore((s) => s.setScreen);
@@ -42,6 +42,10 @@ export function LocalHub() {
           </button>
           <button className="btn" onClick={() => openMapSelect('2v2')}>
             {t('menu.local2v2')}
+          </button>
+
+          <button className="btn" onClick={() => openMapSelect('tournament')}>
+            {t('menu.tournament')}
           </button>
 
           <button className="btn btn--ghost" onClick={() => setScreen('menu')}>

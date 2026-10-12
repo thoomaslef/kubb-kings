@@ -74,7 +74,7 @@ export function TournamentSetup() {
           <button className="btn btn--primary" onClick={start}>
             {t('tournament.setup.start')}
           </button>
-          <button className="btn btn--ghost" onClick={() => setScreen('menu')}>
+          <button className="btn btn--ghost" onClick={() => setScreen('local-hub')}>
             {t('tournament.setup.cancel')}
           </button>
         </div>

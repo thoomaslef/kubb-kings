@@ -125,8 +125,8 @@ l'applique ne prouverait rien.
 
 Le menu n'expose que deux entrees de jeu, qui ouvrent chacune une page (`src/ui/Hubs.tsx`) :
 
-- **Jouer hors ligne** : Solo (avec le niveau de l'IA), 1v1 local, 2v2 local.
+- **Jouer hors ligne** : Solo (avec le niveau de l'IA), 1v1 local, 2v2 local, Tournoi local.
 - **Jouer en ligne** : Partie rapide (recherche d'un inconnu, bot au bout d'une minute),
   Partie privee (code a partager, tchat), Partie classee (ecran des rangs).
 
-Defi et Tournoi local restent sur le menu principal. « Retour » ramene a la page d'ou l'on vient.
+Defi reste sur le menu principal. « Retour » ramene a la page d'ou l'on vient.

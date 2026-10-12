@@ -105,7 +105,7 @@ export function MapSelect() {
             <button className="btn btn--primary" onClick={lancer}>
               {libelleAction}
             </button>
-            <button className="btn" onClick={() => setScreen(intent === 'tournament' ? 'menu' : intent === 'online' ? 'online-hub' : 'local-hub')}>
+            <button className="btn" onClick={() => setScreen(intent === 'online' ? 'online-hub' : 'local-hub')}>
               {t('map.back')}
             </button>
           </div>

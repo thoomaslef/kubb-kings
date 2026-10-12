@@ -51,7 +51,6 @@ export function Menu() {
   const lang = useGameStore((s) => s.lang);
   const setLang = useGameStore((s) => s.setLang);
   const setMode = useGameStore((s) => s.setMode);
-  const openMapSelect = useGameStore((s) => s.openMapSelect);
   const online = useGameStore((s) => s.online);
   const endOnline = useGameStore((s) => s.endOnline);
   const startRun = useGameStore((s) => s.startRun);
@@ -204,9 +203,6 @@ export function Menu() {
           </button>
           <button className="btn" onClick={playDefi}>
             {t('menu.defi', { n: LADDER.length })}
-          </button>
-          <button className="btn" onClick={() => openMapSelect('tournament')}>
-            {t('menu.tournament')}
           </button>
           {bestStage > 0 && (
             <p className="footnote footnote--tight">
