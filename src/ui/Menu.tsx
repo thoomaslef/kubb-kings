@@ -195,11 +195,11 @@ export function Menu() {
         )}
 
         <div className="button-column">
-          <button className="btn btn--primary" onClick={() => setScreen('local-hub')}>
-            {t('menu.playLocal')}
-          </button>
           <button className="btn btn--primary" onClick={() => setScreen('online-hub')}>
             {t('menu.playOnline')}
+          </button>
+          <button className="btn btn--primary" onClick={() => setScreen('local-hub')}>
+            {t('menu.playLocal')}
           </button>
           <button className="btn" onClick={playDefi}>
             {t('menu.defi', { n: LADDER.length })}

@@ -30,6 +30,8 @@ const present = async (page, motif) => (await page.locator('button', { hasText: 
 {
   const { page, contexte } = await nouvelle('menu');
   resultats.menu_deuxEntrees = (await present(page, /Jouer hors ligne/)) && (await present(page, /Jouer en ligne/));
+  const haut = (motif) => page.locator('button', { hasText: motif }).first().evaluate((b) => b.getBoundingClientRect().top);
+  resultats.menu_enLigneAuDessusDeHorsLigne = (await haut(/Jouer en ligne/)) < (await haut(/Jouer hors ligne/));
   resultats.menu_plusDeModeEnVrac =
     !(await present(page, /^Solo/)) && !(await present(page, /1v1 local/)) && !(await present(page, /2v2 local/)) &&
     !(await present(page, /Partie privee/)) && !(await present(page, /Classe —/));
