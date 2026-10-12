@@ -1308,6 +1308,32 @@ body {
   gap: 10px;
 }
 
+.profile-card {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Dans la carte du profil, le compte et le niveau partagent un seul cadre :
+   le panneau XP n'a plus son propre bord, et le bouton compte est une simple ligne. */
+.profile-card .xp-panel {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.profile-card .btn--account {
+  margin: 0 0 10px;
+  padding-bottom: 10px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  width: 100%;
+}
+
 .btn--account,
 .btn--share {
   margin: 0 0 12px;

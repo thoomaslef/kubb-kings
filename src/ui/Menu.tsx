@@ -114,15 +114,6 @@ export function Menu() {
         </h1>
         <p className="subtitle">{t('menu.subtitle')}</p>
 
-        {/* Sans service configure (build local, tests), pas de compte a proposer. */}
-        {accountAvailable() && (
-          <button type="button" className="btn btn--ghost btn--account" onClick={() => setScreen('account')}>
-            {account.status === 'signedIn' && account.email
-              ? t('menu.account.signedIn', { email: account.email })
-              : t('menu.account.signedOut')}
-          </button>
-        )}
-
         <button type="button" className="btn btn--ghost btn--share" onClick={shareWithFriend}>
           {t('menu.share.button')}
         </button>
@@ -171,27 +162,38 @@ export function Menu() {
           </button>
         )}
 
-        <button
-          type="button"
-          className="xp-panel xp-panel--compact xp-panel--clickable"
-          onClick={() => setScreen('progression')}
-          aria-label={t('menu.progressionAria')}
-        >
-          <div className="xp-panel__header">
-            <span className="xp-panel__icon">{levelInfo.icon}</span>
-            <span className="xp-panel__level">{t('progression.level', { n: levelInfo.level })}</span>
-            <span className="xp-panel__title">{t(levelInfo.titleKey)}</span>
-          </div>
-          <div className="xp-panel__bar-track">
-            <div
-              className="xp-panel__bar-fill"
-              style={{ width: `${Math.min(100, (levelInfo.xpIntoLevel / levelInfo.xpForThisLevel) * 100)}%` }}
-            />
-          </div>
-          <p className="xp-panel__bar-label">
-            {levelInfo.xpIntoLevel} / {levelInfo.xpForThisLevel} XP
-          </p>
-        </button>
+        {/* Une seule carte : le compte au-dessus, puis le niveau du profil. */}
+        <div className="profile-card">
+          {/* Sans service configure (build local, tests), pas de compte a proposer. */}
+          {accountAvailable() && (
+            <button type="button" className="btn btn--ghost btn--account" onClick={() => setScreen('account')}>
+              {account.status === 'signedIn' && account.email
+                ? t('menu.account.signedIn', { email: account.email })
+                : t('menu.account.signedOut')}
+            </button>
+          )}
+          <button
+            type="button"
+            className="xp-panel xp-panel--clickable"
+            onClick={() => setScreen('progression')}
+            aria-label={t('menu.progressionAria')}
+          >
+            <div className="xp-panel__header">
+              <span className="xp-panel__icon">{levelInfo.icon}</span>
+              <span className="xp-panel__level">{t('progression.level', { n: levelInfo.level })}</span>
+              <span className="xp-panel__title">{t(levelInfo.titleKey)}</span>
+            </div>
+            <div className="xp-panel__bar-track">
+              <div
+                className="xp-panel__bar-fill"
+                style={{ width: `${Math.min(100, (levelInfo.xpIntoLevel / levelInfo.xpForThisLevel) * 100)}%` }}
+              />
+            </div>
+            <p className="xp-panel__bar-label">
+              {levelInfo.xpIntoLevel} / {levelInfo.xpForThisLevel} XP
+            </p>
+          </button>
+        </div>
 
         <div className="button-column">
           <button className="btn btn--primary" onClick={() => setScreen('local-hub')}>
