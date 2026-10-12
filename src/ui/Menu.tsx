@@ -300,7 +300,7 @@ export function Menu() {
               </button>
             ))}
           </div>
-          <p className="footnote footnote--tight">{t('baton.cosmeticNote')}</p>
+          <p className="footnote footnote--tight">{t(`baton.${batonId}.hint`)}</p>
           {nextBaton && (
             <p className="footnote footnote--tight footnote--locked">
               {t('menu.nextBatonUnlock', { name: t(`baton.${nextBaton.refId}.label`), level: nextBaton.minLevel })}

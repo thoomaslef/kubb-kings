@@ -57,6 +57,24 @@ describe('projectiles', () => {
     expect(rendus.size).toBe(BATON_IDS.length);
   });
 
+  it('chaque baton a une description, et aucun nom ne reprend celui d\'un skin de kubb ou de roi', () => {
+    for (const lang of ['fr', 'en'] as const) {
+      const pris = new Set(
+        [...KUBB_SKINS.map((k) => `skin.${k}.label`), ...KING_SKINS.map((k) => `king.${k}.label`)].map((k) =>
+          DICTS[lang][k].toLowerCase()
+        )
+      );
+      const vus = new Set<string>();
+      for (const id of BATON_IDS) {
+        expect(DICTS[lang][`baton.${id}.hint`], `${lang} description de ${id}`).toBeTruthy();
+        const nom = DICTS[lang][`baton.${id}.label`].toLowerCase();
+        expect(pris.has(nom), `${lang} : "${nom}" existe deja comme skin de kubb ou de roi`).toBe(false);
+        expect(vus.has(nom), `${lang} : "${nom}" en double`).toBe(false);
+        vus.add(nom);
+      }
+    }
+  });
+
   it('les etoiles restent dans 1-5', () => {
     for (const id of BATON_IDS) {
       const { power, precision, control } = BATONS[id];

@@ -258,22 +258,22 @@ les achats deja faits restent valides, seul le nom affiche a change.
 
 | Skin (id)            | Aspect                       | Niveau requis    |
 | -------------------- | ---------------------------- | :--------------: |
-| **De base**          | Bois naturel                 | 1 (des le debut) |
+| **Naturel** (`base`) | Bois naturel                 | 1 (des le debut) |
 | **Bouleau** (`nordique`)   | Bois clair, bagues bleues  | 3                |
-| **Chasseur** (`sniper`)    | Vert sombre, bagues orange | 7                |
+| **Foret** (`sniper`)    | Vert sombre, bagues orange | 7                |
 | **Ebene** (`lourd`)        | Noir, bagues dorees        | 11               |
 | **Cerise** (`boule`)       | Rouge, bagues creme        | 14               |
 | **Sapin** (`stabilise`)    | Vert, bagues blanches      | 17               |
-| **Acier** (`boulefer`)     | Metal poli                 | 20               |
-| **Ardoise** (`disque`)     | Gris ardoise               | 23               |
+| **Chrome** (`boulefer`)     | Metal poli                 | 20               |
+| **Granit** (`disque`)     | Gris ardoise               | 23               |
 | **Ivoire** (`plume`)       | Blanc casse, bagues dorees | 25               |
-| **Obsidienne** (`enclume`) | Violet sombre              | 27               |
+| **Prune** (`enclume`) | Violet sombre              | 27               |
 | **Cuivre** (`fouet`)       | Cuivre, bagues brunes      | 29               |
 
 Seul "De base" reste disponible d&apos;office : les 10 autres sont des articles de boutique
 (`src/game/shop.ts`, categorie `'baton'`) — niveau ET pieces necessaires, cf. section
-"Boutique" plus bas. Le menu et la boutique l'annoncent : « Aspect seulement : tous les
-batons lancent exactement pareil. » (`contenu.test.ts` verrouille que les stats restent
+"Boutique" plus bas. Comme les skins de kubb et de roi, chacun a un nom et une courte description
+(`baton.<id>.label` / `.hint`), et les noms ne reprennent aucun nom de skin de kubb ou de roi. (`contenu.test.ts` verrouille que les stats restent
 identiques et que chaque skin a sa propre texture.)
 
 **Jamais l&apos;IA.** L&apos;IA reste toujours sur le baton de base, quel que soit le choix au menu ; le skin n&apos;a de toute facon aucun effet de jeu, donc aucun des reglages de securite de l&apos;IA (`decideThrow`) n&apos;est concerne.

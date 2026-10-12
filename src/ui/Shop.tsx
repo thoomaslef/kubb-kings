@@ -12,7 +12,7 @@ function labelKey(item: ShopItem): string {
 }
 
 function hintKey(item: ShopItem): string | null {
-  return item.category === 'baton' ? null : `${item.category === 'trail' ? 'effect' : item.category}.${item.refId}.hint`;
+  return `${item.category === 'trail' ? 'effect' : item.category}.${item.refId}.hint`;
 }
 
 /** Boutique : achat des articles cosmetiques/joueur avec les pieces gagnees en match. */
