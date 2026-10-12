@@ -119,22 +119,45 @@ export class Juice {
     if (this.trailMs < FEEL.trailIntervalMs) return;
     this.trailMs = 0;
 
+    // Sans effet : fantomes discrets, a la couleur du projectile. Avec un effet
+    // de boutique : silhouette pleine de la couleur de l'effet (setTintFill, pas
+    // une teinte multipliee qui disparait sur un baton sombre), en fusion
+    // additive et plus durable, accompagnee d'une lueur — c'est ce qui rend
+    // l'effet reellement visible en vol.
     const ghost = this.scene.add
       .image(x, y, textureKey)
       .setDepth(5)
       .setRotation(rotation)
       .setScale(echelleSprite())
-      .setAlpha(0.3 * speedRatio);
-    if (tint !== null) ghost.setTint(tint);
+      .setAlpha(tint === null ? 0.3 * speedRatio : Math.min(0.85, 0.35 + 0.6 * speedRatio));
+    if (tint !== null) ghost.setTintFill(tint).setBlendMode(Phaser.BlendModes.ADD);
 
     this.scene.tweens.add({
       targets: ghost,
       alpha: 0,
-      scaleX: echelleSprite(0.6),
-      duration: 200,
+      scaleX: echelleSprite(tint === null ? 0.6 : 0.4),
+      duration: tint === null ? 200 : 420,
       ease: 'Quad.easeOut',
       onComplete: () => ghost.destroy()
     });
+
+    if (tint !== null) {
+      const glow = this.scene.add
+        .image(x, y, 'p-flash')
+        .setDepth(5)
+        .setTint(tint)
+        .setAlpha(0.55)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setScale(echelleSprite(0.45));
+      this.scene.tweens.add({
+        targets: glow,
+        alpha: 0,
+        scale: echelleSprite(0.9),
+        duration: 360,
+        ease: 'Quad.easeOut',
+        onComplete: () => glow.destroy()
+      });
+    }
   }
 
   /** Le baton s'immobilise : petit frottement, sans effet visuel. */
