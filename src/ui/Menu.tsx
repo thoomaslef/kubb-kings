@@ -114,32 +114,6 @@ export function Menu() {
         </h1>
         <p className="subtitle">{t('menu.subtitle')}</p>
 
-        <button type="button" className="btn btn--ghost btn--share" onClick={shareWithFriend}>
-          {t('menu.share.button')}
-        </button>
-        {shareState === 'copied' && (
-          <p className="footnote footnote--tight" role="status" data-testid="share-status">
-            {t('menu.share.copied')}
-          </p>
-        )}
-        {shareState === 'shared' && (
-          <p className="footnote footnote--tight" role="status" data-testid="share-status">
-            {t('menu.share.shared')}
-          </p>
-        )}
-        {shareState === 'manual' && (
-          <div role="status" data-testid="share-status">
-            <p className="footnote footnote--tight">{t('menu.share.manual')}</p>
-            <input
-              className="input"
-              readOnly
-              value={shareUrl}
-              aria-label={t('menu.share.button')}
-              onFocus={(e) => e.currentTarget.select()}
-            />
-          </div>
-        )}
-
         {/* Mode compatibilite (safeMode.ts) : le jeu a plante au demarrage, ou le joueur l'a demande. */}
         {isSafeMode() && (
           <div className="ranks-change" role="status" data-testid="safe-mode-notice">
@@ -194,6 +168,32 @@ export function Menu() {
             </p>
           </button>
         </div>
+
+        <button type="button" className="btn btn--ghost btn--share" onClick={shareWithFriend}>
+          {t('menu.share.button')}
+        </button>
+        {shareState === 'copied' && (
+          <p className="footnote footnote--tight" role="status" data-testid="share-status">
+            {t('menu.share.copied')}
+          </p>
+        )}
+        {shareState === 'shared' && (
+          <p className="footnote footnote--tight" role="status" data-testid="share-status">
+            {t('menu.share.shared')}
+          </p>
+        )}
+        {shareState === 'manual' && (
+          <div role="status" data-testid="share-status">
+            <p className="footnote footnote--tight">{t('menu.share.manual')}</p>
+            <input
+              className="input"
+              readOnly
+              value={shareUrl}
+              aria-label={t('menu.share.button')}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+          </div>
+        )}
 
         <div className="button-column">
           <button className="btn btn--primary" onClick={() => setScreen('local-hub')}>
