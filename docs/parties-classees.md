@@ -51,7 +51,7 @@ deja installee) ; rien d'autre a configurer.
 
 ## L'ecran des rangs
 
-Depuis le menu : le bouton « Classe — Or 2 » (avec l'insigne du rang). L'ecran presente
+Depuis le menu : « Jouer en ligne », puis le bouton « Classe — Or 2 » (avec l'insigne du rang). L'ecran presente
 le rang actuel, la prochaine marche, le bilan (victoires, defaites, meilleur rang), l'echelle
 des six rangs avec la position du joueur, les regles, puis le bouton qui lance la
 recherche classee.
@@ -120,3 +120,13 @@ l'applique ne prouverait rien.
   l'invite, les textes, le vent, et le 1v1 local jamais retourne.
 - **Non verifie** : la file classee avec de vrais joueurs sur Supabase ; l'affichage de
   l'insigne sur un vrai telephone.
+
+## Organisation du menu
+
+Le menu n'expose que deux entrees de jeu, qui ouvrent chacune une page (`src/ui/Hubs.tsx`) :
+
+- **Jouer hors ligne** : Solo (avec le niveau de l'IA), 1v1 local, 2v2 local.
+- **Jouer en ligne** : Partie rapide (recherche d'un inconnu, bot au bout d'une minute),
+  Partie privee (code a partager, tchat), Partie classee (ecran des rangs).
+
+Defi et Tournoi local restent sur le menu principal. « Retour » ramene a la page d'ou l'on vient.

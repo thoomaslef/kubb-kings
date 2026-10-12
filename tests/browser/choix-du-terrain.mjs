@@ -53,6 +53,7 @@ const ecran = (page) => page.evaluate(() => window.__kubbStoreApi.getState().scr
 // ---- 1. Solo : le terrain choisi est-il REELLEMENT celui de la partie ?
 {
   const { contexte, page } = await ouvrir();
+  await page.locator('button', { hasText: /Jouer hors ligne/i }).first().click();
   await page.locator('button', { hasText: /Solo/i }).first().click();
   await page.waitForSelector('.map-grid', { timeout: 10000 });
   resultats.soloPasseParLEcran = (await ecran(page)) === 'map-select';
@@ -93,10 +94,11 @@ const ecran = (page) => page.evaluate(() => window.__kubbStoreApi.getState().scr
 
 // ---- 2. Les autres modes aboutissent au bon endroit.
 for (const [bouton, attendu, cle] of [
-  [/En ligne/i, 'online', 'enLigneAboutitAuSalon'],
+  [/Partie privee/i, 'online', 'enLigneAboutitAuSalon'],
   [/Tournoi/i, 'tournament-setup', 'tournoiAboutitAuReglage']
 ]) {
   const { contexte, page } = await ouvrir();
+  if (bouton.source === 'Partie privee') await page.locator('button', { hasText: /Jouer en ligne/i }).first().click();
   await page.locator('button', { hasText: bouton }).first().click();
   await page.waitForSelector('.map-grid', { timeout: 10000 });
   const passeParLEcran = (await ecran(page)) === 'map-select';
@@ -122,6 +124,7 @@ for (const [bouton, attendu, cle] of [
 // ---- 4. Profil neuf : les terrains verrouilles restent visibles, non cliquables.
 {
   const { contexte, page } = await ouvrir({ toutDebloque: false });
+  await page.locator('button', { hasText: /Jouer hors ligne/i }).first().click();
   await page.locator('button', { hasText: /Solo/i }).first().click();
   await page.waitForSelector('.map-grid', { timeout: 10000 });
   const v = await page.evaluate(() => {
@@ -147,6 +150,7 @@ for (const [bouton, attendu, cle] of [
 {
   const { contexte, page } = await ouvrir({ toutDebloque: false });
   await page.evaluate(() => window.__kubbStoreApi.getState().setFieldPreset('boue'));
+  await page.locator('button', { hasText: /Jouer hors ligne/i }).first().click();
   await page.locator('button', { hasText: /Solo/i }).first().click();
   await page.waitForSelector('.map-grid', { timeout: 10000 });
   await page.locator('.btn--primary', { hasText: 'Jouer' }).click();

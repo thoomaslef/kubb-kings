@@ -60,6 +60,7 @@ for (const dpr of [1, 3]) {
 
   // 1v1 local, puis l'ecran de choix du terrain. Pas de Solo : l'IA peut
   // commencer et lancer pendant que la verification mesure et tire elle-meme.
+  await page.locator('button', { hasText: /Jouer hors ligne/i }).first().click();
   await page.locator('button', { hasText: /1v1/i }).first().click();
   await page.waitForSelector('.map-grid', { timeout: 20000 });
   await page.locator('.map-actions .btn--primary').first().click();

@@ -85,11 +85,12 @@ export function Ranks() {
 
   const search = () => {
     setRankedLobby(true);
+    useGameStore.getState().setQuickLobby(false);
     setScreen('online');
   };
   const back = () => {
     clearRankChange();
-    setScreen('menu');
+    setScreen('online-hub');
   };
 
   return (

@@ -3,6 +3,7 @@ import { useGameStore } from '../store/useGameStore';
 import { startMusic } from '../game/audio';
 import { GameCanvas } from './GameCanvas';
 import { Menu } from './Menu';
+import { LocalHub, OnlineHub } from './Hubs';
 import { Rules } from './Rules';
 import { HUD } from './HUD';
 import { Tutorial } from './Tutorial';
@@ -85,6 +86,8 @@ export function App() {
       {screen === 'account' && <Account />}
       {accountConflict && screen !== 'match' && <AccountConflict />}
       {screen === 'map-select' && <MapSelect />}
+      {screen === 'local-hub' && <LocalHub />}
+      {screen === 'online-hub' && <OnlineHub />}
     </div>
   );
 }

@@ -12,18 +12,16 @@
  * BroadcastChannel) : c'est le meme code que sur Supabase, seul le tuyau
  * change.
  */
-import { attendreEcran, conclure, etat, focus, lancerNavigateur, ouvrirJeu, passerLeChoixDuTerrain, surveiller } from './harness.mjs';
+import { attendreEcran, conclure, etat, lancerNavigateur, ouvrirJeu, ouvrirUnHub, surveiller } from './harness.mjs';
 
 const navigateur = await lancerNavigateur();
 const contexte = await navigateur.newContext({ viewport: { width: 420, height: 900 } });
 const erreurs = [];
 const resultats = {};
 
-/** Menu -> En ligne -> choix du terrain -> salon, puis « Partie rapide ». */
+/** Menu -> Jouer en ligne -> « Partie rapide » (la recherche demarre seule). */
 async function chercher(page) {
-  await focus(page);
-  await page.locator('button', { hasText: /En ligne/i }).first().click();
-  await passerLeChoixDuTerrain(page);
+  await ouvrirUnHub(page, 'online');
   await page.locator('button', { hasText: /Partie rapide/i }).first().click();
 }
 

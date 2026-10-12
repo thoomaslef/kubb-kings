@@ -22,7 +22,15 @@ const fr: Record<string, string> = {
   'menu.local2v2': '2v2 local — a quatre',
   'menu.defi': 'Defi — {n} manches, de plus en plus dures',
   'menu.tournament': 'Tournoi local — 4 ou 8 joueurs',
-  'menu.online': 'En ligne — partie privee',
+  'menu.online': 'Partie privee',
+  'menu.playLocal': 'Jouer hors ligne',
+  'menu.playOnline': 'Jouer en ligne',
+  'hub.local.title': 'Jouer hors ligne',
+  'hub.online.title': 'Jouer en ligne',
+  'hub.online.intro': 'Trois facons de jouer contre un autre joueur.',
+  'hub.online.privateHint': 'Un code a partager avec un ami : tchat possible, conditions a votre gout.',
+  'hub.online.rankedHint': 'Un inconnu, conditions identiques pour tous. Une victoire monte, une defaite descend.',
+  'hub.back': 'Retour',
 
   // ---- Rangs (src/game/ranks.ts)
   'rank.tier.bronze': 'Bronze',
@@ -604,7 +612,15 @@ const en: Record<string, string> = {
   'menu.local2v2': 'Local 2v2 — for four',
   'menu.defi': 'Challenge — {n} stages, increasingly hard',
   'menu.tournament': 'Local tournament — 4 or 8 players',
-  'menu.online': 'Online — private match',
+  'menu.online': 'Private match',
+  'menu.playLocal': 'Play offline',
+  'menu.playOnline': 'Play online',
+  'hub.local.title': 'Play offline',
+  'hub.online.title': 'Play online',
+  'hub.online.intro': 'Three ways to play against another player.',
+  'hub.online.privateHint': 'A code to share with a friend: chat available, conditions to your taste.',
+  'hub.online.rankedHint': 'A stranger, identical conditions for everyone. A win moves you up, a loss moves you down.',
+  'hub.back': 'Back',
 
   // ---- Ranks (src/game/ranks.ts)
   'rank.tier.bronze': 'Bronze',

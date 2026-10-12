@@ -634,6 +634,7 @@ const B = await appareil('B');
     );
   const ouvrirRangs = async (page) => {
     await focus(page);
+    if ((await page.locator('.btn--ranked').count()) === 0) await page.locator('button', { hasText: /Jouer en ligne/i }).first().click();
     if ((await page.locator('.btn--ranked').count()) > 0) await page.locator('.btn--ranked').click();
     await page.waitForSelector('.panel--ranks');
     await page.waitForFunction(

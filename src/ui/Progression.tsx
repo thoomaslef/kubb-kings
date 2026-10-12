@@ -63,7 +63,7 @@ export function Progression() {
             {levelInfo.xpIntoLevel} / {levelInfo.xpForThisLevel} XP —{' '}
             {t('progression.xpToNext', { n: levelInfo.xpForThisLevel - levelInfo.xpIntoLevel, level: levelInfo.level + 1 })}
           </p>
-          <p className="footnote footnote--tight">{t('progression.xpTotal', { n: progression.totalXp })}</p>
+          <p className="footnote xp-panel__total">{t('progression.xpTotal', { n: progression.totalXp })}</p>
         </div>
 
         <h3 className="shop-section__title">{t('progression.statsTitle')}</h3>

@@ -1030,6 +1030,12 @@ body {
   text-align: right;
 }
 
+.xp-panel__total {
+  /* Sous le libelle de la barre, jamais colle ni superpose : `.footnote--tight`
+     remontait de 6px, ce qui le faisait chevaucher la ligne du dessus. */
+  margin: 10px 0 0;
+}
+
 .xp-panel__coins {
   margin: 6px 0 0;
   color: var(--gold);

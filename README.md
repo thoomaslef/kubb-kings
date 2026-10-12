@@ -149,7 +149,7 @@ kubb-kings/
 │   │   ├── bootGame.ts import dynamique de Phaser (cf. GameCanvas.tsx)
 │   │   └── GameBridge.ts
 │   ├── i18n/           dictionnaires fr/en, translate(), hook useT()
-│   ├── ui/             composants React (App, Menu, Rules, HUD, Tutorial, ResultScreen…)
+│   ├── ui/             composants React (App, Menu, Hubs, Rules, HUD, Tutorial, ResultScreen…)
 │   ├── store/          Zustand
 │   ├── main.tsx
 │   └── index.css

@@ -19,7 +19,7 @@
  * Le rang de depart est inscrit dans le stockage (Or 2 = marche 7) pour que la
  * promotion dans le meme palier soit visible, pas seulement Bronze 1 -> Bronze 2.
  */
-import { attendreEcran, conclure, creerSalon, etat, focus, lancer, lancerNavigateur, ouvrirJeu, surveiller } from './harness.mjs';
+import { attendreEcran, conclure, creerSalon, etat, focus, ouvrirUnHub, lancer, lancerNavigateur, ouvrirJeu, surveiller } from './harness.mjs';
 
 const OR_2 = 7; // Bronze 1-3 = 0-2, Argent 1-3 = 3-5, Or 1-3 = 6-8
 const navigateur = await lancerNavigateur();
@@ -49,7 +49,7 @@ const dernierMouvement = (page) => page.evaluate(() => window.__kubbStoreApi.get
 
 /** Menu -> ecran des rangs -> recherche classee. */
 async function chercherClasse(page) {
-  await focus(page);
+  await ouvrirUnHub(page, 'online');
   await page.locator('button', { hasText: /Classe —/ }).first().click();
   await page.waitForTimeout(400);
   await page.locator('button', { hasText: /Chercher une partie classee/i }).first().click();
@@ -58,7 +58,7 @@ async function chercherClasse(page) {
 // ---------------------------------------------------------------- 1. l'ecran des rangs
 {
   const p = await nouvellePage('menu');
-  await focus(p);
+  await ouvrirUnHub(p, 'online');
   const libelleMenu = await p.locator('button', { hasText: /Classe —/ }).first().textContent();
   await p.locator('button', { hasText: /Classe —/ }).first().click();
   await p.waitForTimeout(400);

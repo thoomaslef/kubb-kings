@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
-import { AI_PROFILES, type Difficulty } from '../game/ai';
 import { BATONS, BATON_IDS } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { KUBB_SKINS, KING_SKINS } from '../game/theme';
@@ -9,13 +8,12 @@ import { THROW_EFFECT_IDS } from '../game/throwEffects';
 import { isShopRefOwned, SHOP_ITEMS, type ShopCategory } from '../game/shop';
 import { LADDER, getBestStage } from '../game/roguelite';
 import { useT } from '../i18n/useT';
-import { RankBadge, useRankName } from './RankBadge';
+import { useRankName } from './RankBadge';
 import { isSafeMode, leaveSafeMode, safeModeReason } from '../game/safeMode';
 import { gameUrl, shareGame, type ShareData, type ShareOutcome } from '../game/shareLink';
 import { accountAvailable } from '../game/account/sync';
 import type { Lang } from '../i18n/translate';
 
-const LEVELS = Object.keys(AI_PROFILES) as Difficulty[];
 const LANGS: Lang[] = ['fr', 'en'];
 const LANG_AUTONYM: Record<Lang, string> = { fr: 'Français', en: 'English' };
 
@@ -27,7 +25,6 @@ function stars(n: number): string {
 export function Menu() {
   const t = useT();
   const setScreen = useGameStore((s) => s.setScreen);
-  const rank = useGameStore((s) => s.rank);
   const account = useGameStore((s) => s.account);
   // Partage du lien du jeu : `null` tant que rien n'a ete tente.
   const [shareState, setShareState] = useState<ShareOutcome | null>(null);
@@ -46,8 +43,6 @@ export function Menu() {
   const lastRankChange = useGameStore((s) => s.lastRankChange);
   const clearRankChange = useGameStore((s) => s.clearRankChange);
   const rankName = useRankName();
-  const difficulty = useGameStore((s) => s.difficulty);
-  const setDifficulty = useGameStore((s) => s.setDifficulty);
   const kubbSkin = useGameStore((s) => s.kubbSkin);
   const setKubbSkin = useGameStore((s) => s.setKubbSkin);
   const kingSkin = useGameStore((s) => s.kingSkin);
@@ -92,8 +87,6 @@ export function Menu() {
 
   // Le terrain se choisit maintenant sur son propre ecran, juste avant la
   // partie (cf. MapSelect.tsx) : le menu n'enchaine plus directement.
-  const play = (mode: 'solo' | 'local' | '2v2') => openMapSelect(mode);
-
   const playDefi = () => {
     setMode('defi');
     startRun();
@@ -206,43 +199,17 @@ export function Menu() {
         </button>
 
         <div className="button-column">
-          <button className="btn btn--primary" onClick={() => play('solo')}>
-            {t('menu.solo')}
+          <button className="btn btn--primary" onClick={() => setScreen('local-hub')}>
+            {t('menu.playLocal')}
           </button>
-
-          <p className="segmented-label">{t('menu.aiLevelAria')}</p>
-          <div className="segmented" role="group" aria-label={t('menu.aiLevelAria')}>
-            {LEVELS.map((level) => (
-              <button
-                key={level}
-                className={`segmented__item${level === difficulty ? ' segmented__item--on' : ''}`}
-                aria-pressed={level === difficulty}
-                onClick={() => setDifficulty(level)}
-              >
-                {t(`difficulty.${level}.label`)}
-              </button>
-            ))}
-          </div>
-          <p className="footnote footnote--tight">{t(`difficulty.${difficulty}.hint`)}</p>
-
-          <button className="btn" onClick={() => play('local')}>
-            {t('menu.local1v1')}
-          </button>
-          <button className="btn" onClick={() => play('2v2')}>
-            {t('menu.local2v2')}
+          <button className="btn btn--primary" onClick={() => setScreen('online-hub')}>
+            {t('menu.playOnline')}
           </button>
           <button className="btn" onClick={playDefi}>
             {t('menu.defi', { n: LADDER.length })}
           </button>
           <button className="btn" onClick={() => openMapSelect('tournament')}>
             {t('menu.tournament')}
-          </button>
-          <button className="btn" onClick={() => openMapSelect('online')}>
-            {t('menu.online')}
-          </button>
-          <button className="btn btn--ranked" onClick={() => setScreen('ranks')}>
-            <RankBadge index={rank.index} size="sm" />
-            {t('menu.ranked', { rank: rankName(rank.index) })}
           </button>
           {bestStage > 0 && (
             <p className="footnote footnote--tight">
