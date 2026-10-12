@@ -207,7 +207,7 @@ const fr: Record<string, string> = {
   'menu.windOnHint':
     "Une brise devie les lancers — direction (8 sens) et force (1 ou 2) tirees au debut de chaque partie, affichees clairement en jeu",
   'menu.windOffHint': 'Terrain calme',
-  'menu.fieldKubbsAria': 'Kubbs de champ',
+  'menu.fieldKubbsAria': 'Mode de jeu',
   'menu.fieldKubbsOff': 'Regle classique',
   'menu.fieldKubbsOn': 'Kubbs de champ',
   'menu.fieldKubbsOnHint':
@@ -796,7 +796,7 @@ const en: Record<string, string> = {
   'menu.windOnHint':
     'A breeze bends throws — direction (8-way) and force (1 or 2) set at the start of each match, shown clearly in-game',
   'menu.windOffHint': 'Calm field',
-  'menu.fieldKubbsAria': 'Field kubbs',
+  'menu.fieldKubbsAria': 'Game mode',
   'menu.fieldKubbsOff': 'Classic rule',
   'menu.fieldKubbsOn': 'Field kubbs',
   'menu.fieldKubbsOnHint':
