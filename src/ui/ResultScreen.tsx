@@ -243,7 +243,7 @@ export function ResultScreen() {
           </div>
         </div>
 
-        <div className="button-column" style={{ marginTop: 16 }}>
+        <div className="button-column" style={{ marginTop: 16, marginBottom: 16 }}>
           <button className="btn btn--ghost" onClick={handleShare} disabled={shareStatus === 'sharing'}>
             {t('result.share')}
           </button>
