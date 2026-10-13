@@ -13,7 +13,14 @@ export const INITIAL_CURRENCY: CurrencyState = { coins: 0 };
  * (achievements.ts, deja calculee par MatchScene).
  * `multiplier` : bonus "Bourse pleine" (Defi, roguelite.ts), 1 hors Defi —
  * ne s'applique qu'au bareme de match, jamais aux succes.
+ * `bonusPerKubb` : bonus « Pillage » (Defi), pieces en plus par kubb abattu, avant le multiplicateur.
  */
-export function computeCoinsAward(knockedDownByBlue: number, won: boolean, achievementCoins = 0, multiplier = 1): number {
-  return Math.round((20 + knockedDownByBlue * 10 + (won ? 50 : 0)) * multiplier) + achievementCoins;
+export function computeCoinsAward(
+  knockedDownByBlue: number,
+  won: boolean,
+  achievementCoins = 0,
+  multiplier = 1,
+  bonusPerKubb = 0
+): number {
+  return Math.round((20 + knockedDownByBlue * (10 + bonusPerKubb) + (won ? 50 : 0)) * multiplier) + achievementCoins;
 }

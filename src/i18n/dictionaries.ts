@@ -435,6 +435,10 @@ const fr: Record<string, string> = {
   'perk.effet-appuye.description': "Vos lancers a effet courbent {pct}% plus fort",
   'perk.grand-renfort.label': 'Grand renfort',
   'perk.grand-renfort.description': '{n} kubbs adverses au hasard sont deja abattus avant votre premier lancer',
+  'perk.pillage.label': 'Pillage',
+  'perk.pillage.description': '+{n} pieces par kubb adverse abattu sur cette manche',
+  'perk.trait-guide.label': 'Trait guide',
+  'perk.trait-guide.description': 'La fleche de visee est {pct}% plus longue : elle montre mieux ou vous tirez',
 
   // ---- HUD
   'hud.ai': 'IA',
@@ -1029,6 +1033,10 @@ const en: Record<string, string> = {
   'perk.effet-appuye.description': 'Your spin throws curve {pct}% harder',
   'perk.grand-renfort.label': 'Big reinforcement',
   'perk.grand-renfort.description': '{n} random opponent kubbs are already down before your first throw',
+  'perk.pillage.label': 'Plunder',
+  'perk.pillage.description': '+{n} coins per opponent kubb knocked down this stage',
+  'perk.trait-guide.label': 'Guide line',
+  'perk.trait-guide.description': 'The aiming arrow is {pct}% longer: it shows better where you are shooting',
 
   // ---- HUD
   'hud.ai': 'AI',

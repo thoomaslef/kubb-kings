@@ -27,7 +27,9 @@ export type PerkId =
   | 'calme-plat'
   | 'poignet-souple'
   | 'effet-appuye'
-  | 'grand-renfort';
+  | 'grand-renfort'
+  | 'pillage'
+  | 'trait-guide';
 
 /** Libelles et descriptions : src/i18n/dictionaries.ts (perk.<id>.label / .description). */
 export const PERK_IDS: readonly PerkId[] = [
@@ -46,7 +48,9 @@ export const PERK_IDS: readonly PerkId[] = [
   'calme-plat',
   'poignet-souple',
   'effet-appuye',
-  'grand-renfort'
+  'grand-renfort',
+  'pillage',
+  'trait-guide'
 ];
 
 /** Lancers supplementaires offerts par "Bras infatigable". */
@@ -85,6 +89,10 @@ export const POIGNET_SOUPLE_SPIN_MULTIPLIER = 1.5;
 export const EFFET_APPUYE_FORCE_MULTIPLIER = 1.25;
 /** Kubbs adverses deja abattus avant le premier lancer, offerts par "Grand renfort". */
 export const GRAND_RENFORT_KUBBS = 2;
+/** Pieces supplementaires par kubb adverse abattu, offertes par "Pillage" (avant "Bourse pleine"). */
+export const PILLAGE_COINS_PER_KUBB = 8;
+/** Allongement de la fleche de visee, offert par "Trait guide" (purement visuel : le lancer ne change pas). */
+export const TRAIT_GUIDE_LENGTH_MULTIPLIER = 1.6;
 
 /**
  * Echelle des manches. Seuls le niveau de l'IA et le terrain changent d'une

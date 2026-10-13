@@ -401,8 +401,15 @@ interface GameState {
    * `achievementCoins` : bonus deja calcule des succes nouvellement
    * debloques ce match (cf. unlockAchievements ci-dessous).
    * `multiplier` : "Bourse pleine" (Defi), 1 sinon.
+   * `bonusPerKubb` : "Pillage" (Defi), 0 sinon.
    */
-  awardMatchCoins: (knockedDownByBlue: number, won: boolean, achievementCoins?: number, multiplier?: number) => void;
+  awardMatchCoins: (
+    knockedDownByBlue: number,
+    won: boolean,
+    achievementCoins?: number,
+    multiplier?: number,
+    bonusPerKubb?: number
+  ) => void;
   /** Effet de lancer choisi au menu — voir `trailEffect` ci-dessus. */
   setTrailEffect: (id: ThrowEffectId) => void;
   /**
@@ -531,9 +538,9 @@ export const useGameStore = create<GameState>((set) => ({
       saveProgression(after);
       return { progression: after, lastXpAward: award };
     }),
-  awardMatchCoins: (knockedDownByBlue, won, achievementCoins = 0, multiplier = 1) =>
+  awardMatchCoins: (knockedDownByBlue, won, achievementCoins = 0, multiplier = 1, bonusPerKubb = 0) =>
     set((state) => {
-      const gained = computeCoinsAward(knockedDownByBlue, won, achievementCoins, multiplier);
+      const gained = computeCoinsAward(knockedDownByBlue, won, achievementCoins, multiplier, bonusPerKubb);
       const coins = state.coins + gained;
       saveCurrency({ coins });
       return { coins, lastCoinsAward: gained };

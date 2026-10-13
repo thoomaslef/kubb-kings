@@ -13,6 +13,8 @@ import {
   POIGNET_SOUPLE_SPIN_MULTIPLIER,
   EFFET_APPUYE_FORCE_MULTIPLIER,
   GRAND_RENFORT_KUBBS,
+  PILLAGE_COINS_PER_KUBB,
+  TRAIT_GUIDE_LENGTH_MULTIPLIER,
   pickPerkChoices,
   type PerkId
 } from '../game/roguelite';
@@ -30,6 +32,8 @@ function descParams(id: PerkId): Record<string, number> | undefined {
   if (id === 'poignet-souple') return { pct: Math.round((POIGNET_SOUPLE_SPIN_MULTIPLIER - 1) * 100) };
   if (id === 'effet-appuye') return { pct: Math.round((EFFET_APPUYE_FORCE_MULTIPLIER - 1) * 100) };
   if (id === 'grand-renfort') return { n: GRAND_RENFORT_KUBBS };
+  if (id === 'pillage') return { n: PILLAGE_COINS_PER_KUBB };
+  if (id === 'trait-guide') return { pct: Math.round((TRAIT_GUIDE_LENGTH_MULTIPLIER - 1) * 100) };
   return undefined;
 }
 

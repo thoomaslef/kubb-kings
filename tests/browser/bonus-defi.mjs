@@ -1,6 +1,6 @@
 /**
  * Les quatre bonus du mode Defi ajoutes apres les treize premiers :
- * « Poignet souple », « Effet appuye » et « Grand renfort » (Elan, retire).
+ * « Poignet souple », « Effet appuye », « Grand renfort », « Pillage », « Trait guide » et « Poigne ferme ».
  *
  * Les tests unitaires ne voient pas ces bonus : ils vivent dans la scene
  * (MatchScene) et lisent le store au demarrage de la manche. Cette
@@ -130,13 +130,46 @@ const base = await geste([], 32);
 const souple = await geste(['poignet-souple'], 32);
 const appuye = await geste(['effet-appuye'], 32);
 
+// ----------------------------------------------------------------- Pillage : pieces par kubb abattu
+/** Fin de manche gagnee avec 5 kubbs abattus : combien de pieces la scene accorde-t-elle ? */
+async function piecesGagnees(perks) {
+  await manche(perks);
+  await attendreBleue();
+  return page.evaluate(() => {
+    // Aucun succes deja debloque : leurs pieces s'ajouteraient au bareme mesure.
+    window.__kubbStoreApi.setState({ unlockedAchievements: [] });
+    const s = window.__kubb.scene.getScene('MatchScene');
+    s.finish({ winner: 'blue', reason: 'king-down', knockedDown: { blue: 5, red: 0 } }, 100000);
+    return window.__kubbStoreApi.getState().lastCoinsAward;
+  });
+}
+const piecesSans = await piecesGagnees([]);
+const piecesPillage = await piecesGagnees(['pillage']);
+const piecesPillageEtBourse = await piecesGagnees(['pillage', 'bourse-pleine']);
+
+// ----------------------------------------------------------------- Trait guide : la fleche s'affiche avec le bonus
+await manche(['trait-guide']);
+await attendreBleue();
+const traitGuide = await page.evaluate(() => {
+  const s = window.__kubb.scene.getScene('MatchScene');
+  try {
+    s.aimPower = 1;
+    s.aimAngle = s.forwardAngle();
+    s.isDragging = true;
+    s.drawAim();
+    return { ok: true, traits: s.aimGfx.commandBuffer.length };
+  } catch (e) {
+    return { ok: false, message: String(e) };
+  }
+});
+
 // ----------------------------------------------------------------- Poigne ferme (roi plus difficile a renverser)
 const roiSans7 = await chocSur('roi', 7, []);
 const roiAvec7 = await chocSur('roi', 7, ['poigne-ferme']);
 const roiAvec9 = await chocSur('roi', 9, ['poigne-ferme']);
 const kubbAvec65 = await chocSur('kubb', 6.5, ['poigne-ferme']);
 const kubbSans65 = await chocSur('kubb', 6.5, []);
-console.log({ sans, renfort, grand, base, souple, appuye, roiSans7, roiAvec7, roiAvec9, kubbAvec65, kubbSans65 });
+console.log({ piecesSans, piecesPillage, piecesPillageEtBourse, traitGuide, sans, renfort, grand, base, souple, appuye, roiSans7, roiAvec7, roiAvec9, kubbAvec65, kubbSans65 });
 
 const resultats = {
   aucunKubbAbattuSansBonus: sans === 0,
@@ -147,6 +180,11 @@ const resultats = {
   sansBonusLEffetDeVolEgaleLEffetLu: Math.abs(base.vol - base.lu) < 1e-6,
   effetAppuyeRenforceLaForce: Math.abs(appuye.vol - appuye.lu * 1.25) < 0.02 && Math.abs(appuye.lu - base.lu) < 0.05,
   poignetSoupleNeChangePasLaForce: Math.abs(souple.vol - souple.lu) < 1e-6,
+  // Les pieces de succes (identiques d'une mesure a l'autre) s'ajoutent au bareme : on compare par DIFFERENCE.
+  pillageAjouteHuitPiecesParKubb: piecesPillage - piecesSans === 5 * 8,
+  // (20 + 5 x 18 + 50) x 1,5 = 240 contre 120 sans bonus : +120.
+  pillageSeCumuleAvecBoursePleine: piecesPillageEtBourse - piecesSans === 240 - 120,
+  traitGuideDessineLaFleche: traitGuide.ok && traitGuide.traits > 0,
   roiTombeSansPoigneFerme: roiSans7 === true,
   poigneFermeProtegeLeRoiDunChocMoyen: roiAvec7 === false,
   poigneFermeLaisseTomberLeRoiSousUnChocFranc: roiAvec9 === true,

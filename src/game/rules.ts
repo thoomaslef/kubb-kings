@@ -484,6 +484,15 @@ export interface Wind {
   force: WindForce;
 }
 
+/**
+ * Longueur de la fleche de visee, en pixels, pour une puissance 0..1. Purement visuel :
+ * ni le lancer ni l'IA ne la lisent. `guide` > 1 : bonus « Trait guide » (Defi), qui
+ * l'allonge sans rien changer d'autre.
+ */
+export function aimArrowLength(power: number, guide = 1): number {
+  return (45 + power * 215) * guide;
+}
+
 /** Les 8 sens possibles, dans l'ordre de la boussole (pour un tirage au hasard ou un affichage). */
 export const WIND_DIRECTIONS: readonly WindDirection[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 

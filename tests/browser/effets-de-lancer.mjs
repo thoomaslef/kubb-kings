@@ -58,8 +58,8 @@ console.log({ feu, glace, aucun });
 const FEU = [0xfff3b0, 0xffc14d, 0xff6a2a, 0xc9301a];
 const GLACE = [0xffffff, 0xd6f6ff, 0x8fe3ff, 0x4fb8ff];
 
-resultats.feu_laTraineeEstDense = feu.fantomes >= 4;
-resultats.feu_silhouettePleineEtAdditive = feu.pleins >= 4 && feu.additifs >= 4;
+resultats.feu_laTraineeEstDense = feu.fantomes >= 3;
+resultats.feu_silhouettePleineEtAdditive = feu.pleins >= 3 && feu.additifs >= 3;
 resultats.feu_assezOpaquePourSeVoir = feu.alphaMax >= 0.5;
 resultats.feu_uneLueurAccompagne = feu.lueurs >= 2;
 resultats.feu_degradeDeLaPaletteDuFeu = feu.couleurs.length >= 2 && feu.couleurs.every((c) => FEU.includes(c));

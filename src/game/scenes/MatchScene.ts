@@ -30,6 +30,8 @@ import {
   POIGNET_SOUPLE_SPIN_MULTIPLIER,
   EFFET_APPUYE_FORCE_MULTIPLIER,
   GRAND_RENFORT_KUBBS,
+  PILLAGE_COINS_PER_KUBB,
+  TRAIT_GUIDE_LENGTH_MULTIPLIER,
   OEIL_DE_LYNX_DEVIATION_MULTIPLIER,
   POIGNE_FERME_KING_THRESHOLD_MULTIPLIER,
   SANG_FROID_WIND_MULTIPLIER,
@@ -55,6 +57,7 @@ import {
   THROW,
   THROW_POSITIONS,
   WIND_DIRECTIONS,
+  aimArrowLength,
   WIND_UNIT_VECTORS,
   availableThrowPositions,
   drawStartingTeam,
@@ -1675,7 +1678,13 @@ export class MatchScene extends Phaser.Scene {
     );
     gameStore
       .getState()
-      .awardMatchCoins(result.knockedDown[this.profileTeam], result.winner === this.profileTeam, this.achievementRewards.coins, coinsMultiplier);
+      .awardMatchCoins(
+        result.knockedDown[this.profileTeam],
+        result.winner === this.profileTeam,
+        this.achievementRewards.coins,
+        coinsMultiplier,
+        this.runPerks.includes('pillage') ? PILLAGE_COINS_PER_KUBB : 0
+      );
     gameStore.getState().unlockAchievements([...this.achievementsEarnedThisMatch]);
 
     // Le verdict sonore arrive apres le choc, pas par-dessus.
@@ -1743,7 +1752,9 @@ export class MatchScene extends Phaser.Scene {
     // a pleine charge, la fleche laissait deviner la trajectoire bien trop
     // clairement. Purement visuel — aimPower/aimAngle, donc le lancer reel,
     // sont inchanges ; l'IA ne lit jamais aimGfx.
-    const length = 45 + this.aimPower * 215;
+    // "Trait guide" (Defi) : fleche plus longue pour le joueur seulement — purement visuel.
+    const guide = this.isProfileTeam(this.activeTeam) && this.runPerks.includes('trait-guide') ? TRAIT_GUIDE_LENGTH_MULTIPLIER : 1;
+    const length = aimArrowLength(this.aimPower, guide);
 
     // La fleche SUIT L'EFFET : elle s'incurve du cote ou le doigt courbe.
     // C'est le seul retour que le joueur ait pendant qu'il dose, et sans lui
