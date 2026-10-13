@@ -298,8 +298,8 @@ const fr: Record<string, string> = {
   // ---- effet de lancer (throwEffects.ts) — feu/glace sont des articles de boutique
   'effect.none.label': 'Aucun',
   'effect.none.hint': 'Trainee couleur du baton',
-  'effect.feu.label': 'Feu',
-  'effect.feu.hint': 'Trainee orange incandescente (boutique)',
+  'effect.feu.label': 'Ra',
+  'effect.feu.hint': 'Sillage solaire dore et braises ardentes (boutique)',
   'effect.glace.label': 'Glace',
   'effect.glace.hint': 'Trainee bleu glacial (boutique)',
 
@@ -895,8 +895,8 @@ const en: Record<string, string> = {
   // ---- throw effect (throwEffects.ts) — feu/glace are shop items
   'effect.none.label': 'None',
   'effect.none.hint': "Trail in the baton's own color",
-  'effect.feu.label': 'Fire',
-  'effect.feu.hint': 'Glowing orange trail (shop)',
+  'effect.feu.label': 'Ra',
+  'effect.feu.hint': 'Golden solar wake and burning embers (shop)',
   'effect.glace.label': 'Ice',
   'effect.glace.hint': 'Icy blue trail (shop)',
 

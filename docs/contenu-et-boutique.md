@@ -365,7 +365,7 @@ existaient deja) :
 | Glace (trainee de lancer)      | Effet de lancer    | 150  | 4             |
 | Sentinelle (terrain)            | Terrain            | 200  | 6             |
 | Sniper (baton)                  | Baton              | 150  | 7             |
-| Feu (trainee de lancer)         | Effet de lancer    | 150  | 8             |
+| Ra (trainee de lancer, id `feu`) | Effet de lancer    | 150  | 8             |
 | Colline (terrain)               | Terrain            | 300  | 9             |
 | Lourd (baton)                   | Baton              | 200  | 11            |
 | Ardoise (skin de kubb)          | Skin               | 300  | 12            |
@@ -434,7 +434,7 @@ cf. plus bas) pour ne jamais cumuler deux choses en meme temps sur un ecran :
 | 4      | Glace (trainee, 150)                               |
 | 6      | Sentinelle (terrain, 200)                          |
 | 7      | Sniper (baton, 150)                                |
-| 8      | Feu (trainee, 150)                                 |
+| 8      | Ra (trainee, 150)                                 |
 | 9      | Colline (terrain, 300)                             |
 | 11     | Lourd (baton, 200)                                 |
 | 12     | Ardoise (skin, 300)                                |
