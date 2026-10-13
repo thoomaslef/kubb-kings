@@ -36,7 +36,16 @@ async function precacheShell() {
     .map((match) => new URL(match[1], self.registration.scope).pathname)
     .filter((path) => path.startsWith(`${ROOT}assets/`));
 
-  await cache.addAll([...new Set(assets)]);
+  const wanted = new Set(assets);
+  await cache.addAll([...wanted]);
+
+  // Les assets portent un nom hashe : chaque deploiement en apporte de
+  // nouveaux et les anciens ne servent plus jamais. Sans ce menage, le cache
+  // grossissait d'un bundle complet (plus d'1,5 Mo) a chaque mise a jour.
+  for (const request of await cache.keys()) {
+    const path = new URL(request.url).pathname;
+    if (path.startsWith(`${ROOT}assets/`) && !wanted.has(path)) await cache.delete(request);
+  }
 }
 
 self.addEventListener('install', (event) => {
@@ -66,14 +75,25 @@ self.addEventListener('fetch', (event) => {
   if (new URL(request.url).origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
+    const path = new URL(request.url).pathname;
+    // Seule la page du jeu devient la copie hors ligne : une page legale ou une
+    // erreur 404 ne doit pas prendre sa place (le jeu s'ouvrirait alors sur elle).
+    const isShell = path === ROOT || path === `${ROOT}index.html`;
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(`${ROOT}index.html`, copy));
+          if (isShell && response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE).then((cache) => cache.put(`${ROOT}index.html`, copy));
+          }
           return response;
         })
-        .catch(() => caches.match(`${ROOT}index.html`).then((cached) => cached ?? Response.error()))
+        .catch(() =>
+          caches
+            .match(request)
+            .then((cached) => cached ?? caches.match(`${ROOT}index.html`))
+            .then((cached) => cached ?? Response.error())
+        )
     );
     return;
   }

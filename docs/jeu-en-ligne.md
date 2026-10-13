@@ -187,6 +187,22 @@ tot termine la partie **des deux cotes avec le meme resultat**. Zero erreur cons
 > etat** (`screen === 'result'`), jamais un delai en temps reel — sinon elles
 > concluent a tort qu&apos;une transition ne se produit pas.
 
+### Messages valides, codes de salon
+
+Le canal etant public, **aucun message n'est traite avant d'avoir ete valide**
+([`online/validate.ts`](../src/game/online/validate.ts), module pur, `validate.test.ts`). Le
+message est reconstruit champ par champ : un type inconnu, un projectile ou un terrain qui
+n'existe pas, un coup sans `entry`, un nombre non fini ou hors bornes (puissance, effet,
+angle), un instantane de la mauvaise taille, une partie renvoyee trop longue — tout cela est
+**ignore en silence** (jamais de reponse, on n'aide pas un emetteur hostile), et aucun champ
+inconnu ne traverse. Sans ce filtre, un message mal forme faisait lever une exception ou
+propageait un `NaN` dans la physique de l'adversaire. Ce n'est pas un arbitrage : un joueur
+peut toujours mentir sur un resultat bien forme (cf. `protocol.ts`).
+
+Les codes de salon viennent de `crypto.getRandomValues` : 5 caracteres pour un salon prive
+(33 millions de codes, encore dicte a voix haute), 10 pour les salons tires au sort
+(partie rapide, classee), qui ne sont jamais saisis.
+
 ### Le tchat
 
 Une partie en ligne comporte un tchat en **texte libre**. C'est le seul contenu du jeu

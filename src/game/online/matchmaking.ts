@@ -81,7 +81,7 @@ export class Matchmaker {
     this.now = options.now ?? Date.now;
     this.since = options.since ?? this.now();
     this.botAfterMs = options.botAfterMs ?? QUEUE_BOT_AFTER_MS;
-    this.makeCode = options.makeCode ?? (() => createRoomCode());
+    this.makeCode = options.makeCode ?? (() => createRoomCode(10));
     this.onMatch = options.onMatch;
     this.onBot = options.onBot;
     this.unsubscribe = this.transport.onMessage((message) => this.receive(message));

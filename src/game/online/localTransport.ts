@@ -20,7 +20,22 @@ const CHANNEL_PREFIX = 'kubb-kings.room.';
 /** Un code de salon court et lisible a voix haute (sans I/O/0/1, trop ambigus). */
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-export function createRoomCode(length = 4, rng: () => number = Math.random): string {
+/**
+ * Hasard du code : `crypto` quand il existe. Un code de salon est le SEUL secret
+ * d'un canal public (cf. validate.ts) : un `Math.random` previsible n'a pas sa
+ * place ici.
+ */
+function secureRandom(): number {
+  const c = globalThis.crypto;
+  if (c?.getRandomValues) return c.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
+  return Math.random();
+}
+
+/**
+ * `length` : 5 par defaut pour un salon prive (32^5 = 33 millions, encore dicte a
+ * voix haute) ; les salons tires au sort ne sont jamais saisis et prennent 10.
+ */
+export function createRoomCode(length = 5, rng: () => number = secureRandom): string {
   let code = '';
   for (let i = 0; i < length; i += 1) {
     code += CODE_ALPHABET[Math.floor(rng() * CODE_ALPHABET.length)];

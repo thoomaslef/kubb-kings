@@ -7,6 +7,7 @@ import {
   type RecordedThrow
 } from './protocol';
 import type { OnlineMessage, Transport } from './transport';
+import { parseOnlineMessage } from './validate';
 import type { TeamId } from '../entities/teamData';
 import type { BatonId } from '../batons';
 import { CHAT_MIN_INTERVAL_MS, ChatRateLimiter, sanitizeChatText } from './chat';
@@ -128,7 +129,11 @@ export class OnlineSession {
     this._setup = setup;
     this.card = card;
     this._localTeam = role === 'host' ? 'blue' : null;
-    this.unsubscribe = transport.onMessage((message) => this.handle(message));
+    // Le canal est public : on ne traite que ce qui a la forme d'un message du protocole (cf. validate.ts).
+    this.unsubscribe = transport.onMessage((raw) => {
+      const message = parseOnlineMessage(raw);
+      if (message) this.handle(message);
+    });
   }
 
   /**
