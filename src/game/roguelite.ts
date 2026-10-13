@@ -1,5 +1,5 @@
 import type { Difficulty } from './ai';
-import type { FieldPresetId } from './rules';
+import type { FieldPresetId, WindForce } from './rules';
 
 /**
  * Mode Defi : une echelle de manches contre l'IA, de plus en plus dures,
@@ -153,6 +153,24 @@ export const LADDER: readonly Stage[] = [
   { difficulty: 'difficile', fieldPreset: 'riviere' },
   { difficulty: 'difficile', fieldPreset: 'sable' }
 ];
+
+/** Premiere manche (numerotee a partir de 1) a vent LEGER. */
+export const DEFI_LIGHT_WIND_FROM_STAGE = 10;
+/** Premiere manche (numerotee a partir de 1) a vent PLUS FORT. */
+export const DEFI_STRONG_WIND_FROM_STAGE = 20;
+
+/**
+ * Force du vent d'une manche du Defi, selon son numero (1 a 30) : aucun avant la
+ * manche 10, leger (force 1) de 10 a 19, plus fort (force 2) a partir de 20. Seule
+ * la direction est tiree au hasard, par MatchScene. Le Defi ignore le reglage de
+ * meteo du menu : c'est l'echelle qui decide, comme pour le terrain et l'IA.
+ * (« Calme plat » reste un bonus utile : il supprime ce vent pour la manche.)
+ */
+export function defiWindForce(stageNumber: number): WindForce | null {
+  if (stageNumber >= DEFI_STRONG_WIND_FROM_STAGE) return 2;
+  if (stageNumber >= DEFI_LIGHT_WIND_FROM_STAGE) return 1;
+  return null;
+}
 
 /**
  * Deux bonus a proposer, tires parmi ceux que le joueur n'a pas encore.

@@ -24,6 +24,7 @@ import {
   ETUDE_RAPIDE_XP_MULTIPLIER,
   JAUGE_BASSE_MIN_POWER,
   LADDER,
+  defiWindForce,
   LANCER_BONUS_THROWS,
   LONGUE_HALEINE_BONUS_MS,
   POIGNET_SOUPLE_SPIN_MULTIPLIER,
@@ -350,6 +351,13 @@ export class MatchScene extends Phaser.Scene {
     this.ai = stage ? AI_PROFILES[stage.difficulty] : mode === 'solo' ? AI_PROFILES[difficulty] : null;
     this.playerIndex = { blue: 1, red: 1 };
     this.fieldPreset = stage ? stage.fieldPreset : fieldPreset;
+    // Defi : le vent vient de l'echelle (leger des la manche 10, plus fort des la 20), pas du menu.
+    if (stage) {
+      const force = defiWindForce((run?.stageIndex ?? 0) + 1);
+      this.wind = force
+        ? { direction: WIND_DIRECTIONS[Math.floor(Math.random() * WIND_DIRECTIONS.length)], force }
+        : null;
+    }
 
     const remoteSetup = this.session?.setup ?? null;
     if (remoteSetup) {

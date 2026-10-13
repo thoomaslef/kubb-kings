@@ -202,7 +202,15 @@ palier en omet donc un, un terrain different a chaque fois — les trois paliers
 ressemblent jamais tout a fait, et **Sable** (le seul a cumuler obstacles ET friction
 modifiee, cf. section "Terrains a obstacles") ferme systematiquement la marche.
 
-Seuls le niveau et le terrain changent d'une manche a l'autre : les regles et
+**Le vent suit l'echelle** (`roguelite.ts::defiWindForce`) : aucun avant la manche 10, **leger**
+(force 1) des la manche 10, **plus fort** (force 2) des la manche 20. Seule la direction est
+tiree au hasard a chaque manche ; le reglage de meteo du menu n'a plus d'effet en Defi, comme
+pour le terrain et l'IA. Le bonus « Calme plat » prend ainsi tout son sens : il supprime ce
+vent pour la manche. Aucune simulation d'IA supplementaire : les sweeps des terrains ont
+toujours couvert tous les etats de vent contre les trois niveaux. Verifie en navigateur par
+[`vent-du-defi.mjs`](../tests/browser/vent-du-defi.mjs).
+
+Hors vent, seuls le niveau et le terrain changent d'une manche a l'autre : les regles et
 l'equilibrage restent ceux, deja calibres, du mode solo. Mieux : chaque ajout de terrain
 a toujours ete verifie par simulation headless contre **les trois niveaux de difficulte a
 la fois** (`Object.keys(AI_PROFILES)` dans chaque script de verification, cf. les
