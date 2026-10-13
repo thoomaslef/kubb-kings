@@ -30,9 +30,8 @@ import {
   POIGNET_SOUPLE_SPIN_MULTIPLIER,
   EFFET_APPUYE_FORCE_MULTIPLIER,
   GRAND_RENFORT_KUBBS,
-  ELAN_MIN_KNOCKED,
   OEIL_DE_LYNX_DEVIATION_MULTIPLIER,
-  POIGNE_FERME_THRESHOLD_MULTIPLIER,
+  POIGNE_FERME_KING_THRESHOLD_MULTIPLIER,
   SANG_FROID_WIND_MULTIPLIER,
   type PerkId
 } from '../roguelite';
@@ -177,7 +176,6 @@ export class MatchScene extends Phaser.Scene {
   private runPerks: PerkId[] = [];
   /** "Second souffle" ne rembourse qu'un seul lancer par manche. */
   private secondSouffleUsed = false;
-  private elanUsed = false;
   /** Partie classee en ligne : le rang est en jeu (cf. ranks.ts). */
   private ranked = false;
   /** Le lancer en cours a-t-il deja fait tomber un kubb ? Remis a zero a chaque tir. */
@@ -373,7 +371,6 @@ export class MatchScene extends Phaser.Scene {
     // "Longue haleine" (Defi) : temps supplementaire pour la manche entiere.
     if (this.runPerks.includes('longue-haleine')) this.timeLeftMs += LONGUE_HALEINE_BONUS_MS;
     this.secondSouffleUsed = false;
-    this.elanUsed = false;
     this.knockedThisThrow = false;
     this.bouncedWallThisThrow = false;
     this.kingTouchedThisThrow = false;
@@ -984,24 +981,15 @@ export class MatchScene extends Phaser.Scene {
       !this.knockedThisThrow &&
       !this.secondSouffleUsed &&
       this.runPerks.includes('second-souffle');
-    // "Elan" (Defi) : le premier lancer du joueur qui renverse au moins
-    // ELAN_MIN_KNOCKED kubbs d'un coup n'est pas compte non plus.
-    const refundedElan =
-      !refundedSecondSouffle &&
-      this.isProfileTeam(this.activeTeam) &&
-      !this.elanUsed &&
-      this.knockedThisThrowCount >= ELAN_MIN_KNOCKED &&
-      this.runPerks.includes('elan');
-    const refunded = refundedSecondSouffle || refundedElan;
+    const refunded = refundedSecondSouffle;
 
     if (refunded) {
-      if (refundedElan) this.elanUsed = true;
-      else this.secondSouffleUsed = true;
+      this.secondSouffleUsed = true;
       if (lastBatonPos) {
         this.juice.floatingText(
           lastBatonPos.x,
           lastBatonPos.y,
-          translate(gameStore.getState().lang, refundedElan ? 'match.elan' : 'match.secondSouffle'),
+          translate(gameStore.getState().lang, 'match.secondSouffle'),
           '#f2c14e'
         );
       }
@@ -1367,12 +1355,13 @@ export class MatchScene extends Phaser.Scene {
       if (!involvesBaton) continue;
 
       const speed = this.baton.impactSpeed;
-      // "Poigne ferme" (Defi) : seuil de chute abaisse, ne joue que pour le
-      // joueur — affecte aussi bien un kubb que le roi, tous deux compares
-      // au meme seuil plus bas.
+      // "Poigne ferme" (Defi) : le ROI tombe plus difficilement sous les coups du
+      // joueur (seuil releve) ; les kubbs gardent le seuil normal. Ne joue que
+      // pour le joueur, jamais pour l'IA.
+      const touchesKing = this.isKing(pair.bodyA) || this.isKing(pair.bodyB);
       const knockdownThreshold =
-        this.isProfileTeam(this.activeTeam) && this.runPerks.includes('poigne-ferme')
-          ? KNOCKDOWN_IMPACT_SPEED * POIGNE_FERME_THRESHOLD_MULTIPLIER
+        touchesKing && this.isProfileTeam(this.activeTeam) && this.runPerks.includes('poigne-ferme')
+          ? KNOCKDOWN_IMPACT_SPEED * POIGNE_FERME_KING_THRESHOLD_MULTIPLIER
           : KNOCKDOWN_IMPACT_SPEED;
       const hardEnough = speed >= knockdownThreshold;
       // Force normalisee (0 au seuil de chute, 1 a pleine puissance) : tout le

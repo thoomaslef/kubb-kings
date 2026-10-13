@@ -404,7 +404,7 @@ const fr: Record<string, string> = {
 
   // ---- perk (roguelite.ts)
   'perk.lancer-bonus.label': 'Bras infatigable',
-  'perk.lancer-bonus.description': '+{n} lancers sur toute la manche',
+  'perk.lancer-bonus.description': '+{n} lancer sur toute la manche',
   'perk.bras-vif.label': 'Bras vif',
   'perk.bras-vif.description': '+{pct}% de puissance au bout du glissement',
   'perk.second-souffle.label': 'Second souffle',
@@ -416,7 +416,7 @@ const fr: Record<string, string> = {
   'perk.jauge-basse.label': 'Jauge basse',
   'perk.jauge-basse.description': 'Vos lancers partent toujours a au moins {pct}% de puissance',
   'perk.poigne-ferme.label': 'Poigne ferme',
-  'perk.poigne-ferme.description': 'Seuil de chute des kubbs et du roi reduit de {pct}% pour vos coups',
+  'perk.poigne-ferme.description': 'Le roi tombe plus difficilement sous vos coups (seuil +{pct}%) : un contact leger ne le renverse plus',
   'perk.bourse-pleine.label': 'Bourse pleine',
   'perk.bourse-pleine.description': '+{pct}% de pieces gagnees sur cette manche',
   'perk.etude-rapide.label': 'Etude rapide',
@@ -433,8 +433,6 @@ const fr: Record<string, string> = {
   'perk.poignet-souple.description': "L'effet se declenche {pct}% plus facilement : un arc plus discret suffit",
   'perk.effet-appuye.label': 'Effet appuye',
   'perk.effet-appuye.description': "Vos lancers a effet courbent {pct}% plus fort",
-  'perk.elan.label': 'Elan',
-  'perk.elan.description': "Le premier lancer qui renverse {n} kubbs ou plus d'un coup n'est pas compte",
   'perk.grand-renfort.label': 'Grand renfort',
   'perk.grand-renfort.description': '{n} kubbs adverses au hasard sont deja abattus avant votre premier lancer',
 
@@ -595,7 +593,6 @@ const fr: Record<string, string> = {
   'match.teamTurn': "AU TOUR DE L'EQUIPE {team}",
   'match.teamTurnPlayer': '{base} — JOUEUR {n}',
   'match.secondSouffle': 'SECOND SOUFFLE !',
-  'match.elan': 'ELAN !',
   'match.sursis': 'SURSIS ! MANCHE REJOUEE',
   'match.knockedLast': 'DERNIER !',
   'match.knockedDown': 'ABATTU !',
@@ -1001,7 +998,7 @@ const en: Record<string, string> = {
 
   // ---- perk
   'perk.lancer-bonus.label': 'Tireless arm',
-  'perk.lancer-bonus.description': '+{n} throws for the whole stage',
+  'perk.lancer-bonus.description': '+{n} throw for the whole stage',
   'perk.bras-vif.label': 'Quick arm',
   'perk.bras-vif.description': '+{pct}% power at full drag',
   'perk.second-souffle.label': 'Second wind',
@@ -1013,7 +1010,7 @@ const en: Record<string, string> = {
   'perk.jauge-basse.label': 'Low gauge',
   'perk.jauge-basse.description': 'Your throws always start at least {pct}% power',
   'perk.poigne-ferme.label': 'Firm grip',
-  'perk.poigne-ferme.description': 'Knockdown threshold for kubbs and the king reduced by {pct}% for your hits',
+  'perk.poigne-ferme.description': 'The king falls harder under your hits (threshold +{pct}%): a light touch no longer topples it',
   'perk.bourse-pleine.label': 'Full purse',
   'perk.bourse-pleine.description': '+{pct}% coins earned this stage',
   'perk.etude-rapide.label': 'Quick study',
@@ -1030,8 +1027,6 @@ const en: Record<string, string> = {
   'perk.poignet-souple.description': 'Spin kicks in {pct}% more easily: a subtler arc is enough',
   'perk.effet-appuye.label': 'Heavy spin',
   'perk.effet-appuye.description': 'Your spin throws curve {pct}% harder',
-  'perk.elan.label': 'Momentum',
-  'perk.elan.description': 'The first throw that knocks down {n} or more kubbs at once is not counted',
   'perk.grand-renfort.label': 'Big reinforcement',
   'perk.grand-renfort.description': '{n} random opponent kubbs are already down before your first throw',
 
@@ -1189,7 +1184,6 @@ const en: Record<string, string> = {
   'match.teamTurn': "{team} TEAM'S TURN",
   'match.teamTurnPlayer': '{base} — PLAYER {n}',
   'match.secondSouffle': 'SECOND WIND!',
-  'match.elan': 'MOMENTUM!',
   'match.sursis': 'REPRIEVE! STAGE REPLAYED',
   'match.knockedLast': 'LAST ONE!',
   'match.knockedDown': 'DOWN!',

@@ -1,6 +1,6 @@
 /**
  * Les quatre bonus du mode Defi ajoutes apres les treize premiers :
- * « Poignet souple », « Effet appuye », « Elan » et « Grand renfort ».
+ * « Poignet souple », « Effet appuye » et « Grand renfort » (Elan, retire).
  *
  * Les tests unitaires ne voient pas ces bonus : ils vivent dans la scene
  * (MatchScene) et lisent le store au demarrage de la manche. Cette
@@ -98,19 +98,26 @@ async function kubbsAbattus(perks) {
   );
 }
 
-/** Un lancer qui renverse `n` kubbs : le compte de lancers de Bleue baisse-t-il ? */
-async function lancersApres(perks, n) {
+/**
+ * Un choc a la vitesse `vitesse` sur le roi (ou sur un kubb de Rouge) : tombe-t-il ?
+ * On injecte une collision reelle dans le gestionnaire de la scene, avec un projectile
+ * dont la vitesse d'impact est imposee.
+ */
+async function chocSur(cible, vitesse, perks) {
   await manche(perks);
   await attendreBleue();
-  return page.evaluate((n) => {
-    const s = window.__kubb.scene.getScene('MatchScene');
-    const avant = s.throwsLeft.blue;
-    s.phase = 'flying';
-    s.knockedThisThrow = n > 0;
-    s.knockedThisThrowCount = n;
-    s.resolveEndOfThrow();
-    return { avant, apres: s.throwsLeft.blue };
-  }, n);
+  return page.evaluate(
+    ({ cible, vitesse }) => {
+      const s = window.__kubb.scene.getScene('MatchScene');
+      s.activeTeam = 'blue';
+      s.launch();
+      Object.defineProperty(s.baton, 'impactSpeed', { get: () => vitesse });
+      const corps = cible === 'roi' ? s.king.sprite.body : s.teams.red.kubbs[0].sprite.body;
+      s.onCollisionStart({ pairs: [{ bodyA: corps, bodyB: s.baton.sprite.body }] });
+      return cible === 'roi' ? !s.king.isStanding : !s.teams.red.kubbs[0].isAtBaseline;
+    },
+    { cible, vitesse }
+  );
 }
 
 // ----------------------------------------------------------------- Grand renfort
@@ -123,23 +130,13 @@ const base = await geste([], 32);
 const souple = await geste(['poignet-souple'], 32);
 const appuye = await geste(['effet-appuye'], 32);
 
-// ----------------------------------------------------------------- Elan
-const deuxSans = await lancersApres([], 2);
-const unAvec = await lancersApres(['elan'], 1);
-const deuxAvec = await lancersApres(['elan'], 2);
-const deuxFois = await page.evaluate(() => {
-  // Deuxieme double dans la MEME manche que deuxAvec (aucune relance entre les deux) :
-  // cette fois, le lancer compte.
-  const s = window.__kubb.scene.getScene('MatchScene');
-  s.activeTeam = 'blue';
-  const avant = s.throwsLeft.blue;
-  s.phase = 'flying';
-  s.knockedThisThrow = true;
-  s.knockedThisThrowCount = 2;
-  s.resolveEndOfThrow();
-  return { avant, apres: s.throwsLeft.blue };
-});
-console.log({ sans, renfort, grand, base, souple, appuye, deuxSans, deuxAvec, unAvec });
+// ----------------------------------------------------------------- Poigne ferme (roi plus difficile a renverser)
+const roiSans7 = await chocSur('roi', 7, []);
+const roiAvec7 = await chocSur('roi', 7, ['poigne-ferme']);
+const roiAvec9 = await chocSur('roi', 9, ['poigne-ferme']);
+const kubbAvec65 = await chocSur('kubb', 6.5, ['poigne-ferme']);
+const kubbSans65 = await chocSur('kubb', 6.5, []);
+console.log({ sans, renfort, grand, base, souple, appuye, roiSans7, roiAvec7, roiAvec9, kubbAvec65, kubbSans65 });
 
 const resultats = {
   aucunKubbAbattuSansBonus: sans === 0,
@@ -150,10 +147,9 @@ const resultats = {
   sansBonusLEffetDeVolEgaleLEffetLu: Math.abs(base.vol - base.lu) < 1e-6,
   effetAppuyeRenforceLaForce: Math.abs(appuye.vol - appuye.lu * 1.25) < 0.02 && Math.abs(appuye.lu - base.lu) < 0.05,
   poignetSoupleNeChangePasLaForce: Math.abs(souple.vol - souple.lu) < 1e-6,
-  doubleCompteSansElan: deuxSans.apres === deuxSans.avant - 1,
-  elanRembourseUnDouble: deuxAvec.apres === deuxAvec.avant,
-  elanIgnoreUnSimpleCoup: unAvec.apres === unAvec.avant - 1,
-  elanNeServQuUneFois: deuxFois.apres === deuxFois.avant - 1
-};
+  roiTombeSansPoigneFerme: roiSans7 === true,
+  poigneFermeProtegeLeRoiDunChocMoyen: roiAvec7 === false,
+  poigneFermeLaisseTomberLeRoiSousUnChocFranc: roiAvec9 === true,
+  poigneFermeNeChangeRienPourLesKubbs: kubbAvec65 === kubbSans65 && kubbAvec65 === true};
 conclure(resultats, erreurs);
 await navigateur.close();

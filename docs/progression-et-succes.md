@@ -229,13 +229,13 @@ sauvegarde en cours de route.
 
 | Bonus             | Effet                                                                     |
 | ------------------ | -------------------------------------------------------------------------- |
-| Bras infatigable   | +2 lancers sur toute la manche                                             |
+| Bras infatigable   | +1 lancer sur toute la manche                                              |
 | Bras vif           | +15% de puissance au bout du glissement                                    |
 | Second souffle     | Le premier lancer qui ne renverse rien n'est pas compte                    |
 | Oeil de lynx       | Deviation aleatoire des lancers reduite de moitie                          |
 | Sang-froid         | Effet du vent sur les lancers reduit de moitie                             |
 | Jauge basse        | Un lancer part toujours a au moins 50% de puissance                        |
-| Poigne ferme       | Seuil de chute des kubbs et du roi reduit de 15% pour les coups du joueur  |
+| Poigne ferme       | Le ROI tombe plus difficilement sous les coups du joueur (seuil +25 %) : un contact leger ne le renverse plus ; les kubbs ne changent pas |
 | Bourse pleine      | +50% de pieces gagnees sur la manche                                       |
 | Etude rapide       | +50% d'XP gagnee sur la manche                                             |
 | Sursis             | Une fois par run, un roi touche trop tot ne finit pas la run : la manche est rejouee |
@@ -244,10 +244,9 @@ sauvegarde en cours de route.
 | Calme plat         | La meteo (vent) est desactivee pour la manche, si elle etait active        |
 | Poignet souple     | Effet lu sur le geste x1,5 (plafonne a +/-1) : un arc plus discret suffit  |
 | Effet appuye       | Force de la courbe x1,25 pour un meme effet (au-dela du maximum)           |
-| Elan               | Le premier lancer qui renverse 2 kubbs ou plus d'un coup n'est pas compte  |
 | Grand renfort      | Deux kubbs adverses au hasard sont deja abattus avant le premier lancer (jamais le dernier debout) |
 
-Les quatre derniers (Poignet souple, Effet appuye, Elan, Grand renfort) ont ete
+Les derniers ajouts (Poignet souple, Effet appuye, Grand renfort) et Poigne ferme ont ete
 verifies en vraie manche de Defi par `tests/browser/bonus-defi.mjs`. "Poignet souple" et
 "Effet appuye" sont deux leviers distincts de l'effet : l'un change l'arc a tracer,
 l'autre la force de la courbe — jamais l'effet que voit l'IA, qui tire toujours droit.
@@ -261,9 +260,9 @@ finir la run) : purement cote scene (`MatchScene::resolveKingHit`, redemarrage d
 scene), l'IA ne sait meme pas que ce bonus existe.
 
 Un seul bonus est propose deux fois : `pickPerkChoices` tire deux options parmi ceux non
-encore debloques. Avec dix-sept bonus a decouvrir, l'ecran de choix continue de proposer
+encore debloques. Avec seize bonus a decouvrir, l'ecran de choix continue de proposer
 de vraies options sur la quasi-totalite des 30 manches de l'echelle ; ce n'est qu'une
-fois les dix-sept acquis que la manche suivante s'enchaine directement, sans faux choix a
+fois les seize acquis que la manche suivante s'enchaine directement, sans faux choix a
 l'ecran.
 
 La meilleure serie (nombre de manches franchies) est retenue en `localStorage`, affichee
@@ -271,3 +270,8 @@ au menu, et proposee de nouveau a la prochaine run — sur le meme modele que la
 persistance du tutoriel.
 
 ---
+
+> **Elan a ete retire** (peu convaincant) et **Poigne ferme** change de sens : elle abaissait le
+> seuil de chute des kubbs ET du roi ; elle releve maintenant celui du seul roi pour les coups
+> du joueur (`POIGNE_FERME_KING_THRESHOLD_MULTIPLIER`, x1,25). **Bras infatigable** passe de +2 a
+> +1 lancer. Une run en cours n'est pas persistee : retirer un bonus ne laisse rien d'orphelin.

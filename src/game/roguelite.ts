@@ -27,7 +27,6 @@ export type PerkId =
   | 'calme-plat'
   | 'poignet-souple'
   | 'effet-appuye'
-  | 'elan'
   | 'grand-renfort';
 
 /** Libelles et descriptions : src/i18n/dictionaries.ts (perk.<id>.label / .description). */
@@ -47,12 +46,11 @@ export const PERK_IDS: readonly PerkId[] = [
   'calme-plat',
   'poignet-souple',
   'effet-appuye',
-  'elan',
   'grand-renfort'
 ];
 
 /** Lancers supplementaires offerts par "Bras infatigable". */
-export const LANCER_BONUS_THROWS = 2;
+export const LANCER_BONUS_THROWS = 1;
 /** Multiplicateur de puissance offert par "Bras vif". */
 export const BRAS_VIF_MULTIPLIER = 1.15;
 /** Multiplicateur de la deviation aleatoire des lancers, offert par "Oeil de lynx". */
@@ -61,8 +59,12 @@ export const OEIL_DE_LYNX_DEVIATION_MULTIPLIER = 0.5;
 export const SANG_FROID_WIND_MULTIPLIER = 0.5;
 /** Puissance minimale garantie d'un lancer, offerte par "Jauge basse". */
 export const JAUGE_BASSE_MIN_POWER = 0.5;
-/** Multiplicateur du seuil de vitesse necessaire pour renverser un kubb ou le roi, offert par "Poigne ferme". */
-export const POIGNE_FERME_THRESHOLD_MULTIPLIER = 0.85;
+/**
+ * Multiplicateur du seuil de vitesse necessaire pour renverser le ROI sous VOS coups, offert par
+ * "Poigne ferme" : > 1, le roi tombe plus difficilement (un contact leger ne le renverse plus —
+ * utile pour ne pas finir la run en le touchant trop tot). Les kubbs ne sont pas concernes.
+ */
+export const POIGNE_FERME_KING_THRESHOLD_MULTIPLIER = 1.25;
 /** Multiplicateur des pieces gagnees sur la manche, offert par "Bourse pleine". */
 export const BOURSE_PLEINE_COINS_MULTIPLIER = 1.5;
 /** Multiplicateur de l'XP gagnee sur la manche, offert par "Etude rapide". */
@@ -83,8 +85,6 @@ export const POIGNET_SOUPLE_SPIN_MULTIPLIER = 1.5;
 export const EFFET_APPUYE_FORCE_MULTIPLIER = 1.25;
 /** Kubbs adverses deja abattus avant le premier lancer, offerts par "Grand renfort". */
 export const GRAND_RENFORT_KUBBS = 2;
-/** Kubbs renverses d'un meme lancer a partir desquels "Elan" rembourse le lancer. */
-export const ELAN_MIN_KNOCKED = 2;
 
 /**
  * Echelle des manches. Seuls le niveau de l'IA et le terrain changent d'une

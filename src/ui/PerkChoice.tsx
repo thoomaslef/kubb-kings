@@ -6,14 +6,13 @@ import {
   LANCER_BONUS_THROWS,
   BRAS_VIF_MULTIPLIER,
   JAUGE_BASSE_MIN_POWER,
-  POIGNE_FERME_THRESHOLD_MULTIPLIER,
+  POIGNE_FERME_KING_THRESHOLD_MULTIPLIER,
   BOURSE_PLEINE_COINS_MULTIPLIER,
   ETUDE_RAPIDE_XP_MULTIPLIER,
   LONGUE_HALEINE_BONUS_MS,
   POIGNET_SOUPLE_SPIN_MULTIPLIER,
   EFFET_APPUYE_FORCE_MULTIPLIER,
   GRAND_RENFORT_KUBBS,
-  ELAN_MIN_KNOCKED,
   pickPerkChoices,
   type PerkId
 } from '../game/roguelite';
@@ -24,14 +23,13 @@ function descParams(id: PerkId): Record<string, number> | undefined {
   if (id === 'lancer-bonus') return { n: LANCER_BONUS_THROWS };
   if (id === 'bras-vif') return { pct: Math.round((BRAS_VIF_MULTIPLIER - 1) * 100) };
   if (id === 'jauge-basse') return { pct: Math.round(JAUGE_BASSE_MIN_POWER * 100) };
-  if (id === 'poigne-ferme') return { pct: Math.round((1 - POIGNE_FERME_THRESHOLD_MULTIPLIER) * 100) };
+  if (id === 'poigne-ferme') return { pct: Math.round((POIGNE_FERME_KING_THRESHOLD_MULTIPLIER - 1) * 100) };
   if (id === 'bourse-pleine') return { pct: Math.round((BOURSE_PLEINE_COINS_MULTIPLIER - 1) * 100) };
   if (id === 'etude-rapide') return { pct: Math.round((ETUDE_RAPIDE_XP_MULTIPLIER - 1) * 100) };
   if (id === 'longue-haleine') return { s: Math.round(LONGUE_HALEINE_BONUS_MS / 1000) };
   if (id === 'poignet-souple') return { pct: Math.round((POIGNET_SOUPLE_SPIN_MULTIPLIER - 1) * 100) };
   if (id === 'effet-appuye') return { pct: Math.round((EFFET_APPUYE_FORCE_MULTIPLIER - 1) * 100) };
   if (id === 'grand-renfort') return { n: GRAND_RENFORT_KUBBS };
-  if (id === 'elan') return { n: ELAN_MIN_KNOCKED };
   return undefined;
 }
 
