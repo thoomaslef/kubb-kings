@@ -251,7 +251,7 @@ const fr: Record<string, string> = {
   'terrain.verger.label': 'Verger',
   'terrain.verger.hint': 'Quatre rochers resserres pres du centre : le passage central se joue au plus pres',
   'terrain.boue.label': 'Boue',
-  'terrain.boue.hint': 'Terrain tres lourd, sans obstacle : il faut doser bien plus fort partout',
+  'terrain.boue.hint': 'Sol collant, sans obstacle : le baton ralentit, mais un mur le fait glisser — rebondissez pour lui redonner de la force',
   'terrain.riviere.label': 'Riviere',
   'terrain.riviere.hint': 'Une bande qui accelere : la traverser fait ressortir le baton plus vite',
 
@@ -848,7 +848,7 @@ const en: Record<string, string> = {
   'terrain.verger.label': 'Orchard',
   'terrain.verger.hint': 'Four rocks clustered near the center: the middle lane is fought over up close',
   'terrain.boue.label': 'Mud',
-  'terrain.boue.hint': 'Very heavy ground, no obstacles: you need much more power everywhere',
+  'terrain.boue.hint': 'Sticky ground, no obstacles: the baton slows down, but a wall makes it slide — bounce it to win back some power',
   'terrain.riviere.label': 'River',
   'terrain.riviere.hint': 'A band that speeds you up: crossing it sends the baton out faster',
 

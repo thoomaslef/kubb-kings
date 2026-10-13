@@ -91,8 +91,18 @@ export function FieldPreview({ id }: { id: FieldPresetId }) {
         <circle key={i} cx={cx + o.dx} cy={cy + o.dy} r={OBSTACLE_RADIUS} fill={css(rocheDe(preset))} />
       ))}
 
-      {/* Lune : seul indice que "Nuit" ne change rien d'autre que l'ambiance. */}
-      {preset.nightSky && <circle cx={width - 90} cy={110} r="34" fill={css(PALETTE.moon)} opacity="0.9" />}
+      {/* Nuit : la zone d'ombre au centre, qui cache a moitie le roi. */}
+      {preset.nightSky && (
+        <>
+          <defs>
+            <radialGradient id="nuit-ombre">
+              <stop offset="0%" stopColor="#03060d" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="#03060d" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          <circle cx={cx} cy={cy} r="250" fill="url(#nuit-ombre)" />
+        </>
+      )}
 
       <rect x="3" y="3" width={width - 6} height={height - 6} fill="none" stroke={css(PALETTE.wood)} strokeWidth="6" />
     </svg>

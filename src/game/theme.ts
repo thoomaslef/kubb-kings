@@ -60,14 +60,12 @@ export const PALETTE = {
   /**
    * Nuit (terrain "Nuit") : remplace la pelouse sur tout le terrain, purement
    * decoratif (memes obstacles/friction que "Classique" — aucun, cf.
-   * rules.ts::FIELD_PRESETS). Lune et son halo, dessines par MatchScene::drawMoon.
+   * rules.ts::FIELD_PRESETS). Zone d'ombre centrale, dessinee par MatchScene::drawNightShade.
    */
   nightGrass: 0x18271f,
   nightGrassLight: 0x22392c,
   nightGrassDark: 0x0f1a14,
   nightBlade: 0x2f4d3a,
-  moon: 0xeef1f5,
-  moonGlow: 0xb9c8de,
   /** Boue (terrain "Boue") : remplace la pelouse sur tout le terrain. */
   mud: 0x5a4632,
   mudLight: 0x7a6448,

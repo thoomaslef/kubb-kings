@@ -180,9 +180,9 @@ export interface FieldPreset {
    */
   hasRiver: boolean;
   /**
-   * true si ce preset dessine la lune et son halo (MatchScene::drawMoon) —
-   * purement decoratif, comme hasHill/drawHill : aucun effet sur les regles,
-   * la friction ni l'IA. Seul "Nuit" le definit pour l'instant.
+   * true pour une nuit (MatchScene::drawNightShade) : le centre du terrain est
+   * assombri — purement visuel, comme hasHill/drawHill : aucun effet sur les
+   * regles, la friction ni l'IA. Seul "Nuit" le definit pour l'instant.
    */
   nightSky: boolean;
   /**
@@ -206,6 +206,12 @@ export interface FieldPreset {
    * le disque se comporte comme un baton normal sur ce terrain.
    */
   frictionMultiplierDisque?: number;
+  /**
+   * Remplace le multiplicateur de friction pour le reste du lancer, des que le
+   * projectile a touche une BANDE (MatchScene::applyTerrainFriction) : le mur
+   * le « libere » et il glisse. Absent = aucun effet. Seule "Boue" le definit.
+   */
+  wallSlideFrictionMultiplier?: number;
   /** Multiplicateur sur BATON_BODY.restitution (rebond aux bandes/rochers), pour tout le terrain (1 = normal). */
   restitutionMultiplier: number;
   /** Texture de sol (BootScene) dessinee sur tout le terrain — 'grass' par defaut. */
@@ -283,39 +289,22 @@ const SAND_FRICTION_MULTIPLIER_BALL = 2.8;
 const SAND_RESTITUTION_MULTIPLIER = 0.35;
 
 /**
- * "Boue" : le terrain le plus lourd, mais uniforme — pas de penalite
- * specifique a la boule ni au disque (aucun cactus non plus) : il faut
- * doser plus fort partout, sans le choix tactique boule-vs-baton que
- * propose Sable. Rebond encore plus mou que Sable (la boue absorbe le
- * choc) : c'est la, plus que dans la friction, qu'est sa vraie identite —
- * aucun ricochet sur bande n'y est jouable.
+ * "Boue" : un terrain collant, mais pas un mur. La friction ne vaut que x1,25
+ * (Sable : x1,6) : le baton ralentit nettement sans que doser devienne un
+ * calvaire. Son identite est la BANDE : des qu'un projectile touche un mur,
+ * il glisse (`MUD_WALL_SLIDE_FRICTION_MULTIPLIER`, plus glissant que la glace) et
+ * rebondit presque normalement (`MUD_RESTITUTION_MULTIPLIER`). Un tir qui passe
+ * par la bande RECUPERE ainsi de la vitesse que la boue lui a prise : on peut
+ * s'en servir pour donner de la force a un baton, ce qui etait impossible
+ * avant (rebond mort, friction x1,65).
  *
- * ---------------------------------------------------------------------
- * Pourquoi 1.65 et pas davantage
- * ---------------------------------------------------------------------
- * La valeur etait a 2.2, et le terrain en etait INJOUABLE : la portee
- * utile d'un baton a pleine puissance tombait a 762 px pour 830 px entre
- * le lanceur et la ligne adverse. Aucun projectile, aucun dosage ne
- * permettait d'atteindre les kubbs adverses — le terrain n'etait pas
- * difficile, il etait casse.
- *
- * Le plafond n'est pas un gout mais une contrainte de GEOMETRIE : avec
- * 830 px a franchir, Sable (1.6) demande deja 82 % de jauge au baton de
- * base. Au-dela de ~1.65, les projectiles les plus faibles ne traversent
- * plus le terrain du tout. Un terrain nettement plus lourd que Sable n'est
- * donc pas possible sans changer les dimensions du jeu.
- *
- * A 1.65 : tous les projectiles atteignent la ligne, le baton de base
- * demande 84 % de jauge (contre 82 % sur Sable), et "Plume" — 1 etoile de
- * puissance, 5 de precision — monte a 96 %. C'est coherent avec ce qu'il
- * est : un outil de precision a courte portee, au maximum de ses moyens
- * sur le terrain le plus lourd, mais qui y arrive.
- *
- * L'invariant est verrouille par un test (`rules.test.ts`) : tout terrain
- * doit rester traversable, sauf les penalites tactiques assumees.
+ * Historique : x2,2 rendait le terrain injouable (portee utile 762 px pour
+ * 830 px a franchir) ; x1,65 le gardait trop dur. L'invariant « tout terrain
+ * reste traversable » est verrouille par `rules.test.ts`.
  */
-const MUD_FRICTION_MULTIPLIER = 1.65;
-const MUD_RESTITUTION_MULTIPLIER = 0.25;
+const MUD_FRICTION_MULTIPLIER = 1.25;
+const MUD_WALL_SLIDE_FRICTION_MULTIPLIER = 0.35;
+const MUD_RESTITUTION_MULTIPLIER = 0.7;
 
 // Libelles et indices : src/i18n/dictionaries.ts (terrain.<id>.label / .hint).
 // Deblocage (niveau + achat) : src/game/shop.ts (SHOP_ITEMS, categorie
@@ -401,8 +390,8 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     groundTexture: 'sand'
   },
   // Purement decoratif : aucun obstacle, aucune friction modifiee — a tous
-  // egards mecaniques identique a "Classique", seuls le sol et la lune
-  // changent (MatchScene::drawMoon). Aucune verification IA necessaire.
+  // egards mecaniques identique a "Classique", seuls le sol et l'obscurite
+  // du centre changent (MatchScene::drawNightShade). Aucune verification IA necessaire.
   nuit: {
     id: 'nuit',
     obstacles: [],
@@ -456,6 +445,7 @@ export const FIELD_PRESETS: Record<FieldPresetId, FieldPreset> = {
     hasRiver: false,
     nightSky: false,
     frictionMultiplier: MUD_FRICTION_MULTIPLIER,
+    wallSlideFrictionMultiplier: MUD_WALL_SLIDE_FRICTION_MULTIPLIER,
     restitutionMultiplier: MUD_RESTITUTION_MULTIPLIER,
     groundTexture: 'mud'
   },

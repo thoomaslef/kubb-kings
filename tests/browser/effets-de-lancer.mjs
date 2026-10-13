@@ -24,7 +24,7 @@ async function mesurer(effet) {
   await attendreSonTour(page);
   const mesure = page.evaluate(async () => {
     const scene = window.__kubb.scene.getScene('MatchScene');
-    const out = { fantomes: 0, pleins: 0, alphaMax: 0, additifs: 0, lueurs: 0, couleurs: new Set() };
+    const out = { fantomes: 0, pleins: 0, alphaMax: 0, additifs: 0, lueurs: 0, particules: 0, couleurs: new Set() };
     for (let i = 0; i < 70; i += 1) {
       await new Promise((r) => setTimeout(r, 40));
       const objets = scene.children.list.filter((o) => o.type === 'Image' && o.depth === 5);
@@ -35,6 +35,11 @@ async function mesurer(effet) {
       out.alphaMax = Math.max(out.alphaMax, ...fantomes.map((o) => o.alpha), 0);
       out.lueurs = Math.max(out.lueurs, objets.filter((o) => o.texture.key === 'p-flash').length);
       fantomes.filter((o) => o.tintFill).forEach((o) => out.couleurs.add(o.tintTopLeft));
+      // Particules vivantes (braises / cristaux) : emetteurs dont la texture est celle de l'effet.
+      const vivantes = scene.children.list
+        .filter((o) => o.type === 'ParticleEmitter' && ['p-ember', 'p-ice'].includes(o.texture?.key))
+        .reduce((n, e) => n + e.getAliveParticleCount(), 0);
+      out.particules = Math.max(out.particules, vivantes);
     }
     out.couleurs = [...out.couleurs];
     return out;
@@ -50,13 +55,19 @@ const glace = await mesurer('glace');
 const aucun = await mesurer('none');
 console.log({ feu, glace, aucun });
 
+const FEU = [0xfff3b0, 0xffc14d, 0xff6a2a, 0xc9301a];
+const GLACE = [0xffffff, 0xd6f6ff, 0x8fe3ff, 0x4fb8ff];
+
 resultats.feu_laTraineeEstDense = feu.fantomes >= 4;
 resultats.feu_silhouettePleineEtAdditive = feu.pleins >= 4 && feu.additifs >= 4;
 resultats.feu_assezOpaquePourSeVoir = feu.alphaMax >= 0.5;
 resultats.feu_uneLueurAccompagne = feu.lueurs >= 2;
-resultats.feu_couleurDuFeu = feu.couleurs.length === 1 && feu.couleurs[0] === 0xff6a2a;
-resultats.glace_couleurDeLaGlace = glace.couleurs.length === 1 && glace.couleurs[0] === 0x6ad9ff && glace.lueurs >= 2;
-resultats.sansEffet_traineeDiscreteEtNaturelle = aucun.fantomes >= 1 && aucun.pleins === 0 && aucun.lueurs === 0 && aucun.alphaMax < 0.35;
+resultats.feu_degradeDeLaPaletteDuFeu = feu.couleurs.length >= 2 && feu.couleurs.every((c) => FEU.includes(c));
+resultats.feu_desBraisesVolent = feu.particules >= 4;
+resultats.glace_degradeDeLaPaletteDeLaGlace = glace.couleurs.length >= 2 && glace.couleurs.every((c) => GLACE.includes(c)) && glace.lueurs >= 2;
+resultats.glace_desCristauxFlottent = glace.particules >= 3;
+resultats.sansEffet_traineeDiscreteEtNaturelle =
+  aucun.fantomes >= 1 && aucun.pleins === 0 && aucun.lueurs === 0 && aucun.alphaMax < 0.35 && aucun.particules === 0;
 
 conclure(resultats, erreurs);
 await navigateur.close();

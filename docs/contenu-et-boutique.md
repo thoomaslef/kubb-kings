@@ -23,10 +23,10 @@ differentes — voir plus bas ; "Nuit" n&apos;en ajoute aucun).
 | **Colline**    | Un monticule au centre (zone de friction accrue, pas un rocher) : le traverser use plus de vitesse, il faut y mettre plus de puissance pour ressortir avec assez de force — cf. plus bas | 9 |
 | **Glace**      | Terrain entier a friction reduite et rebonds plus francs : le baton glisse plus loin et rebondit plus fort sur les bandes — cf. plus bas | 13 |
 | **Sable**      | Terrain entier a friction accrue et rebonds plus mous, la boule y patine bien plus que le baton, plus 4 cactus symetriques — cf. plus bas | 15 |
-| **Nuit**       | Aucun (identique a Classique) : juste l&apos;ambiance, palette sombre et lune — cf. plus bas | 26 |
+| **Nuit**       | Aucun (identique a Classique) : juste l&apos;ambiance, palette sombre et une zone d&apos;ombre au centre qui cache a moitie le roi — cf. plus bas | 26 |
 | **Ruines**     | Trois rochers en triangle ASYMETRIQUE (ni sur l&apos;axe, ni symetrique) : les deux lignes de lancer ne se valent pas — cf. plus bas | 28 |
 | **Verger**     | Quatre rochers en carre resserre pres du centre (~92px, contre ~155px pour Sable) : le passage central se joue de bien plus pres — cf. plus bas | 30 |
-| **Boue**       | Terrain entier a friction un peu plus forte que Sable et rebonds bien plus mous (aucun ricochet jouable), sans obstacle ni penalite specifique a un projectile — cf. plus bas | 31 |
+| **Boue**       | Friction moderee (x1,25, moins que Sable), mais **la bande fait glisser le projectile** (friction x0,35 apres un mur) et le rebond reste vivant : on peut s&apos;en servir pour redonner de la force a un tir — cf. plus bas | 31 |
 | **Riviere**    | Une bande horizontale qui REDUIT la friction (pas un rocher, pas une zone qui ralentit) : le baton en ressort plus vite qu&apos;un trajet normal — cf. plus bas | 33 |
 
 Seul "Classique" reste disponible d&apos;office : les 10 autres sont desormais des
@@ -139,11 +139,12 @@ terrains (Difficile, vent) — toutes sans erreur console.
 **Nuit** est purement decorative : `FIELD_PRESETS.nuit` reprend EXACTEMENT les memes
 valeurs que "Classique" (`obstacles: []`, `frictionMultiplier`/`restitutionMultiplier`
 a 1) — seuls `groundTexture: 'night'` (tuile d&apos;herbe sombre,
-`BootScene::buildNightGrassTexture`) et `nightSky: true` (lune et son halo,
-`MatchScene::drawMoon`, meme principe decoratif que `drawHill` pour "Colline")
+`BootScene::buildNightGrassTexture`) et `nightSky: true` (zone d&apos;ombre au centre,
+`MatchScene::drawNightShade`, dessinee au-dessus du roi ; meme principe purement visuel que `drawHill` pour "Colline")
 different. `AiBoard` ne recevant jamais l&apos;un ou l&apos;autre, aucune verification IA
-n&apos;etait necessaire — uniquement une verification en navigateur (lune visible dans
-le coin superieur droit, terrain fonctionnellement identique a Classique, zero erreur).
+n&apos;etait necessaire — uniquement une verification en navigateur (zone d&apos;ombre centrale visible, la
+lune retiree, terrain fonctionnellement identique a Classique, zero erreur). L&apos;ombre cache a moitie le
+roi ; c&apos;est voulu..
 
 **Ruines** et **Verger** ajoutent des rochers a des positions nouvelles : Ruines en
 triangle asymetrique (aucun des trois cotes du terrain n&apos;etant equivalent aux
@@ -161,16 +162,15 @@ celles attendues pour les deux presets (3 en triangle pour Ruines, 4 en carre po
 Verger, verifie par calcul et par capture d&apos;ecran), lancer reel sur chacun des 3
 nouveaux terrains — zero erreur console.
 
-**Boue** reprend exactement le mecanisme de Glace/Sable (`frictionMultiplier`/
-`restitutionMultiplier` scalaires sur tout le terrain, aucune nouvelle geometrie) avec
-des valeurs plus severes (friction x1,65 contre x1,6 pour Sable, restitution x0,25
-contre x0,35) et volontairement AUCUNE variante par forme de projectile
-(`frictionMultiplierBall`/`frictionMultiplierDisque` absentes) : un pur terrain
-"lourd", uniforme, sans le choix tactique boule-vs-baton de Sable ni obstacle. Meme
-sweep standard (tous niveaux x tous etats de vent x 6 configurations de kubbs adverses
-x kingTargetable vrai/faux, 612 tirs decides, 12&nbsp;240 trajectoires reelles) : zero
-suicide, zero tir invalide. Puis en navigateur reel : achat boutique, terrain visible
-au selecteur, lancer reel sans erreur console.
+**Boue** : friction x1,25 (Sable : x1,6) et restitution x0,7. Son identite est la **bande** :
+des qu&apos;un projectile touche un mur, `FieldPreset.wallSlideFrictionMultiplier` (x0,35,
+plus glissant que la glace) remplace la friction pour le reste du lancer
+(`MatchScene::applyTerrainFriction`, drapeau `bouncedWallThisThrow`). Un tir qui passe par
+la bande recupere ainsi la vitesse que la boue lui a prise : on peut s&apos;en servir pour
+donner de la force a un baton. Aucune variante par forme de projectile. L&apos;IA ne connait
+pas la glisse (elle ne joue jamais la bande) ; son plan de tir sur Boue suit la friction
+x1,25. Verifie en navigateur par [`boue.mjs`](../tests/browser/boue.mjs) (friction avant/apres
+le mur, vitesse conservee au rebond, aucune glisse sur Classique).
 
 > **Corrige apres coup : le terrain etait INJOUABLE.** La friction avait ete reglee a
 > x2,2, et personne ne s&apos;etait demande si la ligne adverse restait seulement
@@ -188,8 +188,7 @@ au selecteur, lancer reel sans erreur console.
 > franchir, Sable (x1,6) demande deja 82 % de jauge au baton de base. Au-dela de
 > ~x1,65, les projectiles les plus faibles ne traversent plus le terrain. Un terrain
 > nettement plus lourd que Sable n&apos;est pas possible sans changer les dimensions du
-> jeu — la vraie identite de Boue est donc ailleurs : son rebond mort (x0,25) rend tout
-> ricochet sur bande injouable, ce que Sable permet encore.
+> jeu. Resolution actuelle : friction ramenee a x1,25 et la bande fait glisser (voir ci-dessus).
 >
 > **L&apos;invariant est desormais verrouille par un test**
 > ([`rules.test.ts`](../src/game/rules.test.ts)) : tout terrain doit rester

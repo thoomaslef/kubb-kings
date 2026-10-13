@@ -17,3 +17,13 @@ export const THROW_EFFECT_TINT: Record<ThrowEffectId, number | null> = {
   feu: 0xff6a2a,
   glace: 0x6ad9ff
 };
+
+/**
+ * Couleurs de la trainee, du coeur (le plus chaud / le plus clair) au bord :
+ * chaque image remanente et chaque particule en tire une, ce qui donne un
+ * degrade vivant plutot qu'une teinte unique.
+ */
+export const THROW_EFFECT_PALETTE: Record<Exclude<ThrowEffectId, 'none'>, readonly number[]> = {
+  feu: [0xfff3b0, 0xffc14d, 0xff6a2a, 0xc9301a],
+  glace: [0xffffff, 0xd6f6ff, 0x8fe3ff, 0x4fb8ff]
+};

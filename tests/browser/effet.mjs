@@ -18,6 +18,15 @@ const DESIGN = { width: 720, height: 1280 };
 const navigateur = await lancerNavigateur();
 const contexte = await navigateur.newContext({ viewport: { width: 390, height: 844 } });
 const erreurs = [];
+// La deviation aleatoire du lancer (jusqu'a ~70 px de derive, dans un sens ou dans l'autre) est de
+// l'ordre de grandeur des courbes mesurees : elle faisait echouer cette verification une fois sur
+// quelques-unes sans que le jeu ait rien de casse. Pendant la mesure des gestes, le hasard est
+// FIGE (deviation nulle) le temps du relachement du geste, et seulement lui.
+await contexte.addInitScript(() => {
+  const vrai = Math.random.bind(Math);
+  window.__hasardFige = false;
+  Math.random = () => (window.__hasardFige ? 0.5 : vrai());
+});
 const page = await contexte.newPage();
 surveiller('effet', page, erreurs);
 
@@ -112,7 +121,12 @@ async function lancerAvecGeste(fleche) {
   await armerEnregistreur();
   const geste = await glisser(fleche);
   const effetLu = await page.evaluate(() => window.__kubb.scene.getScene('MatchScene').aimSpin);
+  // Le lancer part de maniere synchrone au relachement : le hasard n'est fige que le temps de ce
+  // geste (un `Math.random` constant pendant tout le jeu fait echouer Phaser, qui s'en sert pour
+  // des identifiants uniques).
+  await page.evaluate(() => (window.__hasardFige = true));
   await geste.relacher();
+  await page.evaluate(() => (window.__hasardFige = false));
 
   for (let i = 0; i < 80; i += 1) {
     const fini = await page.evaluate(() => {

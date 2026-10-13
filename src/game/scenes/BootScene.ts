@@ -698,6 +698,18 @@ export class BootScene extends Phaser.Scene {
       g.fillCircle(5, 5, 1.6);
     });
 
+    // Braise de l'effet de feu : disque doux, teinte par l'emetteur (juice.ts).
+    this.texture('p-ember', 16, 16, (g) => g.disqueDoux(8, 8, 8, 0xffffff, 1, 0.08));
+
+    // Cristal de l'effet de glace : losange effile avec un coeur clair.
+    this.texture('p-ice', 16, 16, (g) => {
+      g.fillStyle(0xffffff, 0.9);
+      g.fillTriangle(8, 0, 12, 8, 4, 8);
+      g.fillTriangle(8, 16, 12, 8, 4, 8);
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(8, 8, 2.2);
+    });
+
     // Halo d'impact : agrandi puis efface par un tween.
     this.texture('p-flash', 96, 96, (g) => g.disqueDoux(48, 48, 48, 0xffffff, 1, 0.06));
 

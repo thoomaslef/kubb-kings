@@ -64,7 +64,7 @@ import {
   type Wind
 } from '../rules';
 import { BATONS, batonDeviationDeg, batonPowerMultiplier, batonWindMultiplier, type BatonId, type BatonStats } from '../batons';
-import { THROW_EFFECT_TINT } from '../throwEffects';
+import type { ThrowEffectId } from '../throwEffects';
 import {
   PROTOCOL_VERSION,
   appendThrow,
@@ -495,7 +495,7 @@ export class MatchScene extends Phaser.Scene {
         this.baton.sprite.y,
         this.baton.sprite.rotation,
         this.baton.speed / THROW.maxSpeed,
-        this.activeTrailTint(),
+        this.activeTrailEffect(),
         this.baton.textureKey
       );
       this.baton.rememberSpeed();
@@ -618,13 +618,13 @@ export class MatchScene extends Phaser.Scene {
   }
 
   /**
-   * Teinte de la trainee pour le lancer en cours : l'effet choisi au menu
-   * pour une equipe humaine, jamais pour l'IA (toujours 'none') — purement
-   * cosmetique, cf. throwEffects.ts.
+   * Effet de lancer pour le lancer en cours : celui choisi au menu pour une
+   * equipe humaine, jamais pour l'IA (toujours 'none') — purement cosmetique,
+   * cf. throwEffects.ts.
    */
-  private activeTrailTint(): number | null {
-    if (this.isAiTeam(this.activeTeam)) return null;
-    return THROW_EFFECT_TINT[gameStore.getState().trailEffect];
+  private activeTrailEffect(): ThrowEffectId {
+    if (this.isAiTeam(this.activeTeam)) return 'none';
+    return gameStore.getState().trailEffect;
   }
 
   /**
@@ -714,7 +714,11 @@ export class MatchScene extends Phaser.Scene {
     const shape = this.activeBatonStats().shape;
     const shapeOverride =
       shape === 'boule' ? preset.frictionMultiplierBall : shape === 'disque' ? preset.frictionMultiplierDisque : undefined;
-    const multiplier = shapeOverride ?? preset.frictionMultiplier;
+    // Boue : une fois la bande touchee, le projectile glisse (cf. rules.ts).
+    const multiplier =
+      preset.wallSlideFrictionMultiplier !== undefined && this.bouncedWallThisThrow
+        ? preset.wallSlideFrictionMultiplier
+        : shapeOverride ?? preset.frictionMultiplier;
     const base = BATON_BODY.frictionAir * multiplier;
 
     const body = this.baton.sprite.body as MatterJS.BodyType;
@@ -1848,8 +1852,8 @@ export class MatchScene extends Phaser.Scene {
     // Riviere : dessinee comme la colline, avant le reste, pour que les
     // traces de tonte/lignes restent visibles par-dessus.
     if (FIELD_PRESETS[this.fieldPreset].hasRiver) this.drawRiver(g);
-    // Nuit : la lune, dans un coin du ciel — purement decoratif.
-    if (FIELD_PRESETS[this.fieldPreset].nightSky) this.drawMoon(g);
+    // Nuit : le centre du terrain s'assombrit — purement visuel.
+    if (FIELD_PRESETS[this.fieldPreset].nightSky) this.drawNightShade();
 
     // Traces de tonte : bandes alternees, juste assez marquees pour se voir.
     for (let y = FIELD.y; y < FIELD.y + FIELD.height; y += 128) {
@@ -1932,24 +1936,19 @@ export class MatchScene extends Phaser.Scene {
   }
 
   /**
-   * Rendu du terrain "Nuit" : une lune et son halo, dans le coin superieur
-   * droit du terrain — purement decoratif (FieldPreset.nightSky), aucun
-   * effet sur les regles, la friction ni l'IA (contrairement a "Colline").
+   * Rendu du terrain "Nuit" : une zone d'ombre au milieu du terrain, qui cache
+   * a moitie le roi (FieldPreset.nightSky) — purement visuel, aucun effet sur
+   * les regles, la friction ni l'IA. Dessinee AU-DESSUS du roi et des kubbs
+   * (profondeur 4,5) mais sous le baton et sa trainee : le projectile, lui,
+   * reste toujours bien visible.
    */
-  private drawMoon(g: Phaser.GameObjects.Graphics) {
-    const cx = FIELD.x + FIELD.width - 90;
-    const cy = FIELD.y + 90;
-    const rings = 5;
-    for (let i = rings; i >= 1; i -= 1) {
-      g.fillStyle(PALETTE.moonGlow, 0.05);
-      g.fillCircle(cx, cy, 30 + (i / rings) * 70);
+  private drawNightShade() {
+    const g = this.add.graphics().setDepth(4.5);
+    const rings = 22;
+    for (let i = 0; i < rings; i += 1) {
+      g.fillStyle(0x03060d, 0.05);
+      g.fillCircle(FIELD_CENTER_X, FIELD_CENTER_Y, 250 - (i / (rings - 1)) * 190);
     }
-    g.fillStyle(PALETTE.moon, 0.95);
-    g.fillCircle(cx, cy, 26);
-    // Cratere : un croissant plus sombre, decale du centre du disque.
-    g.fillStyle(PALETTE.moonGlow, 0.5);
-    g.fillCircle(cx - 8, cy - 6, 7);
-    g.fillCircle(cx + 6, cy + 9, 4);
   }
 
   /** Assombrit les bords : donne du volume a une vue de dessus tres plate. */

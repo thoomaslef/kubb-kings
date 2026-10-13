@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import * as sfx from './audio';
 import { baseCameraZoom, echelleSprite, renderScaleFactor } from './renderScale';
 import { DESIGN_HEIGHT, DESIGN_WIDTH } from './rules';
+import { THROW_EFFECT_PALETTE, type ThrowEffectId } from './throwEffects';
 
 /**
  * Tout le "ressenti" du match : particules, secousses, vibration, ralenti,
@@ -43,12 +44,17 @@ export class Juice {
   private splinters!: Emitter;
   private dust!: Emitter;
   private sparkle!: Emitter;
+  /** Braises (effet de feu) et cristaux (effet de glace) laisses derriere le projectile. */
+  private embers!: Emitter;
+  private crystals!: Emitter;
 
   /** Halo qui pulse autour du roi quand il devient une cible legale. */
   private kingHalo: Phaser.GameObjects.Image | null = null;
   private haloTween: Phaser.Tweens.Tween | null = null;
 
   private trailMs = 0;
+  /** Dernier point de la trainee d'un effet (feu / glace) : sert a remplir l'espace entre deux images. */
+  private trailLast: { x: number; y: number } | null = null;
   private hitStopTimer: Phaser.Time.TimerEvent | null = null;
 
   constructor(scene: Phaser.Scene) {
@@ -88,6 +94,31 @@ export class Juice {
       emitting: false
     });
     this.sparkle.setDepth(9);
+
+    // Effet de feu : braises qui s'eparpillent en rougissant, en fusion additive.
+    this.embers = scene.add.particles(0, 0, 'p-ember', {
+      speed: { min: 10, max: 70 },
+      lifespan: { min: 380, max: 760 },
+      scale: { start: echelleSprite(0.7), end: 0 },
+      alpha: { start: 0.95, end: 0 },
+      tint: [...THROW_EFFECT_PALETTE.feu],
+      blendMode: Phaser.BlendModes.ADD,
+      emitting: false
+    });
+    this.embers.setDepth(5.2);
+
+    // Effet de glace : eclats de cristal qui tournent doucement en s'eteignant.
+    this.crystals = scene.add.particles(0, 0, 'p-ice', {
+      speed: { min: 8, max: 55 },
+      lifespan: { min: 520, max: 980 },
+      scale: { start: echelleSprite(0.75), end: echelleSprite(0.1) },
+      alpha: { start: 1, end: 0 },
+      rotate: { min: -180, max: 180 },
+      tint: [...THROW_EFFECT_PALETTE.glace],
+      blendMode: Phaser.BlendModes.ADD,
+      emitting: false
+    });
+    this.crystals.setDepth(5.2);
   }
 
   // ------------------------------------------------------------------ lancer
@@ -96,14 +127,17 @@ export class Juice {
     sfx.playThrow(power);
     this.dust.explode(6, x, y);
     this.trailMs = 0;
+    this.trailLast = null;
   }
 
   /**
    * Images remanentes derriere le projectile. Appele a chaque frame de vol :
    * l'accumulateur espace les copies pour que la trainee ne depende pas du framerate.
-   * `textureKey` : 'baton' ou 'boule' selon le projectile en jeu (Baton.textureKey).
-   * `tint` (effet de lancer de boutique, cf. throwEffects.ts) : null = couleur
-   * d'origine du projectile, sinon teinte les fantomes de la trainee.
+   * `textureKey` : le projectile en jeu (Baton.textureKey).
+   * `effect` (effet de lancer de boutique, cf. throwEffects.ts) : 'none' = fantomes
+   * discrets a la couleur du projectile ; 'feu' / 'glace' = silhouettes pleines
+   * en fusion additive qui piochent dans la palette de l'effet (du coeur clair
+   * au bord sombre), une lueur, et des particules (braises, cristaux).
    */
   trail(
     delta: number,
@@ -111,7 +145,7 @@ export class Juice {
     y: number,
     rotation: number,
     speedRatio: number,
-    tint: number | null = null,
+    effect: ThrowEffectId = 'none',
     textureKey = 'baton'
   ) {
     if (speedRatio < 0.12) return;
@@ -119,45 +153,75 @@ export class Juice {
     if (this.trailMs < FEEL.trailIntervalMs) return;
     this.trailMs = 0;
 
-    // Sans effet : fantomes discrets, a la couleur du projectile. Avec un effet
-    // de boutique : silhouette pleine de la couleur de l'effet (setTintFill, pas
-    // une teinte multipliee qui disparait sur un baton sombre), en fusion
-    // additive et plus durable, accompagnee d'une lueur — c'est ce qui rend
-    // l'effet reellement visible en vol.
+    if (effect === 'none') {
+      const ghost = this.scene.add
+        .image(x, y, textureKey)
+        .setDepth(5)
+        .setRotation(rotation)
+        .setScale(echelleSprite())
+        .setAlpha(0.3 * speedRatio);
+      this.scene.tweens.add({
+        targets: ghost,
+        alpha: 0,
+        scaleX: echelleSprite(0.6),
+        duration: 200,
+        ease: 'Quad.easeOut',
+        onComplete: () => ghost.destroy()
+      });
+      return;
+    }
+
+    // Silhouette pleine (setTintFill, pas une teinte multipliee qui disparait
+    // sur un projectile sombre) en fusion additive, plus durable qu'un fantome.
+    const palette = THROW_EFFECT_PALETTE[effect];
+    const pick = () => palette[Math.floor(Math.random() * palette.length)];
     const ghost = this.scene.add
       .image(x, y, textureKey)
       .setDepth(5)
       .setRotation(rotation)
       .setScale(echelleSprite())
-      .setAlpha(tint === null ? 0.3 * speedRatio : Math.min(0.85, 0.35 + 0.6 * speedRatio));
-    if (tint !== null) ghost.setTintFill(tint).setBlendMode(Phaser.BlendModes.ADD);
-
+      .setAlpha(Math.min(0.85, 0.35 + 0.6 * speedRatio))
+      .setTintFill(pick())
+      .setBlendMode(Phaser.BlendModes.ADD);
     this.scene.tweens.add({
       targets: ghost,
       alpha: 0,
-      scaleX: echelleSprite(tint === null ? 0.6 : 0.4),
-      duration: tint === null ? 200 : 420,
+      scaleX: echelleSprite(0.35),
+      scaleY: echelleSprite(effect === 'feu' ? 1.15 : 0.9),
+      duration: effect === 'feu' ? 380 : 460,
       ease: 'Quad.easeOut',
       onComplete: () => ghost.destroy()
     });
 
-    if (tint !== null) {
+    // Lueur : orange chaud pour le feu, bleu givre pour la glace. Le projectile
+    // file vite (40 px et plus entre deux images) : on en pose plusieurs le long
+    // du segment parcouru, pour une traine CONTINUE plutot qu'une suite de taches.
+    const last = this.trailLast ?? { x, y };
+    const steps = Math.max(1, Math.min(6, Math.round(Math.hypot(x - last.x, y - last.y) / 12)));
+    for (let i = 1; i <= steps; i += 1) {
+      const t = i / steps;
+      const gx = last.x + (x - last.x) * t;
+      const gy = last.y + (y - last.y) * t;
       const glow = this.scene.add
-        .image(x, y, 'p-flash')
+        .image(gx, gy, 'p-flash')
         .setDepth(5)
-        .setTint(tint)
-        .setAlpha(0.55)
+        .setTint(palette[i % 2 === 0 ? 1 : 2])
+        .setAlpha(0.42)
         .setBlendMode(Phaser.BlendModes.ADD)
-        .setScale(echelleSprite(0.45));
+        .setScale(echelleSprite(0.6));
       this.scene.tweens.add({
         targets: glow,
         alpha: 0,
-        scale: echelleSprite(0.9),
+        scale: echelleSprite(effect === 'feu' ? 1.15 : 0.95),
         duration: 360,
         ease: 'Quad.easeOut',
         onComplete: () => glow.destroy()
       });
     }
+    this.trailLast = { x, y };
+
+    const emitter = effect === 'feu' ? this.embers : this.crystals;
+    emitter.emitParticleAt(x + Phaser.Math.Between(-5, 5), y + Phaser.Math.Between(-5, 5), effect === 'feu' ? 3 : 2);
   }
 
   /** Le baton s'immobilise : petit frottement, sans effet visuel. */

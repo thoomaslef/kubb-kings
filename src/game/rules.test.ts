@@ -102,11 +102,24 @@ describe('tout terrain reste traversable', () => {
 describe('hierarchie des terrains', () => {
   const porteeDeBase = (id: FieldPresetId) => porteeUtile(FIELD_PRESETS[id], 'base', 1);
 
-  it('Boue est le terrain le plus lourd', () => {
-    const autres = terrains.filter((id) => id !== 'boue');
-    for (const id of autres) {
-      expect(porteeDeBase('boue'), `Boue devrait porter moins loin que ${id}`).toBeLessThanOrEqual(porteeDeBase(id));
-    }
+  it('Boue freine plus que Classique, mais moins que Sable', () => {
+    expect(porteeDeBase('boue')).toBeLessThan(porteeDeBase('classique'));
+    expect(porteeDeBase('boue')).toBeGreaterThan(porteeDeBase('sable'));
+  });
+
+  it('Boue : la bande fait glisser le projectile, et le rebond y reste vivant', () => {
+    const boue = FIELD_PRESETS.boue;
+    // Apres un mur, la friction tombe sous celle de la glace : on peut s'en servir pour donner de la force.
+    expect(boue.wallSlideFrictionMultiplier).toBeDefined();
+    expect(boue.wallSlideFrictionMultiplier!).toBeLessThan(FIELD_PRESETS.glace.frictionMultiplier);
+    expect(boue.wallSlideFrictionMultiplier!).toBeLessThan(boue.frictionMultiplier);
+    // Plus mou qu'un terrain normal, mais plus rebondissant que Sable : un ricochet est jouable.
+    expect(boue.restitutionMultiplier).toBeLessThan(1);
+    expect(boue.restitutionMultiplier).toBeGreaterThan(FIELD_PRESETS.sable.restitutionMultiplier);
+  });
+
+  it("seule Boue a une glisse apres la bande", () => {
+    for (const id of terrains.filter((t) => t !== 'boue')) expect(FIELD_PRESETS[id].wallSlideFrictionMultiplier, id).toBeUndefined();
   });
 
   it('Glace et Riviere portent plus loin que Classique', () => {
