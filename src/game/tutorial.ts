@@ -44,9 +44,3 @@ export function isKingTipSeen(): boolean {
 export function markKingTipSeen() {
   write(KING_TIP_KEY, true);
 }
-
-/** Depuis l'ecran des regles : "Revoir le tutoriel" a la prochaine partie. */
-export function resetTutorial() {
-  write(INTRO_KEY, false);
-  write(KING_TIP_KEY, false);
-}

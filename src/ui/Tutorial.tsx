@@ -12,8 +12,7 @@ type Step = 'intro' | 'toast' | 'hidden';
  * HUD (`HUD.tsx`) : c'est le meme bandeau qui existe deja hors tutoriel,
  * juste plus bavard la premiere fois.
  *
- * Ne s'affiche qu'une fois (voir `tutorial.ts`) ; "Revoir le tutoriel"
- * depuis l'ecran des regles remet le drapeau a zero.
+ * Ne s'affiche qu'une fois (voir `tutorial.ts`).
  */
 export function Tutorial() {
   const t = useT();

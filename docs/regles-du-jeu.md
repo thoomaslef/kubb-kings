@@ -381,8 +381,7 @@ Chaque etape est gardee par un signal de jeu reel (`hud.phase`, `hud.canTargetKi
 par un minuteur arbitraire : elle attend que la situation se produise vraiment. Un seul drapeau
 `localStorage` ([`src/game/tutorial.ts`](../src/game/tutorial.ts)) retient que la premiere partie a
 eu lieu &mdash; termine ou quittee en cours de route, peu importe, elle ne rejoue jamais deux
-fois. **"Revoir le tutoriel"**, dans l&apos;ecran des regles, remet ce drapeau a zero pour la
-partie suivante.
+fois. Le bouton « Revoir le tutoriel » de l&apos;ecran des regles a ete retire.
 
 ---
 

@@ -533,29 +533,15 @@ const fr: Record<string, string> = {
 
   // ---- Rules screen
   'rules.title': 'Regles',
-  'rules.item1': 'Chaque equipe aligne {n} kubbs sur sa ligne de fond. Un roi unique se tient au centre du terrain.',
-  'rules.item2':
-    "Les equipes lancent a tour de role, uniquement depuis l'aplomb de l'un de leurs kubbs encore debout : touchez l'un d'eux sur votre ligne, c'est de la que part le baton. Un kubb tombe n'est plus une position de lancer.",
-  'rules.item3': "Glissez vers la cible pour donner l'angle, la longueur du glissement donne la puissance. Relachez pour lancer.",
-  'rules.itemSpin':
-    "Glissez en COURBE et le baton part en courbe, du cote ou votre doigt est passe. C'est ainsi qu'on contourne un rocher — ou le roi, pour atteindre le kubb central derriere lui.",
-  'rules.item4':
-    "Un baton ne fait tomber un kubb que s'il le percute assez fort. Chaque lancer part avec une legere deviation : personne ne vise parfaitement.",
-  'rules.item5': 'Un kubb tombe est hors jeu. Quand tous les kubbs adverses sont a terre, vous pouvez viser le roi.',
-  'rules.item6':
-    "Le roi se tient sur la ligne mediane : contournez-le tant que vous n'avez pas le droit de le viser. Le toucher trop tot = defaite immediate de l'equipe qui a lance.",
-  'rules.item7': 'Faire tomber le roi dans les regles = victoire. Roi decouvert, un tir droit ne suffit pas : il faut un rebond sur la bande.',
-  'rules.item8':
-    "{n} lancers par equipe, et 30 secondes maximum pour jouer chaque coup (passe ce delai, le jeu lance pour vous). Quand les lancers sont epuises, l'equipe qui a abattu le plus de kubbs l'emporte.",
-  'rules.item9':
-    "Un tir qui ricoche sur une bande avant d'abattre un kubb adverse redresse en recompense l'un de vos propres kubbs tombes, toujours le plus a gauche.",
-  'rules.itemFieldKubbs':
-    "Regle « Kubbs de champ » (activable au menu) : un kubb que vous abattez n'est pas retire du jeu, il est replante dans VOTRE camp — vous devrez l'y abattre une seconde fois, en priorite, avant de pouvoir viser de nouveau la ligne adverse.",
-  'rules.itemStart':
-    "Un tirage au sort designe l'equipe qui commence : un bandeau l'annonce au debut de la partie.",
+  'rules.item1': 'Chaque equipe a {n} kubbs sur sa ligne de fond, et un roi unique se tient au centre. Le sort designe qui commence.',
+  'rules.item2': "A votre tour, touchez l'un de vos kubbs debout pour vous placer, glissez vers la cible puis relachez : la longueur du glissement donne la puissance. Glissez en courbe pour donner de l'effet.",
+  'rules.item3': 'Un kubb touche assez fort tombe et disparait. Chaque tir devie un peu : personne ne vise parfaitement.',
+  'rules.item4': 'Le roi est interdit tant qu\'un kubb adverse reste debout : le toucher trop tot fait perdre.',
+  'rules.item5': 'Tous les kubbs adverses sont a terre ? Visez le roi, mais un tir droit ne suffit pas : il doit rebondir sur une bande.',
+  'rules.item6': 'Un tir qui rebondit sur une bande avant d\'abattre un kubb redresse l\'un de vos kubbs tombes.',
+  'rules.item7': '{n} lancers par equipe, 30 secondes par coup (passe ce delai, le jeu lance pour vous). Une fois les lancers epuises, le plus de kubbs abattus l\'emporte.',
+  'rules.item8': 'Option « Kubbs de champ » (au menu) : un kubb abattu est replante dans votre camp, et il faut l\'abattre une seconde fois avant de revenir a la ligne adverse.',
   'rules.back': 'Retour',
-  'rules.replayTutorial': 'Revoir le tutoriel',
-  'rules.tutorialWillReplay': 'Reapparaitra a la prochaine partie',
 
   // ---- Tutorial
   'tutorial.step1': 'Touchez votre ligne pour vous placer',
@@ -1145,29 +1131,15 @@ const en: Record<string, string> = {
 
   // ---- Rules screen
   'rules.title': 'Rules',
-  'rules.item1': 'Each team lines up {n} kubbs on its baseline. A single king stands at the center of the field.',
-  'rules.item2':
-    "Teams throw in turn, only from directly behind one of their kubbs still standing: tap one of them on your line, that's where the baton starts from. A fallen kubb is no longer a valid throwing spot.",
-  'rules.item3': "Drag toward the target to set the angle; the drag length sets the power. Release to throw.",
-  'rules.itemSpin':
-    'Swipe in a CURVE and the baton curves too, toward the side your finger travelled. That is how you get around a rock — or around the king, to reach the centre kubb behind it.',
-  'rules.item4':
-    "A baton only knocks down a kubb if it hits hard enough. Every throw starts with a slight deviation: nobody aims perfectly.",
-  'rules.item5': "A fallen kubb is out of play. Once all the opposing kubbs are down, you may aim for the king.",
-  'rules.item6':
-    "The king stands on the centerline: go around it until you're allowed to aim at it. Hitting it too soon means immediate defeat for the throwing team.",
-  'rules.item7': 'Knocking down the king within the rules = victory. With the king exposed, a straight shot is not enough: it must bounce off a wall first.',
-  'rules.item8':
-    '{n} throws per team, and 30 seconds at most to play each throw (past that, the game throws for you). When the throws run out, the team with the most kubbs down wins.',
-  'rules.item9':
-    "A throw that bounces off a wall before knocking down an opposing kubb revives one of your own fallen kubbs as a reward — always the leftmost one.",
-  'rules.itemFieldKubbs':
-    "\"Field kubbs\" rule (toggle in the menu): a kubb you knock down isn't removed from play, it's replanted in YOUR half — you must knock it down a second time, as a priority, before you can aim at the opposing baseline again.",
-  'rules.itemStart':
-    'A coin toss decides which team starts: a banner announces it at the beginning of the match.',
+  'rules.item1': 'Each team has {n} kubbs on its baseline, and a single king stands in the center. A draw decides who starts.',
+  'rules.item2': "On your turn, tap one of your standing kubbs to take position, drag toward the target and release: the drag length sets the power. Drag in a curve to add spin.",
+  'rules.item3': 'A kubb hit hard enough falls and disappears. Every throw deviates a little: nobody aims perfectly.',
+  'rules.item4': 'The king is off-limits while an opposing kubb is still standing: hitting it too early loses the game.',
+  'rules.item5': 'All opposing kubbs down? Aim for the king, but a straight shot is not enough: it must bounce off a wall.',
+  'rules.item6': 'A throw that bounces off a wall before knocking down a kubb stands one of your fallen kubbs back up.',
+  'rules.item7': '{n} throws per team, 30 seconds per throw (after that the game throws for you). Once the throws run out, whoever knocked down the most kubbs wins.',
+  'rules.item8': 'Optional "Field kubbs" rule (in the menu): a kubb you knock down is replanted in your camp, and you must knock it down a second time before returning to the opposing line.',
   'rules.back': 'Back',
-  'rules.replayTutorial': 'Replay the tutorial',
-  'rules.tutorialWillReplay': 'Will show again next match',
 
   // ---- Tutorial
   'tutorial.step1': 'Tap your line to position yourself',
