@@ -175,10 +175,6 @@ export function Menu() {
           <button className="btn btn--primary" onClick={() => setScreen('online-hub')}>
             {t('menu.playOnline')}
           </button>
-          <button className="btn btn--ranked" onClick={() => setScreen('ranks')}>
-            <RankBadge index={rank.index} size="sm" />
-            {t('menu.ranked', { rank: rankName(rank.index) })}
-          </button>
           <button className="btn btn--primary" onClick={() => setScreen('local-hub')}>
             {t('menu.playLocal')}
           </button>
@@ -193,6 +189,10 @@ export function Menu() {
               })}
             </p>
           )}
+          <button className="btn btn--ranked" onClick={() => setScreen('ranks')}>
+            <RankBadge index={rank.index} size="sm" />
+            {t('menu.ranked', { rank: rankName(rank.index) })}
+          </button>
 
           <p className="segmented-label">{t('menu.windAria')}</p>
           <div className="segmented" role="group" aria-label={t('menu.windAria')}>
