@@ -14,6 +14,7 @@ create or replace function public.pseudo_is_allowed(p text)
 returns boolean
 language plpgsql
 immutable
+set search_path = public
 as $$
 declare
   brut      text := translate(lower(p), 'àâäáãåçéèêëíìîïñóòôöõúùûüýÿ', 'aaaaaaceeeeiiiinooooouuuuyy');

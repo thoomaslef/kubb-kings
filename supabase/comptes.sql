@@ -50,6 +50,7 @@ returns table (data jsonb, revision integer)
 language sql
 stable
 security invoker
+set search_path = public
 as $$
   select p.data, p.revision from public.profiles p where p.user_id = auth.uid();
 $$;
@@ -59,6 +60,7 @@ create or replace function public.generate_pseudo()
 returns text
 language plpgsql
 volatile
+set search_path = public
 as $$
 declare
   adjectifs text[] := array['Rapide','Malin','Fougueux','Ruse','Costaud','Agile','Brave','Zen','Vif','Solide','Habile','Fute'];
@@ -210,6 +212,7 @@ create or replace function public.pseudo_is_allowed(p text)
 returns boolean
 language plpgsql
 immutable
+set search_path = public
 as $$
 declare
   brut      text := translate(lower(p), 'àâäáãåçéèêëíìîïñóòôöõúùûüýÿ', 'aaaaaaceeeeiiiinooooouuuuyy');
