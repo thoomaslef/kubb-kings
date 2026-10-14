@@ -25,7 +25,7 @@ const entry: RecordedThrow = {
 };
 
 const messages: OnlineMessage[] = [
-  { kind: 'join', playerId: 'invite-AB12', batonId: 'sniper', card: { level: 12 } },
+  { kind: 'join', playerId: 'invite-AB12', batonId: 'sniper', card: { level: 12, skins: { kubb: 'marbre', trail: 'glace' } } },
   { kind: 'welcome', playerId: 'hote-AB12', setup, guestTeam: 'red', card: { level: 3 } },
   { kind: 'throw', entry },
   { kind: 'throw', entry: { ...entry, seq: 5, result: { winner: 'blue', reason: 'king-down', knockedDown: { blue: 5, red: 4 } } } },
@@ -58,6 +58,12 @@ describe('validate : le reste est refuse', () => {
     bad({ kind: 'throw', entry: { ...entry, input: { ...entry.input, spin: -3 } } });
     bad({ kind: 'throw', entry: { ...entry, seq: -1 } });
     bad({ kind: 'throw', entry: { ...entry, seq: 1.5 } });
+  });
+
+  it('une carte avec un skin inconnu', () => {
+    bad({ kind: 'join', playerId: 'x', batonId: 'sniper', card: { level: 1, skins: { kubb: 'or', trail: 'none' } } });
+    bad({ kind: 'join', playerId: 'x', batonId: 'sniper', card: { level: 1, skins: { kubb: 'bois', trail: '__proto__' } } });
+    bad({ kind: 'join', playerId: 'x', batonId: 'sniper', card: { level: 1, skins: 'marbre' } });
   });
 
   it('un projectile ou un terrain inconnu', () => {

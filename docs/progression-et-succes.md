@@ -239,7 +239,7 @@ sauvegarde en cours de route.
 | Bourse pleine      | +50% de pieces gagnees sur la manche                                       |
 | Etude rapide       | +50% d'XP gagnee sur la manche                                             |
 | Sursis             | Une fois par run, un roi touche trop tot ne finit pas la run : la manche est rejouee |
-| Longue haleine     | +30 secondes sur l'horloge de la manche                                    |
+| Longue haleine     | +10 secondes pour jouer chaque lancer (en plus des 30 s)                                    |
 | Renfort            | Un kubb adverse au hasard est deja abattu avant le premier lancer          |
 | Calme plat         | La meteo (vent) est desactivee pour la manche, si elle etait active        |
 | Poignet souple     | Effet lu sur le geste x1,5 (plafonne a +/-1) : un arc plus discret suffit  |

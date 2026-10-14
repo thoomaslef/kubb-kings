@@ -3,6 +3,8 @@ import type { TeamId } from '../entities/teamData';
 import type { BatonId } from '../batons';
 import type { FieldPresetId, Wind } from '../rules';
 import type { MatchResult } from '../matchResult';
+import type { KubbSkin } from '../theme';
+import type { ThrowEffectId } from '../throwEffects';
 
 /**
  * Protocole d'une partie : ce qui doit transiter entre deux joueurs en
@@ -48,8 +50,11 @@ import type { MatchResult } from '../matchResult';
  * `stage`. Ce n'est PAS cosmetique — une version 2 qui recevrait un instantane
  * sans `stage` lirait `undefined`, ne le prendrait pas pour la partie
  * normale, et rendrait tous les kubbs intouchables.
+ *
+ * Passe a 4 avec le minuteur PAR COUP (30 s) a la place du chrono general, et le deplacement des skins dans
+ * la carte du joueur : deux versions ne doivent plus se parler.
  */
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 
 /**
  * Ce qu'un joueur dit de LUI a l'autre — par opposition a `MatchSetup`, qui
@@ -64,6 +69,18 @@ export const PROTOCOL_VERSION = 3;
 export interface PlayerCard {
   /** Niveau de progression (progression.ts) au moment de la rencontre. */
   level: number;
+  /**
+   * Les skins PERSONNELS : ce que l'autre joueur voit de moi. Chacun garde ses habillages — ses kubbs a
+   * son skin, sa trainee a son effet — pour pouvoir s'en vanter. Purement cosmetique, donc croyable sur
+   * parole (le baton, lui, voyage deja dans `MatchSetup.batons`). Le roi est un objet neutre, au centre :
+   * chaque ecran montre le SIEN. Absent chez une ancienne version : habillage par defaut.
+   */
+  skins?: PlayerSkins;
+}
+
+export interface PlayerSkins {
+  kubb: KubbSkin;
+  trail: ThrowEffectId;
 }
 
 /**

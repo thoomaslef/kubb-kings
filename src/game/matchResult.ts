@@ -10,7 +10,6 @@ import type { TeamId } from './entities/teamData';
 export type WinReason =
   | 'king-down'
   | 'king-early'
-  | 'timeout'
   | 'throws-exhausted';
 
 export interface MatchResult {

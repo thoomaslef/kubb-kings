@@ -89,9 +89,19 @@ export const FIELD_KUBB_INSET = 260;
  */
 export const REVIVED_KUBB_SCALE = 0.5;
 
-/** Duree maximale d'une partie (4 min) pour tenir dans la fenetre 3-5 min. */
-export const MATCH_DURATION_MS = 4 * 60 * 1000;
-/** Nombre de lancers par equipe. Garde-fou si le timer n'est pas atteint. */
+/**
+ * Temps maximal pour jouer UN coup (30 s). Il n'y a plus de chrono general : avec lui, un joueur
+ * pouvait attendre avant son dernier coup (anti-jeu). Chaque coup a sa propre limite ; passee,
+ * le jeu lance pour le joueur (cf. MatchScene::autoThrow). Une partie se termine par le roi ou
+ * par l'epuisement des lancers (MAX_THROWS_PER_TEAM).
+ */
+export const TURN_DURATION_MS = 30_000;
+/**
+ * En ligne, marge laissee a l'adversaire APRES ses 30 s pour que son coup arrive (latence,
+ * onglet a peine reveille) : au-dela, il est considere inactif et la partie est terminee.
+ */
+export const REMOTE_TURN_GRACE_MS = 12_000;
+/** Nombre de lancers par equipe : c'est ce qui borne la longueur d'une partie. */
 export const MAX_THROWS_PER_TEAM = 12;
 
 /**

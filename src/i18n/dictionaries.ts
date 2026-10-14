@@ -199,6 +199,7 @@ const fr: Record<string, string> = {
   'online.ended.desynchronise': 'Partie interrompue : un coup ne nous est pas parvenu.',
   'online.ended.incompatible': "Versions du jeu incompatibles : impossible de jouer ensemble.",
   'online.ended.perdu': "Liaison perdue : plus aucun signe de l'adversaire.",
+  'online.ended.inactif': "L'adversaire ne joue plus (30 secondes par coup) : la partie est terminee.",
   'online.endedTitle': 'Partie interrompue',
   'online.rematch': 'Revanche',
   'online.rematchWaiting': "Revanche demandee — en attente de l'adversaire...",
@@ -242,7 +243,7 @@ const fr: Record<string, string> = {
   'menu.langAria': 'Langue',
   'menu.rules': 'Regles',
   'menu.quit': 'Quitter',
-  'menu.footer': 'Pass-and-play · 4 minutes max',
+  'menu.footer': 'Pass-and-play · 30 s par coup',
   'menu.about': 'A propos',
   'menu.legal': 'Confidentialite & mentions legales',
 
@@ -447,7 +448,7 @@ const fr: Record<string, string> = {
   'perk.sursis.label': 'Sursis',
   'perk.sursis.description': "Une fois par run, toucher le roi trop tot ne finit pas la run : la manche est rejouee",
   'perk.longue-haleine.label': 'Longue haleine',
-  'perk.longue-haleine.description': '+{s} secondes sur l\'horloge de cette manche',
+  'perk.longue-haleine.description': '+{s} secondes pour jouer chaque coup (en plus des 30 s)',
   'perk.renfort.label': 'Renfort',
   'perk.renfort.description': 'Un kubb adverse au hasard est deja abattu avant votre premier lancer',
   'perk.calme-plat.label': 'Calme plat',
@@ -496,7 +497,6 @@ const fr: Record<string, string> = {
   'result.teamVictory': "Victoire de l'equipe {team}",
   'result.detail.kingDown': 'Le roi est tombe dans les regles.',
   'result.detail.kingEarly': "L'equipe {team} a touche le roi avant d'avoir abattu tous les kubbs adverses.",
-  'result.detail.timeout': "Temps ecoule : le plus grand nombre de kubbs abattus l'emporte.",
   'result.detail.throwsExhausted': "Plus de lancers : le plus grand nombre de kubbs abattus l'emporte.",
   'result.knockedLabel': 'kubbs abattus',
   'result.you': 'Vous',
@@ -546,7 +546,7 @@ const fr: Record<string, string> = {
     "Le roi se tient sur la ligne mediane : contournez-le tant que vous n'avez pas le droit de le viser. Le toucher trop tot = defaite immediate de l'equipe qui a lance.",
   'rules.item7': 'Faire tomber le roi dans les regles = victoire.',
   'rules.item8':
-    "Partie limitee a 4 minutes et {n} lancers par equipe. Au buzzer, l'equipe qui a abattu le plus de kubbs l'emporte.",
+    "{n} lancers par equipe, et 30 secondes maximum pour jouer chaque coup (passe ce delai, le jeu lance pour vous). Quand les lancers sont epuises, l'equipe qui a abattu le plus de kubbs l'emporte.",
   'rules.item9':
     "Un tir qui ricoche sur une bande avant d'abattre un kubb adverse redresse en recompense l'un de vos propres kubbs tombes, toujours le plus a gauche.",
   'rules.itemFieldKubbs':
@@ -813,6 +813,7 @@ const en: Record<string, string> = {
   'online.ended.desynchronise': 'Match interrupted: a throw never reached us.',
   'online.ended.incompatible': 'Incompatible game versions: you cannot play together.',
   'online.ended.perdu': 'Connection lost: no sign of your opponent.',
+  'online.ended.inactif': 'Your opponent is no longer playing (30 seconds per throw): the match is over.',
   'online.endedTitle': 'Match interrupted',
   'online.rematch': 'Rematch',
   'online.rematchWaiting': 'Rematch requested — waiting for your opponent...',
@@ -856,7 +857,7 @@ const en: Record<string, string> = {
   'menu.langAria': 'Language',
   'menu.rules': 'Rules',
   'menu.quit': 'Quit',
-  'menu.footer': 'Pass-and-play · 4 minutes tops',
+  'menu.footer': 'Pass-and-play · 30 s per throw',
   'menu.about': 'About',
   'menu.legal': 'Privacy & legal notice',
 
@@ -1061,7 +1062,7 @@ const en: Record<string, string> = {
   'perk.sursis.label': 'Reprieve',
   'perk.sursis.description': "Once per run, hitting the king too soon doesn't end the run — the stage is replayed",
   'perk.longue-haleine.label': 'Stamina',
-  'perk.longue-haleine.description': '+{s} seconds on this stage\'s clock',
+  'perk.longue-haleine.description': '+{s} seconds to play each throw (on top of the 30 s)',
   'perk.renfort.label': 'Reinforcement',
   'perk.renfort.description': 'A random opponent kubb is already down before your first throw',
   'perk.calme-plat.label': 'Dead calm',
@@ -1110,7 +1111,6 @@ const en: Record<string, string> = {
   'result.teamVictory': '{team} team wins',
   'result.detail.kingDown': 'The king fell within the rules.',
   'result.detail.kingEarly': '{team} team hit the king before knocking down all the opposing kubbs.',
-  'result.detail.timeout': "Time's up: the most kubbs knocked down wins.",
   'result.detail.throwsExhausted': 'Out of throws: the most kubbs knocked down wins.',
   'result.knockedLabel': 'kubbs knocked down',
   'result.you': 'You',
@@ -1157,7 +1157,7 @@ const en: Record<string, string> = {
     "The king stands on the centerline: go around it until you're allowed to aim at it. Hitting it too soon means immediate defeat for the throwing team.",
   'rules.item7': 'Knocking down the king within the rules = victory.',
   'rules.item8':
-    'Match capped at 4 minutes and {n} throws per team. At the buzzer, the team with the most kubbs down wins.',
+    '{n} throws per team, and 30 seconds at most to play each throw (past that, the game throws for you). When the throws run out, the team with the most kubbs down wins.',
   'rules.item9':
     "A throw that bounces off a wall before knocking down an opposing kubb revives one of your own fallen kubbs as a reward — always the leftmost one.",
   'rules.itemFieldKubbs':

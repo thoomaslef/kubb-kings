@@ -73,8 +73,8 @@ export const POIGNE_FERME_KING_THRESHOLD_MULTIPLIER = 1.25;
 export const BOURSE_PLEINE_COINS_MULTIPLIER = 1.5;
 /** Multiplicateur de l'XP gagnee sur la manche, offert par "Etude rapide". */
 export const ETUDE_RAPIDE_XP_MULTIPLIER = 1.5;
-/** Temps supplementaire (ms) offert par "Longue haleine". */
-export const LONGUE_HALEINE_BONUS_MS = 30000;
+/** Temps supplementaire (ms) pour jouer CHAQUE coup, offert par "Longue haleine" (en plus des 30 s de base). */
+export const LONGUE_HALEINE_BONUS_MS = 10000;
 
 /**
  * Multiplicateur de l'effet LU sur le geste, offert par "Poignet souple" : un arc

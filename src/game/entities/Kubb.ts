@@ -108,7 +108,12 @@ export class Kubb {
     this.shadow.setRotation(this.sprite.rotation);
   }
 
-  /** Retire le kubb du jeu : il bascule sur le flanc et y reste. */
+  /**
+   * Retire le kubb du jeu : il bascule sur le flanc, puis DISPARAIT (fondu). Un kubb couche qui restait a
+   * l'ecran se confondait, pour un nouveau joueur, avec un kubb encore en jeu : la regle « un kubb abattu
+   * sort du jeu » se lit bien mieux quand il s'efface. Seul l'affichage change — `reviveUp` (redresse)
+   * le fait reparaitre a sa place d'origine.
+   */
   knockDown(scene: Phaser.Scene) {
     if (this._status === 'out') return;
     this._status = 'out';
@@ -135,6 +140,20 @@ export class Kubb {
       duration: 260,
       ease: 'Back.easeOut'
     });
+
+    // Apres sa chute (260 ms) et un court instant pour la lire, il s'efface — avec son ombre.
+    scene.tweens.add({
+      targets: fallen,
+      alpha: 0,
+      delay: 420,
+      duration: 380,
+      ease: 'Quad.easeIn',
+      onComplete: () => {
+        fallen.destroy();
+        if (this.fallenSprite === fallen) this.fallenSprite = null;
+      }
+    });
+    scene.tweens.add({ targets: this.shadow, alpha: 0, delay: 420, duration: 380, ease: 'Quad.easeIn' });
 
     // L'ombre s'etale et s'eclaircit : la piece n'est plus debout.
     this.shadow.setDepth(0.5);

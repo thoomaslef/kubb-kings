@@ -3,7 +3,7 @@ import type { TeamId } from '../game/entities/teamData';
 import type { MatchResult } from '../game/matchResult';
 import type { Difficulty } from '../game/ai';
 import type { PerkId } from '../game/roguelite';
-import { KUBBS_PER_TEAM, MATCH_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId, type Wind } from '../game/rules';
+import { KUBBS_PER_TEAM, TURN_DURATION_MS, MAX_THROWS_PER_TEAM, type FieldPresetId, type Wind } from '../game/rules';
 import type { BatonId } from '../game/batons';
 import type { KubbSkin, KingSkin } from '../game/theme';
 import type { ThrowEffectId } from '../game/throwEffects';
@@ -206,7 +206,7 @@ const initialHud = (): HudState => ({
   kubbsStanding: { blue: KUBBS_PER_TEAM, red: KUBBS_PER_TEAM },
   fieldKubbs: { blue: 0, red: 0 },
   throwsLeft: { blue: MAX_THROWS_PER_TEAM, red: MAX_THROWS_PER_TEAM },
-  timeLeftMs: MATCH_DURATION_MS,
+  timeLeftMs: TURN_DURATION_MS,
   canTargetKing: false,
   activePlayer: 1,
   wind: null

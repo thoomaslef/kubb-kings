@@ -4,6 +4,8 @@ import type { MatchResult, WinReason } from '../matchResult';
 import type { TeamId } from '../entities/teamData';
 import type { KubbStatus } from '../entities/Kubb';
 import { BATON_IDS, type BatonId } from '../batons';
+import { KUBB_SKINS, type KubbSkin } from '../theme';
+import { THROW_EFFECT_IDS, type ThrowEffectId } from '../throwEffects';
 import { FIELD_PRESETS, KUBBS_PER_TEAM, MAX_THROWS_PER_TEAM, WIND_DIRECTIONS, type FieldPresetId } from '../rules';
 
 /**
@@ -23,7 +25,7 @@ import { FIELD_PRESETS, KUBBS_PER_TEAM, MAX_THROWS_PER_TEAM, WIND_DIRECTIONS, ty
 
 const TEAMS: readonly string[] = ['blue', 'red'];
 const KUBB_STATUSES: readonly string[] = ['baseline', 'field', 'out'];
-const WIN_REASONS: readonly string[] = ['king-down', 'king-early', 'timeout', 'throws-exhausted'];
+const WIN_REASONS: readonly string[] = ['king-down', 'king-early', 'throws-exhausted'];
 /** Plus long qu'une partie reelle (2 x MAX_THROWS_PER_TEAM) : une borne anti-abus, pas une regle. */
 const MAX_RECORDED_THROWS = 4 * MAX_THROWS_PER_TEAM;
 const MAX_ID_LENGTH = 80;
@@ -42,7 +44,14 @@ const isId = (v: unknown): v is string => typeof v === 'string' && v.length > 0 
 function card(v: unknown): PlayerCard | null {
   // Une carte absente est acceptee (anciens clients) ; une carte mal formee est refusee.
   if (!isObj(v) || !isInt(v.level, 0, 10_000)) return null;
-  return { level: v.level };
+  if (v.skins === undefined) return { level: v.level };
+  // Les skins ne sont que cosmetiques, mais un identifiant inconnu ferait chercher une texture qui
+  // n'existe pas : on refuse la carte plutot que de laisser le jeu s'y tromper.
+  if (!isObj(v.skins)) return null;
+  const { kubb, trail } = v.skins;
+  if (typeof kubb !== 'string' || !(KUBB_SKINS as readonly string[]).includes(kubb)) return null;
+  if (typeof trail !== 'string' || !(THROW_EFFECT_IDS as readonly string[]).includes(trail)) return null;
+  return { level: v.level, skins: { kubb: kubb as KubbSkin, trail: trail as ThrowEffectId } };
 }
 
 export function parseSetup(v: unknown): MatchSetup | null {

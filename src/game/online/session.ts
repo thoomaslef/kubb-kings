@@ -50,7 +50,9 @@ export type CloseReason =
   /** Protocoles incompatibles (versions differentes). */
   | 'incompatible'
   /** Plus aucun signe de vie : liaison coupee sans que l'autre ait pu prevenir. */
-  | 'perdu';
+  | 'perdu'
+  /** L'autre est connecte mais ne joue plus (son coup de 30 s n'est jamais arrive). */
+  | 'inactif';
 
 type Listener<T> = (value: T) => void;
 
@@ -289,6 +291,14 @@ export class OnlineSession {
     }
     this.expectedSeq += 1;
     this.transport.send({ kind: 'throw', entry });
+  }
+
+  /**
+   * L'adversaire n'a pas joue dans le temps imparti (30 s + marge) : on met fin a la partie, comme s'il
+   * etait parti. Il ne recoit rien — s'il est reellement la, c'est son appareil qui a manque a lancer.
+   */
+  forfeitOpponent() {
+    this.close('inactif');
   }
 
   /** Depart volontaire : on previent l'autre avant de fermer. */

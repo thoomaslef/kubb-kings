@@ -14,7 +14,7 @@ import { Baton } from '../entities/Baton';
 import { Obstacle } from '../entities/Obstacle';
 import { BATON_BODY, WALL_BODY } from '../physics/matterConfig';
 import { Juice } from '../juice';
-import { PALETTE, BORDER_WIDTH } from '../theme';
+import { PALETTE, BORDER_WIDTH, type KubbSkin } from '../theme';
 import { echelleSprite, fitCameraToDesign } from '../renderScale';
 import { spinAcceleration, spinFromDragPath, type Point } from '../spin';
 import { AI_PROFILES, AI_TEAM, decideThrow, type AiProfile } from '../ai';
@@ -49,7 +49,8 @@ import {
   HILL_EXTRA_FRICTION,
   HILL_RADIUS,
   KNOCKDOWN_IMPACT_SPEED,
-  MATCH_DURATION_MS,
+  TURN_DURATION_MS,
+  REMOTE_TURN_GRACE_MS,
   MAX_AIM_DEVIATION_DEG,
   MAX_THROWS_PER_TEAM,
   RIVER_FRICTION_MULTIPLIER,
@@ -155,7 +156,12 @@ export class MatchScene extends Phaser.Scene {
   private resultThisThrow: MatchResult | null = null;
   private activeTeam: TeamId = 'blue';
   private throwsLeft: Record<TeamId, number> = { blue: 0, red: 0 };
-  private timeLeftMs = MATCH_DURATION_MS;
+  /** Temps restant pour le coup en cours (30 s a chaque tour, cf. TURN_DURATION_MS). */
+  private timeLeftMs = TURN_DURATION_MS;
+  /** Etait-on en phase de visee a l'image precedente ? Un passage a « visee » ouvre un nouveau tour. */
+  private wasAiming = false;
+  /** Retard cumule de l'adversaire en ligne apres ses 30 s (cf. REMOTE_TURN_GRACE_MS). */
+  private remoteOverdueMs = 0;
   /**
    * En 2v2, lequel des deux joueurs d'une equipe est au lancer. Purement
    * cosmetique : l'alternance des tours reste celle du 1v1 (un baton, puis
@@ -303,7 +309,9 @@ export class MatchScene extends Phaser.Scene {
     this.phase = 'aiming';
     this.activeTeam = 'blue';
     this.throwsLeft = { blue: MAX_THROWS_PER_TEAM, red: MAX_THROWS_PER_TEAM };
-    this.timeLeftMs = MATCH_DURATION_MS;
+    this.timeLeftMs = TURN_DURATION_MS;
+    this.wasAiming = false;
+    this.remoteOverdueMs = 0;
     this.throwX = { blue: FIELD_CENTER_X, red: FIELD_CENTER_X };
     this.baton = null;
     this.isDragging = false;
@@ -371,8 +379,7 @@ export class MatchScene extends Phaser.Scene {
     this.runPerks = stage ? run?.perks ?? [] : [];
     // "Calme plat" (Defi) : neutralise la meteo tiree plus haut, si active ce jour-la.
     if (this.runPerks.includes('calme-plat')) this.wind = null;
-    // "Longue haleine" (Defi) : temps supplementaire pour la manche entiere.
-    if (this.runPerks.includes('longue-haleine')) this.timeLeftMs += LONGUE_HALEINE_BONUS_MS;
+    this.timeLeftMs = this.turnLimitMs();
     this.secondSouffleUsed = false;
     this.knockedThisThrow = false;
     this.bouncedWallThisThrow = false;
@@ -399,7 +406,11 @@ export class MatchScene extends Phaser.Scene {
     this.createThrowers();
     this.createObstacles();
 
-    this.teams = { blue: new Team(this, 'blue', kubbSkin), red: new Team(this, 'red', kubbSkin) };
+    // Skins PERSONNELS : en ligne, chaque camp porte le skin de SON joueur (l'adversaire voit le mien,
+    // je vois le sien). Hors ligne, un seul appareil : tout le monde a mon skin, comme avant.
+    const opponentKubbSkin = this.session?.opponentCard?.skins?.kubb ?? 'bois';
+    const skinOf = (team: TeamId): KubbSkin => (this.session && team !== this.profileTeam ? opponentKubbSkin : kubbSkin);
+    this.teams = { blue: new Team(this, 'blue', skinOf('blue')), red: new Team(this, 'red', skinOf('red')) };
     this.king = new King(this, FIELD_CENTER_X, FIELD_CENTER_Y, kingSkin);
 
     // "Renfort" (Defi) : un kubb adverse au hasard est deja abattu avant le premier lancer.
@@ -460,7 +471,7 @@ export class MatchScene extends Phaser.Scene {
       // interruptions (liaison perdue, desynchronisation) ne designent pas de
       // fautif — personne ne gagne ni ne perd de rang.
       if (this.ranked) {
-        if (reason === 'parti') gameStore.getState().recordRankedMatch('win', 'forfeit-win');
+        if (reason === 'parti' || reason === 'inactif') gameStore.getState().recordRankedMatch('win', 'forfeit-win');
         else gameStore.getState().clearRankedMatch();
       }
       gameStore.getState().patchOnline({ status: 'terminee', endedBecause: reason });
@@ -632,6 +643,8 @@ export class MatchScene extends Phaser.Scene {
    */
   private activeTrailEffect(): ThrowEffectId {
     if (this.isAiTeam(this.activeTeam)) return 'none';
+    // En ligne, la trainee d'un lancer de l'adversaire est SA trainee (skin personnel), pas la mienne.
+    if (this.session && !this.isProfileTeam(this.activeTeam)) return this.session.opponentCard?.skins?.trail ?? 'none';
     return gameStore.getState().trailEffect;
   }
 
@@ -1575,7 +1588,7 @@ export class MatchScene extends Phaser.Scene {
   }
 
   /** Fin sans roi abattu : le plus grand nombre de kubbs adverses l'emporte. */
-  private finishOnPoints(reason: Extract<WinReason, 'timeout' | 'throws-exhausted'>) {
+  private finishOnPoints(reason: Extract<WinReason, 'throws-exhausted'>) {
     const knockedDown = this.knockedDown();
     const winner =
       knockedDown.blue === knockedDown.red ? 'draw' : knockedDown.blue > knockedDown.red ? 'blue' : 'red';
@@ -1699,25 +1712,68 @@ export class MatchScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------- horloge
 
-  /** Renvoie true si le temps ecoule vient de terminer le match. */
-  private tickClock(delta: number): boolean {
-    this.timeLeftMs = Math.max(0, this.timeLeftMs - delta);
+  /** Temps accorde pour le coup du joueur actif : 30 s, plus « Longue haleine » (Defi) pour le joueur. */
+  private turnLimitMs(): number {
+    const bonus = this.isProfileTeam(this.activeTeam) && this.runPerks.includes('longue-haleine') ? LONGUE_HALEINE_BONUS_MS : 0;
+    return TURN_DURATION_MS + bonus;
+  }
 
+  /**
+   * Minuteur PAR COUP. Il tourne tant que quelqu'un vise (jamais pendant un vol, ni pendant que
+   * l'IA « reflechit » : elle joue seule) et repart de 30 s a chaque nouveau tour.
+   *
+   * - Mon coup : a 0, le jeu lance a ma place (`autoThrow`) — pas d'attente possible.
+   * - Le coup de l'adversaire (en ligne) : le decompte est seulement affiche ; c'est SON appareil qui
+   *   lance a 0. Si son coup n'arrive pas dans la marge `REMOTE_TURN_GRACE_MS`, il est inactif : la
+   *   partie s'arrete (il ne peut pas bloquer l'autre en gardant sa liaison ouverte).
+   *
+   * Renvoie toujours false : le temps n'arrete plus la partie (plus de chrono general).
+   */
+  private tickClock(delta: number): boolean {
+    const aiming = this.phase === 'aiming';
+    if (aiming && !this.wasAiming) {
+      this.timeLeftMs = this.turnLimitMs();
+      this.remoteOverdueMs = 0;
+      this.lastShownSecond = -1;
+    }
+    this.wasAiming = aiming;
+    if (!aiming) return false;
+
+    this.timeLeftMs = Math.max(0, this.timeLeftMs - delta);
     const second = Math.ceil(this.timeLeftMs / 1000);
     if (second !== this.lastShownSecond) {
       this.lastShownSecond = second;
       gameStore.getState().patchHud({ timeLeftMs: this.timeLeftMs });
-      // Compte a rebours sonore sur la derniere ligne droite.
-      if (second > 0 && second <= 10) sfx.playTick(second <= 3);
+      // Compte a rebours sonore sur la derniere ligne droite — pour celui qui doit jouer.
+      if (this.canAimNow() && second > 0 && second <= 10) sfx.playTick(second <= 3);
     }
 
-    // On laisse toujours le lancer en cours se terminer avant de siffler la fin.
-    if (this.timeLeftMs <= 0 && this.phase === 'aiming') {
-      sfx.playBuzzer();
-      this.finishOnPoints('timeout');
-      return true;
+    if (this.timeLeftMs > 0) return false;
+
+    if (this.canAimNow()) {
+      this.autoThrow();
+    } else if (this.session) {
+      this.remoteOverdueMs += delta;
+      if (this.remoteOverdueMs >= REMOTE_TURN_GRACE_MS) this.session.forfeitOpponent();
     }
     return false;
+  }
+
+  /**
+   * Temps ecoule : le jeu lance pour le joueur, avec ce qu'il avait engage (angle, puissance, effet) ou, a
+   * defaut, un tir droit tres faible — jamais un coup « gagne » ni un coup repousse. C'est un lancer comme
+   * un autre (compte dans les lancers, transmis en ligne) : rien de nouveau dans le protocole.
+   */
+  private autoThrow() {
+    sfx.playBuzzer();
+    const engaged = this.isDragging && this.aimPower > 0;
+    if (!engaged) {
+      this.aimAngle = this.forwardAngle();
+      this.aimPower = AIM.minPower;
+      this.aimSpin = 0;
+    }
+    this.isDragging = false;
+    this.launch();
   }
 
   // ------------------------------------------------------------------ rendu

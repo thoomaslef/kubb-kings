@@ -7,7 +7,7 @@ Six modes : **solo contre l'IA** (trois niveaux), **1v1 local**, **2v2 local**
 (pass-and-play sur le meme telephone), **Defi** (un roguelite en 30 manches contre l'IA),
 **Tournoi local** (elimination directe a 4 ou 8, toujours en pass-and-play) et
 **en ligne** (partie privee a deux, par code). Onze terrains, un vent optionnel, quatre
-skins de blocs, une partie de 4 minutes maximum.
+skins de blocs, 30 secondes par lancer.
 
 Un lancer se dose d&apos;un seul geste : la direction donne l&apos;angle, la longueur
 donne la puissance, et **la courbure du glissement donne l&apos;effet** — glissez en arc

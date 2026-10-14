@@ -499,3 +499,9 @@ retrouvent, camps opposes, meme salon ; annulation qui libere la file ; bot en
 difficile apres la VRAIE minute, choix du menu intact). Il tourne sur le transport
 local : c'est le meme code que sur Supabase, seul le tuyau change. Non verifie : la
 file avec de vrais joueurs sur Supabase (latence, plusieurs inconnus a la fois).
+## Skins personnels (en ligne)
+
+Chaque joueur voit les kubbs de chaque camp avec le skin de leur proprietaire (carte `skins`
+du protocole v4 : kubb + trainee). Le baton suit deja le camp ; le roi reste celui du spectateur.
+Un kubb abattu s'efface apres sa chute, et le compte de 30 s par lancer remplace le chrono general
+(l'adversaire inactif au-dela de 12 s de grace est forfait : raison de fin `inactif`).

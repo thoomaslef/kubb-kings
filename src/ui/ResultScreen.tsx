@@ -36,8 +36,6 @@ function detail(lang: Lang, result: MatchResult) {
         : translate(lang, 'result.detail.kingEarly', {
             team: translate(lang, `team.${OPPONENT[result.winner]}.label`)
           });
-    case 'timeout':
-      return translate(lang, 'result.detail.timeout');
     case 'throws-exhausted':
       return translate(lang, 'result.detail.throwsExhausted');
     default:

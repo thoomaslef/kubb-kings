@@ -69,8 +69,8 @@ encore par proximite de rang** : avec peu de joueurs, une file triee par niveau 
 couplerait personne. A faire quand il y aura du monde.
 
 **Conditions imposees**, les memes pour tous (l'hote les inscrit, c'est lui qui decide) :
-terrain classique, sans vent, sans kubb de champ, **projectile de base pour les deux**.
-Rien de ce qu'on a achete a la boutique ni regle au menu n'entre en jeu — verifie en navigateur
+terrain classique, sans vent, sans kubb de champ, chacun garde son propre baton (cosmetique) et ses **skins personnels** (kubbs, trainee).
+Rien de ce qu'on a achete a la boutique ni regle au menu n'ENTRE EN JEU (hors cosmetique) — verifie en navigateur
 avec des reglages volontairement hostiles (vent actif, glace, kubbs de champ).
 
 **Pas de revanche** en classe (le rang est deja joue) ; l'ecran de resultat propose

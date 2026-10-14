@@ -73,7 +73,9 @@ export function OnlineLobby() {
   const progression = useGameStore((s) => s.progression);
   // Ce qu'on annonce de soi : pour l'instant le seul niveau, que l'adversaire
   // n'a aucun autre moyen de connaitre (cf. succes "Tombeur de geant").
-  const card: PlayerCard = { level: levelFromXp(progression.totalXp).level };
+  const kubbSkin = useGameStore((s) => s.kubbSkin);
+  const trailEffect = useGameStore((s) => s.trailEffect);
+  const card: PlayerCard = { level: levelFromXp(progression.totalXp).level, skins: { kubb: kubbSkin, trail: trailEffect } };
 
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -160,10 +162,10 @@ export function OnlineLobby() {
       OnlineSession.host(
         createMatchTransport(code, onTransportError),
         // Partie classee : conditions fixes, les memes pour tous (terrain
-        // classique, sans vent ni kubb de champ, projectile de base). Rien de
-        // ce qu'on a achete ou regle au menu n'entre en jeu.
+        // classique, sans vent ni kubb de champ). Les skins (kubbs, baton, trainee)
+        // sont personnels et purement visuels : ils voyagent, sans rien changer au jeu.
         ranked
-          ? drawSetup('classique', false, false, 'base')
+          ? drawSetup('classique', false, false, batonId)
           : drawSetup(fieldPreset, windEnabled, fieldKubbsEnabled, batonId),
         `hote-${code}`,
         card
@@ -180,7 +182,7 @@ export function OnlineLobby() {
     setError(null);
     startOnline(code, 'guest', ranked, matchmade);
     wire(
-      OnlineSession.join(createMatchTransport(code, onTransportError), `invite-${code}`, ranked ? 'base' : batonId, card)
+      OnlineSession.join(createMatchTransport(code, onTransportError), `invite-${code}`, batonId, card)
     );
   };
 

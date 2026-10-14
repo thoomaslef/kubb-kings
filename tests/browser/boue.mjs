@@ -53,7 +53,8 @@ async function mesurer(terrain) {
   return {
     preset: releve[0]?.preset,
     toucheLeMur: i > 0,
-    frictionAvant: i > 0 ? releve[i - 1].fa : null,
+    // Le plus fort freinage releve AVANT le mur (le tout premier releve peut preceder l'application du terrain).
+    frictionAvant: i > 0 ? Math.max(...releve.slice(0, i).map((p) => p.fa)) : null,
     frictionApres: i > 0 ? releve[Math.min(releve.length - 1, i + 2)].fa : null,
     restitution: releve[0]?.rest ?? null
   };

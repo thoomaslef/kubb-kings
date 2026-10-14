@@ -30,8 +30,11 @@ reglages chiffres sont dans [`src/game/rules.ts`](../src/game/rules.ts).
   le HUD affiche alors un bandeau.
 - Toucher le roi **trop tot** = **defaite immediate** de l&apos;equipe qui a lance.
 - Faire tomber le roi dans les regles = **victoire**.
-- Duree limitee a **4 minutes** et **12 lancers par equipe**. Au buzzer, l&apos;equipe qui a
-  abattu le plus de kubbs adverses gagne ; a egalite, match nul.
+- **30 secondes par lancer** et **12 lancers par equipe**. Pas de chrono general : on ne peut pas
+  attendre avant son dernier coup. Quand le compte tombe a zero, le jeu lance a la place du joueur
+  (visee engagee, ou tir droit faible). Quand les 12 lancers sont joues, l&apos;equipe qui a abattu
+  le plus de kubbs adverses gagne ; a egalite, match nul.
+- Un kubb abattu **s&apos;efface** apres sa chute : ce qui reste sur le terrain est ce qui compte.
 - **Kubbs de champ** (bouton au menu, off par defaut) : un kubb de ligne abattu est
   replante dans le camp de l&apos;equipe qui vient de l&apos;abattre, plutot que retire du
   jeu — c&apos;est a elle de l&apos;y degager avant de viser de nouveau la ligne d&apos;en
@@ -85,8 +88,8 @@ reglages chiffres sont dans [`src/game/rules.ts`](../src/game/rules.ts).
 
 **Un tirage au sort, une chance sur deux**, dans tous les modes
 ([`drawStartingTeam`](../src/game/rules.ts)). La partie demarre aussitot en partie
-normale : les 12 lancers de chaque equipe comptent tous, et le chronometre ne tourne
-plus pour rien. La pastille d&apos;equipe du HUD indique qui joue, et un bandeau de tour la nomme au
+normale : les 12 lancers de chaque equipe comptent tous, et le compte des 30 secondes
+ne court que pendant la visee. La pastille d&apos;equipe du HUD indique qui joue, et un bandeau de tour la nomme au
 debut de la partie. Si le sort designe Rouge en Solo, c&apos;est l&apos;IA qui lance en
 premier, de son propre chef (`MatchScene.beginMatch`).
 
