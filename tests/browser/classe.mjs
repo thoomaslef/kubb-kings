@@ -47,11 +47,9 @@ async function nouvellePage(nom, indexDeRang = OR_2, { pending = false } = {}) {
 const rang = (page) => page.evaluate(() => window.__kubbStoreApi.getState().rank);
 const dernierMouvement = (page) => page.evaluate(() => window.__kubbStoreApi.getState().lastRankChange);
 
-/** Menu -> ecran des rangs -> recherche classee. */
+/** Menu -> « Partie rapide » (recherche classee). */
 async function chercherClasse(page) {
   await ouvrirUnHub(page, 'online');
-  await page.locator('button', { hasText: /Classement —/ }).first().click();
-  await page.waitForTimeout(400);
   await page.locator('button', { hasText: /Partie rapide/i }).first().click();
 }
 

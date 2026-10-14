@@ -28,7 +28,6 @@ export function Ranks() {
   const t = useT();
   const rankName = useRankName();
   const setScreen = useGameStore((s) => s.setScreen);
-  const setRankedLobby = useGameStore((s) => s.setRankedLobby);
   const rank = useGameStore((s) => s.rank);
   const lastRankChange = useGameStore((s) => s.lastRankChange);
   const clearRankChange = useGameStore((s) => s.clearRankChange);
@@ -66,10 +65,6 @@ export function Ranks() {
   const total = rank.wins + rank.losses;
   const winRate = total > 0 ? Math.round((rank.wins / total) * 100) : null;
 
-  const search = () => {
-    setRankedLobby(true);
-    setScreen('online');
-  };
   const back = () => {
     clearRankChange();
     setScreen('menu');
@@ -209,12 +204,8 @@ export function Ranks() {
           <li>{t('ranks.rule.forfeit')}</li>
           <li>{t('ranks.rule.bot')}</li>
         </ul>
-        <p className="footnote">{t('ranks.localNote')}</p>
 
         <div className="button-column">
-          <button className="btn btn--primary" onClick={search}>
-            {t('ranks.search')}
-          </button>
           <button className="btn btn--ghost" onClick={back}>
             {t('online.back')}
           </button>

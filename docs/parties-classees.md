@@ -57,8 +57,8 @@ deja installee) ; rien d'autre a configurer.
 
 Depuis le menu : le bouton « Classement — Or 2 » (avec l'insigne du rang). L'ecran presente
 le rang actuel, la prochaine marche, le bilan (victoires, defaites, meilleur rang), l'echelle
-des six rangs avec la position du joueur, les regles, puis le bouton qui lance la
-recherche classee.
+des six rangs avec la position du joueur, le classement et « Comment ca marche ». Cet ecran
+ne lance rien : la recherche part du bouton « Partie rapide » du menu.
 
 ## Le matchmaking classe
 
