@@ -29,7 +29,9 @@ reglages chiffres sont dans [`src/game/rules.ts`](../src/game/rules.ts).
 - Le roi ne peut etre vise legalement que lorsque **tous les kubbs adverses sont tombes** :
   le HUD affiche alors un bandeau.
 - Toucher le roi **trop tot** = **defaite immediate** de l&apos;equipe qui a lance.
-- Faire tomber le roi dans les regles = **victoire**.
+- Faire tomber le roi dans les regles = **victoire**. Une fois tous les kubbs adverses au sol, le roi
+  ne tombe pas sur un tir droit : il faut un **rebond sur la bande** (qui adoucit le choc necessaire,
+  `KING_BOUNCE_SPEED_RATIO`). Le toucher trop tot reste une defaite immediate.
 - **30 secondes par lancer** et **12 lancers par equipe**. Pas de chrono general : on ne peut pas
   attendre avant son dernier coup. Quand le compte tombe a zero, le jeu lance a la place du joueur
   (visee engagee, ou tir droit faible). Quand les 12 lancers sont joues, l&apos;equipe qui a abattu

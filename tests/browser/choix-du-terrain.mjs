@@ -94,11 +94,11 @@ const ecran = (page) => page.evaluate(() => window.__kubbStoreApi.getState().scr
 
 // ---- 2. Les autres modes aboutissent au bon endroit.
 for (const [bouton, attendu, cle] of [
-  [/Partie privee/i, 'online', 'enLigneAboutitAuSalon'],
+  [/Jouer avec un ami/i, 'online', 'enLigneAboutitAuSalon'],
   [/Tournoi/i, 'tournament-setup', 'tournoiAboutitAuReglage']
 ]) {
   const { contexte, page } = await ouvrir();
-  await page.locator('button', { hasText: bouton.source === 'Partie privee' ? /Jouer en ligne/i : /Jouer hors ligne/i }).first().click();
+  if (attendu !== 'online') await page.locator('button', { hasText: /Jouer hors ligne/i }).first().click();
   await page.locator('button', { hasText: bouton }).first().click();
   await page.waitForSelector('.map-grid', { timeout: 10000 });
   const passeParLEcran = (await ecran(page)) === 'map-select';

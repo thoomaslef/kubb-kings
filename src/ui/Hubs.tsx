@@ -1,7 +1,6 @@
 import { AI_PROFILES, type Difficulty } from '../game/ai';
 import { useGameStore } from '../store/useGameStore';
 import { useT } from '../i18n/useT';
-import { RankBadge, useRankName } from './RankBadge';
 
 const LEVELS = Object.keys(AI_PROFILES) as Difficulty[];
 
@@ -47,52 +46,6 @@ export function LocalHub() {
           <button className="btn" onClick={() => openMapSelect('tournament')}>
             {t('menu.tournament')}
           </button>
-
-          <button className="btn btn--ghost" onClick={() => setScreen('menu')}>
-            {t('hub.back')}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Les trois facons de jouer en ligne : rapide (inconnu), privee (code), classee (rang). */
-export function OnlineHub() {
-  const t = useT();
-  const rankName = useRankName();
-  const rank = useGameStore((s) => s.rank);
-  const setScreen = useGameStore((s) => s.setScreen);
-  const openMapSelect = useGameStore((s) => s.openMapSelect);
-
-  const quick = () => {
-    const state = useGameStore.getState();
-    state.setRankedLobby(false);
-    state.setQuickLobby(true);
-    setScreen('online');
-  };
-
-  return (
-    <div className="overlay overlay--solid">
-      <div className="panel">
-        <h2 className="panel__title">{t('hub.online.title')}</h2>
-        <p className="panel__text">{t('hub.online.intro')}</p>
-        <div className="button-column">
-          <button className="btn btn--primary" onClick={quick}>
-            {t('online.quick')}
-          </button>
-          <p className="footnote footnote--tight">{t('online.quickHint')}</p>
-
-          <button className="btn" onClick={() => openMapSelect('online')}>
-            {t('menu.online')}
-          </button>
-          <p className="footnote footnote--tight">{t('hub.online.privateHint')}</p>
-
-          <button className="btn btn--ranked" onClick={() => setScreen('ranks')}>
-            <RankBadge index={rank.index} size="sm" />
-            {t('menu.ranked', { rank: rankName(rank.index) })}
-          </button>
-          <p className="footnote footnote--tight">{t('hub.online.rankedHint')}</p>
 
           <button className="btn btn--ghost" onClick={() => setScreen('menu')}>
             {t('hub.back')}

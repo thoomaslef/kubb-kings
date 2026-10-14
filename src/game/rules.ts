@@ -573,6 +573,13 @@ export function drawStartingTeam(random: () => number = Math.random): 'blue' | '
 
 /** Vitesse d'impact minimale (px/step Matter) pour faire tomber un kubb. */
 export const KNOCKDOWN_IMPACT_SPEED = 6;
+
+/**
+ * Roi decouvert (tous les kubbs adverses au sol) : il ne tombe que sur un tir qui a REBONDI sur une
+ * bande, et d'un choc plus doux — un rebond coute environ 60 % de la vitesse du baton, et sans cette
+ * faveur le coup serait pratiquement irrealisable. Un tir droit, lui, ne le fait jamais tomber.
+ */
+export const KING_BOUNCE_SPEED_RATIO = 0.5;
 /**
  * Deviation aleatoire appliquee a chaque lancer, en degres.
  *

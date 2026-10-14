@@ -57,8 +57,6 @@ export function OnlineLobby() {
   const rankName = useRankName();
   const rankedLobby = useGameStore((s) => s.rankedLobby);
   const setRankedLobby = useGameStore((s) => s.setRankedLobby);
-  const quickLobby = useGameStore((s) => s.quickLobby);
-  const setQuickLobby = useGameStore((s) => s.setQuickLobby);
   const rank = useGameStore((s) => s.rank);
   const setScreen = useGameStore((s) => s.setScreen);
   const setMode = useGameStore((s) => s.setMode);
@@ -260,12 +258,11 @@ export function OnlineLobby() {
     }, 1000);
   };
 
-  // Arrive par l'ecran des rangs ou par le hub en ligne : la recherche demarre d'elle-meme.
+  // Arrive par « Partie rapide » ou l'ecran du classement : la recherche (classee) demarre d'elle-meme.
   useEffect(() => {
     const state = useGameStore.getState();
     if (kind !== 'aucun' && !state.online) {
       if (rankedLobby) startSearch(undefined, true);
-      else if (quickLobby) startSearch();
     }
     // Une seule fois a l'arrivee sur l'ecran.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -276,12 +273,11 @@ export function OnlineLobby() {
     setSearching(null);
     setQuickRoom(false);
     setRankedLobby(false);
-    setQuickLobby(false);
     sessionRef.current?.leave();
     sessionRef.current = null;
     setCurrentSession(null);
     endOnline();
-    setScreen('online-hub');
+    setScreen('menu');
   };
 
   if (kind === 'aucun') {

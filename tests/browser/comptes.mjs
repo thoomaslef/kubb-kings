@@ -478,6 +478,43 @@ const B = await appareil('B');
   resultats.reconnexionSansQuestion = (await etat(A.page)).conflit === false;
 }
 
+// ------------------------------------------------------------------ 5b. un AUTRE compte sur le meme appareil repart de zero
+{
+  const N = await appareil('N', PROGRESSION_A);
+  const sinscrire = async (email) => {
+    await ouvrirCompte(N.page);
+    await N.page.locator('button', { hasText: /^Creer un compte$/ }).click();
+    await remplir(N.page, { email, mdp: 'motdepasse1', confirmation: 'motdepasse1' });
+    await N.page.locator('button[type="submit"]').click();
+    await attendre(N.page, (e) => window.__kubbStoreApi.getState().account.email === e && window.__kubbStoreApi.getState().account.sync === 'ok', email);
+    await N.page.waitForTimeout(800);
+  };
+  const deconnecter = async () => {
+    await ouvrirCompte(N.page);
+    await N.page.locator('button', { hasText: /^Se deconnecter$/ }).click();
+    await attendre(N.page, () => window.__kubbStoreApi.getState().account.status === 'signedOut');
+    await N.page.locator('button', { hasText: /^Retour$/ }).click().catch(() => {});
+  };
+  await sinscrire('premier@example.com');
+  resultats.autreCompte_LePremierCompteGardeLaProgressionLibre = (await etat(N.page)).xp === 1500;
+  await deconnecter();
+  await sinscrire('second@example.com');
+  const second = await etat(N.page);
+  resultats.autreCompte_LeSecondRepartDeZero = second.xp === 0 && second.coins === 0 && second.owned.length === 0 && second.rang.index === 0;
+  const profils = [...serveur.profils.entries()].filter(([, v]) => v.data?.coins !== undefined);
+  const copie = profils.filter(([, v]) => v.data.coins === 340 && v.data.rank?.index === 7).length;
+  resultats.autreCompte_LaProgressionNEstPasCopieeAuClassement = copie === 1;
+  await deconnecter();
+  await ouvrirCompte(N.page);
+  await N.page.locator('button', { hasText: /^Connexion$/ }).click().catch(() => {});
+  await remplir(N.page, { email: 'premier@example.com', mdp: 'motdepasse1' });
+  await N.page.locator('button[type="submit"]').click();
+  await attendre(N.page, () => window.__kubbStoreApi.getState().account.status === 'signedIn');
+  await attendre(N.page, () => window.__kubbStoreApi.getState().progression.totalXp === 1500);
+  resultats.autreCompte_LePremierRetrouveLaSienne = (await etat(N.page)).xp === 1500;
+  await N.contexte.close();
+}
+
 // ------------------------------------------------------------------ 6. deux histoires : le joueur choisit
 {
   const profilAvant = JSON.parse(JSON.stringify([...serveur.profils.values()][0].data));
@@ -568,12 +605,13 @@ const B = await appareil('B');
 // ------------------------------------------------------------------ 8. suppression du compte
 {
   const avant = serveur.users.size;
+  const profilsAvant = serveur.profils.size;
   await ouvrirCompte(A.page);
   await A.page.locator('button', { hasText: /^Supprimer mon compte$/ }).click();
   await A.page.locator('button', { hasText: /Oui, supprimer definitivement/ }).click();
   await attendre(A.page, () => window.__kubbStoreApi.getState().account.status === 'signedOut');
   resultats.compteSupprimeCoteServeur = serveur.users.size === avant - 1 && !serveur.users.has('joueur@example.com');
-  resultats.profilSupprimeCoteServeur = serveur.profils.size === 0;
+  resultats.profilSupprimeCoteServeur = serveur.profils.size === profilsAvant - 1;
   resultats.laProgressionLocaleResteApresSuppression = (await etat(A.page)).xp === 1500;
 
   await A.page.waitForTimeout(500);
@@ -648,7 +686,6 @@ const B = await appareil('B');
     );
   const ouvrirRangs = async (page) => {
     await focus(page);
-    if ((await page.locator('.btn--ranked').count()) === 0) await page.locator('button', { hasText: /Jouer en ligne/i }).first().click();
     if ((await page.locator('.btn--ranked').count()) > 0) await page.locator('.btn--ranked').click();
     await page.waitForSelector('.panel--ranks');
     await page.waitForFunction(

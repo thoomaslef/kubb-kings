@@ -160,6 +160,19 @@ async function reconcileNow(user: AccountUser, attempt = 1): Promise<void> {
 
   const local = readProfileSnapshot();
 
+  // Cet appareil porte deja la progression d'UN AUTRE compte : elle n'est pas a celui-ci. Un nouveau
+  // compte repart de zero (ou retrouve la sienne), il ne recopie jamais — ni la progression, ni son
+  // score au classement — celle du compte precedent. Seule une progression « libre » (jamais rattachee
+  // a un compte) suit le joueur dans son premier compte.
+  const meta = loadMeta();
+  if (meta && meta.userId !== user.id) {
+    const own = remote ? (sanitizeSnapshot(remote.data) ?? emptySnapshot()) : emptySnapshot();
+    adopt(user, own, remote?.revision ?? 0);
+    if (!remote) await push(user, own, 0, attempt);
+    else markOk();
+    return;
+  }
+
   if (!remote) {
     await push(user, local, 0, attempt);
     return;
@@ -173,7 +186,6 @@ async function reconcileNow(user: AccountUser, attempt = 1): Promise<void> {
     return;
   }
 
-  const meta = loadMeta();
   if (meta && meta.userId === user.id) {
     const localMoved = fingerprint(local) !== meta.hash;
     if (remote.revision === meta.revision) {

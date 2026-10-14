@@ -48,6 +48,7 @@ import {
   FIELD_PRESETS,
   HILL_EXTRA_FRICTION,
   HILL_RADIUS,
+  KING_BOUNCE_SPEED_RATIO,
   KNOCKDOWN_IMPACT_SPEED,
   TURN_DURATION_MS,
   REMOTE_TURN_GRACE_MS,
@@ -1409,7 +1410,19 @@ export class MatchScene extends Phaser.Scene {
 
       if (this.isKing(pair.bodyA) || this.isKing(pair.bodyB)) {
         this.kingTouchedThisThrow = true;
-        if (hardEnough && this.king.isStanding) {
+        // Roi DECOUVERT (tous les kubbs au sol) : un tir droit ne suffit pas, il faut un REBOND sur la
+        // bande — et ce rebond abaisse le choc necessaire (KING_BOUNCE_SPEED_RATIO). Toucher le roi
+        // trop tot, lui, reste une defaite immediate, rebond ou non.
+        const kingUncovered = this.isKingTargetable(this.activeTeam);
+        if (kingUncovered && !this.bouncedWallThisThrow && hardEnough && this.king.isStanding) {
+          this.playBounce(speed);
+          const { x, y } = this.king.sprite;
+          this.juice.floatingText(x, y - 46, translate(gameStore.getState().lang, 'match.kingNeedsBounce'), '#f2c14e');
+          continue;
+        }
+        const kingHardEnough =
+          kingUncovered && this.bouncedWallThisThrow ? speed >= knockdownThreshold * KING_BOUNCE_SPEED_RATIO : hardEnough;
+        if (kingHardEnough && this.king.isStanding) {
           this.resolveKingHit();
           return;
         }

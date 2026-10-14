@@ -1,11 +1,13 @@
 import { BATON_BODY } from './physics/matterConfig';
 import {
   AIM,
+  FIELD,
   FIELD_CENTER_X,
   FIELD_CENTER_Y,
   HILL_EXTRA_FRICTION,
   HILL_RADIUS,
   HITBOX,
+  KING_BOUNCE_SPEED_RATIO,
   KNOCKDOWN_IMPACT_SPEED,
   MAX_AIM_DEVIATION_DEG,
   OBSTACLE_RADIUS,
@@ -559,6 +561,103 @@ interface Candidate extends AiThrow {
   score: number;
 }
 
+
+// ---------------------------------------------------------------- roi : tir par rebond
+
+/**
+ * Rebond du baton sur une bande, MESURE sur la vraie physique (10 tirs releves image par image) plutot que
+ * deduit d'une restitution theorique :
+ *   - composante qui rentre dans la bande : gardee a ~50 % (et renvoyee) ;
+ *   - composante le long de la bande : gardee a ~88 % ;
+ *   - le centre du baton se retourne a ~28 px de la bande (le barreau touche par son bout).
+ */
+const BANK_KEEP_NORMAL = 0.5;
+const BANK_KEEP_ALONG = 0.88;
+const BANK_WALL_OFFSET = 28;
+/** Marge de vitesse a l'impact sur le roi : le rebond reste variable d'un tir a l'autre. */
+const BANK_SPEED_MARGIN = 1.25;
+/** Vitesse a viser sur le roi apres le rebond. */
+const BANK_KING_SPEED = KNOCKDOWN_IMPACT_SPEED * KING_BOUNCE_SPEED_RATIO * BANK_SPEED_MARGIN;
+
+/**
+ * Un tir parti de `origin` dans la direction `angle` a `power`, qui rebondit UNE fois sur la bande verticale
+ * `wallX` puis file vers le roi : touche-t-il le roi assez fort ? Modele plat (friction lineaire en distance,
+ * comme speedAfter).
+ */
+function bankHitsKing(origin: Point, angle: number, power: number, wallX: number, king: Point, frictionMultiplier: number): boolean {
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  if (Math.abs(dx) < 1e-6) return false;
+  const t = (wallX - origin.x) / dx;
+  if (t <= 0) return false;
+  const wallY = origin.y + dy * t;
+  if (wallY < FIELD.y || wallY > FIELD.y + FIELD.height) return false;
+  const fa = BATON_BODY.frictionAir * frictionMultiplier;
+  const vWall = THROW.maxSpeed * power - fa * t;
+  if (vWall <= 0) return false;
+  const ex = -dx * BANK_KEEP_NORMAL;
+  const ey = dy * BANK_KEEP_ALONG;
+  const norm = Math.hypot(ex, ey);
+  const v2 = vWall * norm;
+  const ux = ex / norm;
+  const uy = ey / norm;
+  const rx = king.x - wallX;
+  const ry = king.y - wallY;
+  const along = rx * ux + ry * uy;
+  if (along <= 0) return false;
+  const miss = Math.abs(rx * uy - ry * ux);
+  if (miss > KING_HIT_RADIUS * 0.9) return false;
+  return v2 - fa * along >= BANK_KING_SPEED;
+}
+
+/** Meilleur tir par rebond vers le roi (ou null) : angle et puissance exacts par bande, puis tri par fiabilite. */
+function bestBankShot(board: AiBoard, profile: AiProfile, positions: readonly number[], king: Point): Candidate | null {
+  const forward = board.direction === -1 ? -Math.PI / 2 : Math.PI / 2;
+  const maxDelta = AIM.maxAngleDeg * DEG;
+  const frictionMultiplier = board.frictionMultiplier ?? 1;
+  const fa = BATON_BODY.frictionAir * frictionMultiplier;
+  let best: Candidate | null = null;
+
+  for (const throwX of positions) {
+    const origin: Point = { x: throwX, y: board.throwerY };
+    for (const wallX of [FIELD.x + BANK_WALL_OFFSET, FIELD.x + FIELD.width - BANK_WALL_OFFSET]) {
+      const dx1 = wallX - origin.x;
+      // Le segment de retour (-ax*dx1, ay*dy1) passe par le roi : equation lineaire en dy1.
+      const denom = (king.x - wallX) * BANK_KEEP_ALONG - BANK_KEEP_NORMAL * dx1;
+      if (Math.abs(denom) < 1e-6) continue;
+      const dy1 = (-BANK_KEEP_NORMAL * dx1 * (king.y - origin.y)) / denom;
+      const angle = Math.atan2(dy1, dx1);
+      if (Math.abs(wrapAngle(angle - forward)) > maxDelta) continue;
+      const d1 = Math.hypot(dx1, dy1);
+      const wallY = origin.y + dy1;
+      if (wallY < FIELD.y || wallY > FIELD.y + FIELD.height) continue;
+      const d2 = Math.hypot(king.x - wallX, king.y - wallY);
+      // Le premier segment ne doit pas frole le roi : un contact sans rebond le ferait ricocher ailleurs.
+      const toKingX = king.x - origin.x;
+      const toKingY = king.y - origin.y;
+      const along1 = (toKingX * dx1 + toKingY * dy1) / d1;
+      if (along1 > 0 && along1 < d1 && Math.abs((toKingX * dy1 - toKingY * dx1) / d1) < KING_HIT_RADIUS * 1.3) continue;
+      const f = Math.hypot((BANK_KEEP_NORMAL * dx1) / d1, (BANK_KEEP_ALONG * dy1) / d1);
+      const power = Math.max(AIM.minPower, ((BANK_KING_SPEED + fa * d2) / f + fa * d1) / THROW.maxSpeed);
+      if (power > 1) continue;
+
+      let ok = 0;
+      let shots = 0;
+      for (let a = 0; a < AIM_SAMPLES; a += 1) {
+        const aimError = ((2 * a) / (AIM_SAMPLES - 1) - 1) * profile.aimErrorDeg;
+        for (let d = 0; d < DEVIATION_SAMPLES; d += 1) {
+          const deviation = ((2 * d) / (DEVIATION_SAMPLES - 1) - 1) * MAX_AIM_DEVIATION_DEG;
+          shots += 1;
+          if (bankHitsKing(origin, angle + (aimError + deviation) * DEG, power, wallX, king, frictionMultiplier)) ok += 1;
+        }
+      }
+      const score = (ok / shots) * 10 - (d1 + d2) / 2000;
+      if (!best || score > best.score) best = { throwX, angle, power, aimedAt: { x: wallX, y: wallY }, score };
+    }
+  }
+  return best;
+}
+
 /**
  * Choisit un lancer : une position sur la ligne, un angle et une puissance.
  *
@@ -575,6 +674,12 @@ interface Candidate extends AiThrow {
 export function decideThrow(board: AiBoard, profile: AiProfile, rng: Rng = Math.random): AiThrow {
   const king: Point = { x: FIELD_CENTER_X, y: FIELD_CENTER_Y };
   const aimingAtKing = board.kingTargetable;
+  // Roi decouvert : il ne tombe que sur un REBOND de bande (cf. MatchScene). On calcule le tir exact par la
+  // bande ; si aucun n'est jouable, on retombe sur le tir droit (sans danger, mais sans effet sur le roi).
+  if (aimingAtKing && board.kingStanding) {
+    const bank = bestBankShot(board, profile, board.ownStanding ? availableThrowPositions(board.ownStanding) : THROW_POSITIONS, king);
+    if (bank) return applyImprecision(bank, profile, rng);
+  }
   const targets = aimingAtKing ? [king] : board.targets;
   if (targets.length === 0) return safeThrow(board, rng);
 

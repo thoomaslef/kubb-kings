@@ -144,4 +144,16 @@ describe('prudence vis-a-vis du roi', () => {
       expect(vises, `${niveau} renonce sur une ligne pleine`).toBe(essais);
     }
   });
+
+  it('le roi decouvert : elle vise la bande (un tir droit ne le fait plus tomber)', () => {
+    const board = { ...plateau([]), kingTargetable: true };
+    for (const niveau of NIVEAUX) {
+      for (let i = 0; i < 5; i += 1) {
+        const tir = decideThrow(board, AI_PROFILES[niveau], alea(i * 17 + 1));
+        const surUneBande = tir.aimedAt.x < FIELD.x + 80 || tir.aimedAt.x > FIELD.x + FIELD.width - 80;
+        expect(surUneBande, `${niveau} vise ${JSON.stringify(tir.aimedAt)}`).toBe(true);
+        expect(tir.power).toBeGreaterThan(0.5);
+      }
+    }
+  });
 });

@@ -19,7 +19,7 @@ const contexte = await navigateur.newContext({ viewport: { width: 420, height: 9
 const erreurs = [];
 const resultats = {};
 
-/** Menu -> Jouer en ligne -> « Partie rapide » (la recherche demarre seule). */
+/** Menu -> « Partie rapide » (la recherche classee demarre seule). */
 async function chercher(page) {
   await ouvrirUnHub(page, 'online');
   await page.locator('button', { hasText: /Partie rapide/i }).first().click();

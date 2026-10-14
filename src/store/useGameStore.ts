@@ -45,8 +45,7 @@ export type Screen =
   | 'ranks'
   | 'account'
   | 'map-select'
-  | 'local-hub'
-  | 'online-hub';
+  | 'local-hub';
 
 /** Phase du tour courant, pilotee par MatchScene. */
 export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';
@@ -363,9 +362,6 @@ interface GameState {
   /** Le salon en ligne cherche une partie CLASSEE plutot qu'une partie privee. */
   rankedLobby: boolean;
   setRankedLobby: (ranked: boolean) => void;
-  /** Arrive par le hub en ligne : la recherche rapide demarre d'elle-meme. */
-  quickLobby: boolean;
-  setQuickLobby: (quick: boolean) => void;
   /** Une partie classee commence : l'abandon par fermeture d'onglet devient detectable. */
   beginRankedMatch: () => void;
   /** Une partie classee s'acheve (ou est abandonnee) : le rang bouge. */
@@ -477,7 +473,6 @@ export const useGameStore = create<GameState>((set) => ({
   onlineWinStreak: loadOnlineStreak(),
   ...settleRankAtStartup(),
   rankedLobby: false,
-  quickLobby: false,
   account: { status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null, pseudo: null },
   accountConflict: null,
 
@@ -622,7 +617,6 @@ export const useGameStore = create<GameState>((set) => ({
     });
   },
   setRankedLobby: (ranked) => set({ rankedLobby: ranked }),
-  setQuickLobby: (quick) => set({ quickLobby: quick }),
   beginRankedMatch: () => setPendingRankedMatch(true),
   recordRankedMatch: (outcome, reason) =>
     set((state) => {

@@ -224,15 +224,12 @@ export async function passerLeChoixDuTerrain(page, delaiMs = 20000) {
   await page.waitForFunction(() => !document.querySelector('.map-grid'), null, { timeout: delaiMs });
 }
 
-/** Depuis le menu : ouvre la page des modes hors ligne ('local') ou en ligne ('online'). */
+/** Depuis le menu : ouvre la page des modes hors ligne ('local'). En ligne, tout est directement au menu. */
 export async function ouvrirUnHub(page, hub) {
   await focus(page);
-  await page.locator('button', { hasText: hub === 'online' ? /Jouer en ligne|Play online/i : /Jouer hors ligne|Play offline/i }).first().click();
-  await page.waitForFunction(
-    (attendu) => window.__kubbStoreApi.getState().screen === attendu,
-    hub === 'online' ? 'online-hub' : 'local-hub',
-    { timeout: 10000 }
-  );
+  if (hub === 'online') return;
+  await page.locator('button', { hasText: /Jouer hors ligne|Play offline/i }).first().click();
+  await page.waitForFunction(() => window.__kubbStoreApi.getState().screen === 'local-hub', null, { timeout: 10000 });
 }
 
 /** Depuis le menu : choisit un mode (dans sa page) et traverse le choix du terrain. */
@@ -243,7 +240,7 @@ export async function lancerDepuisLeMenu(page, motifDuBouton, hub = 'local') {
 }
 
 export async function creerSalon(page) {
-  await lancerDepuisLeMenu(page, /Partie privee|Private match/i, 'online');
+  await lancerDepuisLeMenu(page, /Jouer avec un ami|Play with a friend/i, 'online');
   await page.locator('button', { hasText: /Creer une partie/i }).first().click();
   await page.waitForTimeout(600);
   const code = (await etat(page)).online?.roomCode;
@@ -253,7 +250,7 @@ export async function creerSalon(page) {
 
 /** Rejoint un salon par son code et attend d'etre en match. */
 export async function rejoindreSalon(page, code) {
-  await lancerDepuisLeMenu(page, /Partie privee|Private match/i, 'online');
+  await lancerDepuisLeMenu(page, /Jouer avec un ami|Play with a friend/i, 'online');
   await page.locator('input').first().fill(code);
   await page.locator('button', { hasText: /^Rejoindre$/i }).first().click();
   return attendreEcran(page, 'match', 120);

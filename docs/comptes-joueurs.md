@@ -4,6 +4,14 @@ Un compte **facultatif**, par e-mail et mot de passe, pour retrouver sa progress
 un autre appareil. Le jeu reste entierement jouable sans compte, hors ligne, exactement
 comme avant.
 
+## Un compte = une progression
+
+La progression d'un appareil n'appartient qu'a UN compte. Un appareil qui porte deja celle du compte A
+et se connecte (ou cree) le compte B **ne la copie pas** : B retrouve la sienne, ou repart de zero
+(`sync.ts::reconcileNow`, repere `META_KEY`). Seule la progression « libre » — jamais rattachee a un
+compte — suit le joueur dans son premier compte. Sans cela, un second compte heritait du niveau, des pieces
+et du score au classement du premier.
+
 ## Ce qui est synchronise
 
 Niveau et experience (avec la serie et les parties jouees), pieces, succes, articles de la

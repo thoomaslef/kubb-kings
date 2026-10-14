@@ -68,12 +68,11 @@ export function Ranks() {
 
   const search = () => {
     setRankedLobby(true);
-    useGameStore.getState().setQuickLobby(false);
     setScreen('online');
   };
   const back = () => {
     clearRankChange();
-    setScreen('online-hub');
+    setScreen('menu');
   };
 
   return (
@@ -201,6 +200,8 @@ export function Ranks() {
           )
         )}
 
+        <h3 className="legal-heading">{t('ranks.how.title')}</h3>
+        <p className="panel__text">{t('ranks.how.intro')}</p>
         <ul className="rules-list">
           <li>{t('ranks.rule.step')}</li>
           <li>{t('ranks.rule.divisions')}</li>

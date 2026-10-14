@@ -22,14 +22,9 @@ const fr: Record<string, string> = {
   'menu.local2v2': '2v2 local — a quatre',
   'menu.defi': 'Defi — {n} manches, de plus en plus dures',
   'menu.tournament': 'Tournoi local — 4 ou 8 joueurs',
-  'menu.online': 'Partie privee',
+  'menu.online': 'Jouer avec un ami',
   'menu.playLocal': 'Jouer hors ligne',
-  'menu.playOnline': 'Jouer en ligne',
   'hub.local.title': 'Jouer hors ligne',
-  'hub.online.title': 'Jouer en ligne',
-  'hub.online.intro': 'Trois facons de jouer contre un autre joueur.',
-  'hub.online.privateHint': 'Un code a partager avec un ami : tchat possible, conditions a votre gout.',
-  'hub.online.rankedHint': 'Un inconnu, conditions identiques pour tous. Une victoire monte, une defaite descend.',
   'hub.back': 'Retour',
 
   // ---- Rangs (src/game/ranks.ts)
@@ -39,7 +34,7 @@ const fr: Record<string, string> = {
   'rank.tier.platinum': 'Platine',
   'rank.tier.diamond': 'Diamant',
   'rank.tier.master': 'Master',
-  'menu.ranked': 'Classe — {rank}',
+  'menu.ranked': 'Classement — {rank}',
   'hud.leaveRankedWarning': 'Partie classee : quitter maintenant compte comme une defaite.',
   'ranks.board.title': 'Classement',
   'ranks.board.loading': 'Chargement du classement...',
@@ -90,11 +85,13 @@ const fr: Record<string, string> = {
   'ranks.peak': 'meilleur rang : {rank}',
   'ranks.rule.step': 'Une victoire fait monter d\'une division, une defaite fait descendre d\'une division. Un match nul ne change rien.',
   'ranks.rule.divisions': 'Six rangs de trois divisions : la division 3 est la plus haute. Or 2 + une victoire = Or 3, puis Platine 1.',
-  'ranks.rule.fixed': 'Terrain classique, sans vent, sans kubb de champ, avec le projectile de base pour les deux : personne ne gagne grace a sa boutique.',
+  'ranks.rule.fixed': 'Terrain classique, sans vent, sans kubb de champ : les memes regles pour tous. Vos skins (kubbs, baton, trainee) restent a vous et se voient chez l\'adversaire, mais ne changent rien au jeu.',
   'ranks.rule.forfeit': 'Quitter une partie en cours, ou fermer l\'onglet, compte comme une defaite. Si votre adversaire part, vous gagnez.',
   'ranks.rule.bot': 'Sans adversaire au bout d\'une minute, vous jouez un bot pour vous entrainer : cette partie ne change pas votre rang.',
   'ranks.localNote': 'Votre rang est enregistre sur cet appareil : il n\'existe pas encore de classement mondial.',
-  'ranks.search': 'Chercher une partie classee',
+  'ranks.how.title': 'Comment ca marche',
+  'ranks.how.intro': 'Chaque « Partie rapide » est classee : vous affrontez un autre joueur, et le resultat fait bouger votre rang. Rien a regler, rien a configurer.',
+  'ranks.search': 'Partie rapide',
   'ranks.change.forfeit-win': 'Victoire par forfait : {from} → {to}.',
   'ranks.change.forfeit-loss': 'Partie quittee, comptee comme une defaite : {from} → {to}.',
   'ranks.change.abandon': 'Une partie classee a ete abandonnee (onglet ferme) : defaite, {from} → {to}.',
@@ -178,7 +175,7 @@ const fr: Record<string, string> = {
     "Votre adversaire peut etre sur un autre appareil, ou l'ordinateur d'a cote : il lui suffit du code.",
   'online.connectionFailed': "Service en ligne injoignable. Verifiez votre connexion, puis reessayez.",
   'online.quick': 'Partie rapide',
-  'online.quickHint': "Un adversaire au hasard. Si personne n'arrive en une minute, vous jouez contre un bot en difficile.",
+  'online.quickHint': "Un adversaire au hasard, en partie classee. Si personne n'arrive en une minute, vous jouez contre un bot.",
   'online.searchingTitle': "Recherche d'un adversaire",
   'online.searchingText': "Joueurs en file : {n}. Sans adversaire, un bot (difficile) vous affrontera dans {s} s.",
   'online.quickFound': 'Adversaire trouve, connexion...',
@@ -544,7 +541,7 @@ const fr: Record<string, string> = {
   'rules.item5': 'Un kubb tombe est hors jeu. Quand tous les kubbs adverses sont a terre, vous pouvez viser le roi.',
   'rules.item6':
     "Le roi se tient sur la ligne mediane : contournez-le tant que vous n'avez pas le droit de le viser. Le toucher trop tot = defaite immediate de l'equipe qui a lance.",
-  'rules.item7': 'Faire tomber le roi dans les regles = victoire.',
+  'rules.item7': 'Faire tomber le roi dans les regles = victoire. Roi decouvert, un tir droit ne suffit pas : il faut un rebond sur la bande.',
   'rules.item8':
     "{n} lancers par equipe, et 30 secondes maximum pour jouer chaque coup (passe ce delai, le jeu lance pour vous). Quand les lancers sont epuises, l'equipe qui a abattu le plus de kubbs l'emporte.",
   'rules.item9':
@@ -625,6 +622,7 @@ const fr: Record<string, string> = {
   'match.comboPerfect': 'PERFECT !',
   'match.comboMultiplier': '×{n} COMBO',
   'match.kingFalls': 'LE ROI TOMBE !',
+  'match.kingNeedsBounce': 'IL FAUT UN REBOND !',
   'match.kingTooEarly': 'ROI TOUCHE TROP TOT'
 };
 
@@ -637,14 +635,9 @@ const en: Record<string, string> = {
   'menu.local2v2': 'Local 2v2 — for four',
   'menu.defi': 'Challenge — {n} stages, increasingly hard',
   'menu.tournament': 'Local tournament — 4 or 8 players',
-  'menu.online': 'Private match',
+  'menu.online': 'Play with a friend',
   'menu.playLocal': 'Play offline',
-  'menu.playOnline': 'Play online',
   'hub.local.title': 'Play offline',
-  'hub.online.title': 'Play online',
-  'hub.online.intro': 'Three ways to play against another player.',
-  'hub.online.privateHint': 'A code to share with a friend: chat available, conditions to your taste.',
-  'hub.online.rankedHint': 'A stranger, identical conditions for everyone. A win moves you up, a loss moves you down.',
   'hub.back': 'Back',
 
   // ---- Ranks (src/game/ranks.ts)
@@ -654,7 +647,7 @@ const en: Record<string, string> = {
   'rank.tier.platinum': 'Platinum',
   'rank.tier.diamond': 'Diamond',
   'rank.tier.master': 'Master',
-  'menu.ranked': 'Ranked — {rank}',
+  'menu.ranked': 'Ranking — {rank}',
   'hud.leaveRankedWarning': 'Ranked match: leaving now counts as a loss.',
   'ranks.board.title': 'Leaderboard',
   'ranks.board.loading': 'Loading the leaderboard...',
@@ -705,11 +698,13 @@ const en: Record<string, string> = {
   'ranks.peak': 'best rank: {rank}',
   'ranks.rule.step': 'A win moves you up one division, a loss moves you down one division. A draw changes nothing.',
   'ranks.rule.divisions': 'Six ranks of three divisions: division 3 is the highest. Gold 2 + a win = Gold 3, then Platinum 1.',
-  'ranks.rule.fixed': 'Classic field, no wind, no field kubbs, base projectile for both: nobody wins thanks to the shop.',
+  'ranks.rule.fixed': 'Classic field, no wind, no field kubbs: same rules for everyone. Your skins (kubbs, baton, trail) stay yours and show on your opponent\'s screen, but change nothing in the game.',
   'ranks.rule.forfeit': 'Leaving a match in progress, or closing the tab, counts as a loss. If your opponent leaves, you win.',
   'ranks.rule.bot': 'With no opponent after a minute, you play a practice bot: that match does not change your rank.',
   'ranks.localNote': 'Your rank is saved on this device: there is no global leaderboard yet.',
-  'ranks.search': 'Find a ranked match',
+  'ranks.how.title': 'How it works',
+  'ranks.how.intro': 'Every “Quick match” is ranked: you face another player and the result moves your rank. Nothing to set up.',
+  'ranks.search': 'Quick match',
   'ranks.change.forfeit-win': 'Win by forfeit: {from} → {to}.',
   'ranks.change.forfeit-loss': 'Match left, counted as a loss: {from} → {to}.',
   'ranks.change.abandon': 'A ranked match was abandoned (tab closed): loss, {from} → {to}.',
@@ -792,7 +787,7 @@ const en: Record<string, string> = {
   'online.anyDeviceHint': 'Your opponent can be on another device, anywhere: all they need is the code.',
   'online.connectionFailed': 'Online service unreachable. Check your connection, then try again.',
   'online.quick': 'Quick match',
-  'online.quickHint': 'A random opponent. If nobody shows up within a minute, you play a bot on hard.',
+  'online.quickHint': 'A random opponent, in a ranked match. If nobody shows up within a minute, you play a bot.',
   'online.searchingTitle': 'Looking for an opponent',
   'online.searchingText': 'Players in queue: {n}. With no opponent, a bot (hard) will face you in {s} s.',
   'online.quickFound': 'Opponent found, connecting...',
@@ -1155,7 +1150,7 @@ const en: Record<string, string> = {
   'rules.item5': "A fallen kubb is out of play. Once all the opposing kubbs are down, you may aim for the king.",
   'rules.item6':
     "The king stands on the centerline: go around it until you're allowed to aim at it. Hitting it too soon means immediate defeat for the throwing team.",
-  'rules.item7': 'Knocking down the king within the rules = victory.',
+  'rules.item7': 'Knocking down the king within the rules = victory. With the king exposed, a straight shot is not enough: it must bounce off a wall first.',
   'rules.item8':
     '{n} throws per team, and 30 seconds at most to play each throw (past that, the game throws for you). When the throws run out, the team with the most kubbs down wins.',
   'rules.item9':
@@ -1236,6 +1231,7 @@ const en: Record<string, string> = {
   'match.comboPerfect': 'PERFECT!',
   'match.comboMultiplier': '×{n} COMBO',
   'match.kingFalls': 'THE KING FALLS!',
+  'match.kingNeedsBounce': 'BOUNCE IT OFF A WALL!',
   'match.kingTooEarly': 'KING HIT TOO SOON'
 };
 

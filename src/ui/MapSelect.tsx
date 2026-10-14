@@ -45,7 +45,6 @@ export function MapSelect() {
     if (intent === 'online') {
       // Le salon prive : jamais la recherche classee (qui passe par l'ecran des rangs).
       useGameStore.getState().setRankedLobby(false);
-      useGameStore.getState().setQuickLobby(false);
       setScreen('online');
       return;
     }
@@ -105,7 +104,7 @@ export function MapSelect() {
             <button className="btn btn--primary" onClick={lancer}>
               {libelleAction}
             </button>
-            <button className="btn" onClick={() => setScreen(intent === 'online' ? 'online-hub' : 'local-hub')}>
+            <button className="btn" onClick={() => setScreen(intent === 'online' ? 'menu' : 'local-hub')}>
               {t('map.back')}
             </button>
           </div>

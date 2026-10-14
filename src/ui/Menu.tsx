@@ -8,7 +8,7 @@ import { THROW_EFFECT_IDS } from '../game/throwEffects';
 import { isShopRefOwned, SHOP_ITEMS, type ShopCategory } from '../game/shop';
 import { LADDER, getBestStage } from '../game/roguelite';
 import { useT } from '../i18n/useT';
-import { useRankName } from './RankBadge';
+import { RankBadge, useRankName } from './RankBadge';
 import { isSafeMode, leaveSafeMode, safeModeReason } from '../game/safeMode';
 import { gameUrl, shareGame, type ShareData, type ShareOutcome } from '../game/shareLink';
 import { accountAvailable } from '../game/account/sync';
@@ -38,6 +38,13 @@ export function Menu() {
   const lastRankChange = useGameStore((s) => s.lastRankChange);
   const clearRankChange = useGameStore((s) => s.clearRankChange);
   const rankName = useRankName();
+  const rank = useGameStore((s) => s.rank);
+  const openMapSelect = useGameStore((s) => s.openMapSelect);
+  // « Partie rapide » = une partie classee, lancee tout de suite (la recherche demarre en arrivant).
+  const quickMatch = () => {
+    useGameStore.getState().setRankedLobby(true);
+    setScreen('online');
+  };
   const kubbSkin = useGameStore((s) => s.kubbSkin);
   const setKubbSkin = useGameStore((s) => s.setKubbSkin);
   const kingSkin = useGameStore((s) => s.kingSkin);
@@ -204,8 +211,16 @@ export function Menu() {
         )}
 
         <div className="button-column">
-          <button className="btn btn--primary" onClick={() => setScreen('online-hub')}>
-            {t('menu.playOnline')}
+          <button className="btn btn--primary" onClick={quickMatch}>
+            {t('online.quick')}
+          </button>
+          <p className="footnote footnote--tight">{t('online.quickHint')}</p>
+          <button className="btn btn--ranked" onClick={() => setScreen('ranks')}>
+            <RankBadge index={rank.index} size="sm" />
+            {t('menu.ranked', { rank: rankName(rank.index) })}
+          </button>
+          <button className="btn" onClick={() => openMapSelect('online')}>
+            {t('menu.online')}
           </button>
           <button className="btn btn--primary" onClick={() => setScreen('local-hub')}>
             {t('menu.playLocal')}

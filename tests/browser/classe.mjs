@@ -50,17 +50,17 @@ const dernierMouvement = (page) => page.evaluate(() => window.__kubbStoreApi.get
 /** Menu -> ecran des rangs -> recherche classee. */
 async function chercherClasse(page) {
   await ouvrirUnHub(page, 'online');
-  await page.locator('button', { hasText: /Classe —/ }).first().click();
+  await page.locator('button', { hasText: /Classement —/ }).first().click();
   await page.waitForTimeout(400);
-  await page.locator('button', { hasText: /Chercher une partie classee/i }).first().click();
+  await page.locator('button', { hasText: /Partie rapide/i }).first().click();
 }
 
 // ---------------------------------------------------------------- 1. l'ecran des rangs
 {
   const p = await nouvellePage('menu');
   await ouvrirUnHub(p, 'online');
-  const libelleMenu = await p.locator('button', { hasText: /Classe —/ }).first().textContent();
-  await p.locator('button', { hasText: /Classe —/ }).first().click();
+  const libelleMenu = await p.locator('button', { hasText: /Classement —/ }).first().textContent();
+  await p.locator('button', { hasText: /Classement —/ }).first().click();
   await p.waitForTimeout(400);
   const ecran = await p.evaluate(() => ({
     titre: document.querySelector('.panel__title')?.textContent,
@@ -89,6 +89,7 @@ async function chercherClasse(page) {
     st.setWindEnabled(true);
     st.setFieldKubbsEnabled(true);
     st.setFieldPreset('glace');
+    st.setBatonId('sniper');
   });
   await chercherClasse(hote);
   await chercherClasse(invite);
@@ -110,7 +111,8 @@ async function chercherClasse(page) {
   resultats.partieMarqueeClasseDesDeuxCotes = conditions.ranked === true && conditionsInvite.ranked === true;
   resultats.terrainClassiqueSansVentNiKubbDeChamp =
     conditions.setup.fieldPreset === 'classique' && conditions.setup.wind === null && conditions.setup.fieldKubbsEnabled === false;
-  resultats.projectileDeBasePourLesDeux = conditions.setup.batons.blue === 'base' && conditions.setup.batons.red === 'base';
+  // Le baton est un skin personnel : chacun garde le sien (hote : sniper, invite : base).
+  resultats.chacunGardeSonBaton = conditions.setup.batons.blue === 'sniper' && conditions.setup.batons.red === 'base';
   resultats.abandonParOngletFermeDetectable = conditionsInvite.pending === '1';
 
   // L'invite touche le roi trop tot : il perd, l'hote gagne.
