@@ -47,7 +47,8 @@ export type Screen =
   | 'map-select'
   | 'local-hub'
   | 'online-hub'
-  | 'options';
+  | 'options'
+  | 'appearance';
 
 /** Phase du tour courant, pilotee par MatchScene. */
 export type MatchPhase = 'aiming' | 'ai-aiming' | 'flying' | 'over';

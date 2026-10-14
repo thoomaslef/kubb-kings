@@ -54,7 +54,7 @@ async function mesurer(largeur, langue) {
   await page.waitForFunction(() => window.__kubbStoreApi?.getState().screen === 'menu', null, { timeout: 30000 });
   await page.waitForSelector('.segmented__item', { timeout: 10000 });
 
-  const mesure = await page.evaluate(() => {
+  const lire = () => page.evaluate(() => {
     const groupes = [...document.querySelectorAll('.segmented')];
     const pastilles = [...document.querySelectorAll('.segmented__item')];
     return {
@@ -76,8 +76,22 @@ async function mesurer(largeur, langue) {
       pageDeborde: document.documentElement.scrollWidth > window.innerWidth + 1
     };
   });
+  // Les pastilles de skins/effets sont sur l'ecran Apparence : on mesure les DEUX ecrans.
+  const menu = await lire();
+  await page.evaluate(() => window.__kubbStoreApi.getState().setScreen('appearance'));
+  await page.waitForSelector('.panel__title', { timeout: 5000 });
+  await page.waitForTimeout(300);
+  const apparence = await lire();
   await contexte.close();
-  return mesure;
+  return {
+    groupes: menu.groupes + apparence.groupes,
+    groupesDebordants: [...menu.groupesDebordants, ...apparence.groupesDebordants],
+    pastillesTronquees: menu.pastillesTronquees + apparence.pastillesTronquees,
+    pastilles: menu.pastilles + apparence.pastilles,
+    hauteurMin: Math.min(menu.hauteurMin, apparence.hauteurMin),
+    pastillesHorsCadre: menu.pastillesHorsCadre + apparence.pastillesHorsCadre,
+    pageDeborde: menu.pageDeborde || apparence.pageDeborde
+  };
 }
 
 for (const langue of LANGUES) {

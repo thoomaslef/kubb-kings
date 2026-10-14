@@ -5,6 +5,7 @@ import { GameCanvas } from './GameCanvas';
 import { Menu } from './Menu';
 import { LocalHub, OnlineHub } from './Hubs';
 import { Options } from './Options';
+import { Appearance } from './Appearance';
 import { Rules } from './Rules';
 import { HUD } from './HUD';
 import { Tutorial } from './Tutorial';
@@ -90,6 +91,7 @@ export function App() {
       {screen === 'local-hub' && <LocalHub />}
       {screen === 'online-hub' && <OnlineHub />}
       {screen === 'options' && <Options />}
+      {screen === 'appearance' && <Appearance />}
     </div>
   );
 }
