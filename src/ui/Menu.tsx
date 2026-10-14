@@ -140,9 +140,18 @@ export function Menu() {
           {/* Sans service configure (build local, tests), pas de compte a proposer. */}
           {accountAvailable() && (
             <button type="button" className="btn btn--ghost btn--account" onClick={() => setScreen('account')}>
-              {account.status === 'signedIn' && account.email
-                ? t('menu.account.signedIn', { email: account.email })
-                : t('menu.account.signedOut')}
+              {account.status === 'signedIn' && account.email ? (
+                <>
+                  {account.pseudo && (
+                    <strong className="account-pseudo" data-testid="menu-pseudo">
+                      {account.pseudo}
+                    </strong>
+                  )}
+                  <span className="account-email">{t('menu.account.signedIn', { email: account.email })}</span>
+                </>
+              ) : (
+                t('menu.account.signedOut')
+              )}
             </button>
           )}
           <button

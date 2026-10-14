@@ -35,6 +35,13 @@ try {
 }
 resultats.leScriptSExecuteEtSeRelance = ok;
 
+// Le court extrait a coller pour un projet deja installe (supabase/ajout-pseudo.sql) ne doit jamais
+// deriver du script complet : ses fonctions y figurent mot pour mot.
+const extrait = readFileSync(new URL('../../supabase/ajout-pseudo.sql', import.meta.url), 'utf8');
+const blocs = extrait.match(/create or replace function[\s\S]*?\n\$\$;/g) ?? [];
+resultats.lExtraitAPoserLesDeuxFonctions = blocs.length === 2;
+resultats.lExtraitEstIdentiqueAuScriptComplet = blocs.every((b) => sql.includes(b));
+
 const A = '00000000-0000-0000-0000-00000000000a';
 const B = '00000000-0000-0000-0000-00000000000b';
 await db.exec(`insert into auth.users values ('${A}'), ('${B}')`);

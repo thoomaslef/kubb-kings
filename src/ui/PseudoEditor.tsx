@@ -31,7 +31,9 @@ export function PseudoEditor({ onChanged, showRandom = true }: { onChanged?: () 
     }
     let cancelled = false;
     void fetchStanding().then((s) => {
-      if (!cancelled) setCurrent(s?.pseudo ?? null);
+      if (cancelled) return;
+      setCurrent(s?.pseudo ?? null);
+      if (s?.pseudo) useGameStore.getState().setAccount({ pseudo: s.pseudo });
     });
     return () => {
       cancelled = true;

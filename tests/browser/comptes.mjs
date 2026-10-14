@@ -798,6 +798,8 @@ const B = await appareil('B');
   for (let i = 0; i < 40 && pseudoServeur('ra@example.com') !== 'Thomas_Ra'; i += 1) await P1.page.waitForTimeout(150);
   resultats.pseudo_choisiALaCreation = pseudoServeur('ra@example.com') === 'Thomas_Ra';
   resultats.pseudo_leChoixEnAttenteEstNettoye = (await P1.page.evaluate(() => localStorage.getItem('kubb-kings.pending-pseudo'))) === null;
+  await P1.page.evaluate(() => window.__kubbStoreApi.getState().setScreen('menu'));
+  resultats.menu_affiche_LePseudoApresLInscription = await attendre(P1.page, () => document.querySelector('[data-testid="menu-pseudo"]')?.textContent === 'Thomas_Ra');
   resultats.pseudo_aucunAvertissementSiToutVaBien = (await P1.page.locator('[data-testid="account-notice"]').count()) === 0;
 
   // P2 : le meme pseudo (autre casse) est deja pris : le compte est cree, un pseudo attribue, et on le dit.
@@ -846,6 +848,10 @@ const B = await appareil('B');
   resultats.boutique_unRefusNeCoutePasDePieces = (await pieces()) === 250;
   await saisir('Nouveau_Nom');
   resultats.boutique_renommage = (await attendre(P1.page, () => document.querySelector('[data-testid="pseudo-current"]')?.textContent === 'Nouveau_Nom')) && pseudoServeur('ra@example.com') === 'Nouveau_Nom';
+  await P1.page.evaluate(() => window.__kubbStoreApi.getState().setScreen('menu'));
+  resultats.menu_affiche_LePseudoApresUnRenommage = await attendre(P1.page, () => document.querySelector('[data-testid="menu-pseudo"]')?.textContent === 'Nouveau_Nom');
+  await P1.page.evaluate(() => window.__kubbStoreApi.getState().setScreen('shop'));
+  await P1.page.waitForSelector('[data-testid="pseudo-editor"]');
   resultats.boutique_leRenommageCoute100Pieces = (await pieces()) === 150 && (await P1.page.evaluate(() => JSON.parse(localStorage.getItem('kubb-kings.currency')).coins)) === 150;
   await saisir('Encore_Un');
   resultats.boutique_trop_tot_RefuseParLeServeur = /quelques minutes/.test((await msg()) ?? '') && (await courant()) === 'Nouveau_Nom';

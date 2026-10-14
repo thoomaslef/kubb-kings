@@ -298,7 +298,7 @@ function setSignedOut() {
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = null;
   store().setAccountConflict(null);
-  store().setAccount({ status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null });
+  store().setAccount({ status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null, pseudo: null });
 }
 
 /** Un compte est possible : le service est configure. */
@@ -341,6 +341,7 @@ export async function initAccount(): Promise<void> {
     watchAuth();
     await reconcile(user);
     await applyPendingPseudo();
+    await refreshPseudo();
   } catch {
     // Hors ligne au demarrage : on reste « connecte » d'apres la session conservee, sans synchroniser.
     store().setAccount({ status: 'signedOut' });
@@ -403,7 +404,7 @@ async function authenticate(kind: 'signIn' | 'signUp', email: string, password: 
   if (result.user) {
     setSignedIn(result.user);
     watchAuth();
-    void reconcile(result.user).then(applyPendingPseudo);
+    void reconcile(result.user).then(applyPendingPseudo).then(refreshPseudo);
   }
   return { ok: true, needsEmailConfirmation: result.needsEmailConfirmation };
 }
@@ -504,6 +505,17 @@ function clearPendingPseudo() {
  * synchronisation ; un refus definitif (pris, interdit...) l'abandonne et previent le joueur : il
  * garde le pseudo attribue et peut en choisir un autre depuis la Boutique.
  */
+/** Lit le pseudo sur le serveur pour l'afficher au menu ; en cas d'echec on garde ce qu'on avait. */
+async function refreshPseudo(): Promise<void> {
+  if (!backend || store().account.status !== 'signedIn') return;
+  try {
+    const standing = await backend.myStanding();
+    if (standing?.pseudo && store().account.status === 'signedIn') store().setAccount({ pseudo: standing.pseudo });
+  } catch {
+    // Le menu montre simplement l'adresse e-mail seule.
+  }
+}
+
 async function applyPendingPseudo(): Promise<void> {
   const pending = loadPendingPseudo();
   if (!pending || !backend || store().account.status !== 'signedIn') return;
@@ -524,11 +536,16 @@ export async function changeMyPseudo(raw: string): Promise<ChangePseudoResult> {
   const check = validatePseudo(raw);
   if (!check.ok) return { ok: false, error: check.reason };
   if (!backend || store().account.status !== 'signedIn') return { ok: false, error: 'network' };
-  return backend.setPseudo(check.pseudo);
+  const result = await backend.setPseudo(check.pseudo);
+  if (result.ok) store().setAccount({ pseudo: result.pseudo });
+  return result;
 }
 
 export async function rerollMyPseudo(): Promise<string | null> {
-  return backend && store().account.status === 'signedIn' ? backend.rerollPseudo() : null;
+  if (!backend || store().account.status !== 'signedIn') return null;
+  const pseudo = await backend.rerollPseudo();
+  if (pseudo) store().setAccount({ pseudo });
+  return pseudo;
 }
 
 export async function setMyLeaderboardVisible(visible: boolean): Promise<boolean> {

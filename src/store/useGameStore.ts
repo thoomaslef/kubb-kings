@@ -89,6 +89,8 @@ export interface AccountState {
   lastSyncAt: number | null;
   /** Retour d'une connexion Google qui a echoue ou ete annulee, a annoncer sur l'ecran Compte. */
   notice: 'oauth-error' | 'pseudo-taken' | 'pseudo-refused' | null;
+  /** Pseudo du classement, une fois lu sur le serveur (affiche au menu) ; null tant qu'on ne le connait pas. */
+  pseudo: string | null;
 }
 
 /** Premier rapprochement d'un appareil et d'un compte qui ont chacun leur histoire : au joueur de trancher. */
@@ -476,7 +478,7 @@ export const useGameStore = create<GameState>((set) => ({
   ...settleRankAtStartup(),
   rankedLobby: false,
   quickLobby: false,
-  account: { status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null },
+  account: { status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null, pseudo: null },
   accountConflict: null,
 
   mapIntent: null,
