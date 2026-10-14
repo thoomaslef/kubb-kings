@@ -31,10 +31,6 @@ export function Menu() {
   const clearRankChange = useGameStore((s) => s.clearRankChange);
   const rankName = useRankName();
   const rank = useGameStore((s) => s.rank);
-  const windEnabled = useGameStore((s) => s.windEnabled);
-  const setWindEnabled = useGameStore((s) => s.setWindEnabled);
-  const fieldKubbsEnabled = useGameStore((s) => s.fieldKubbsEnabled);
-  const setFieldKubbsEnabled = useGameStore((s) => s.setFieldKubbsEnabled);
   const setMode = useGameStore((s) => s.setMode);
   const online = useGameStore((s) => s.online);
   const endOnline = useGameStore((s) => s.endOnline);
@@ -193,46 +189,6 @@ export function Menu() {
             <RankBadge index={rank.index} size="sm" />
             {t('menu.ranked', { rank: rankName(rank.index) })}
           </button>
-
-          <p className="segmented-label">{t('menu.windAria')}</p>
-          <div className="segmented" role="group" aria-label={t('menu.windAria')}>
-            <button
-              className={`segmented__item${!windEnabled ? ' segmented__item--on' : ''}`}
-              aria-pressed={!windEnabled}
-              onClick={() => setWindEnabled(false)}
-            >
-              {t('menu.windOff')}
-            </button>
-            <button
-              className={`segmented__item${windEnabled ? ' segmented__item--on' : ''}`}
-              aria-pressed={windEnabled}
-              onClick={() => setWindEnabled(true)}
-            >
-              {t('menu.windOn')}
-            </button>
-          </div>
-          <p className="footnote footnote--tight">{t(windEnabled ? 'menu.windOnHint' : 'menu.windOffHint')}</p>
-
-          <p className="segmented-label">{t('menu.fieldKubbsAria')}</p>
-          <div className="segmented" role="group" aria-label={t('menu.fieldKubbsAria')}>
-            <button
-              className={`segmented__item${!fieldKubbsEnabled ? ' segmented__item--on' : ''}`}
-              aria-pressed={!fieldKubbsEnabled}
-              onClick={() => setFieldKubbsEnabled(false)}
-            >
-              {t('menu.fieldKubbsOff')}
-            </button>
-            <button
-              className={`segmented__item${fieldKubbsEnabled ? ' segmented__item--on' : ''}`}
-              aria-pressed={fieldKubbsEnabled}
-              onClick={() => setFieldKubbsEnabled(true)}
-            >
-              {t('menu.fieldKubbsOn')}
-            </button>
-          </div>
-          <p className="footnote footnote--tight">
-            {t(fieldKubbsEnabled ? 'menu.fieldKubbsOnHint' : 'menu.fieldKubbsOffHint')}
-          </p>
 
           <button className="btn" onClick={() => setScreen('appearance')}>
             {t('menu.appearance')}

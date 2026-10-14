@@ -106,8 +106,17 @@ async function chercherClasse(page) {
   });
   console.log({ conditions, conditionsInvite });
   resultats.partieMarqueeClasseDesDeuxCotes = conditions.ranked === true && conditionsInvite.ranked === true;
-  resultats.terrainClassiqueSansVentNiKubbDeChamp =
-    conditions.setup.fieldPreset === 'classique' && conditions.setup.wind === null && conditions.setup.fieldKubbsEnabled === false;
+  // Terrain et vent sont tires au hasard (pas ceux du menu), jamais de kubbs de champ.
+  const terrainInvite = await invite.evaluate(() => {
+    const sc = window.__kubb.scene.getScene('MatchScene');
+    return { preset: sc.fieldPreset, wind: sc.wind ?? null, champ: sc.fieldKubbsEnabled };
+  });
+  console.log({ terrainInvite });
+  resultats.pasDeKubbsDeChampEnClassee = conditions.setup.fieldKubbsEnabled === false && terrainInvite.champ === false;
+  resultats.lesDeuxJouentLeMemeTerrain = terrainInvite.preset === conditions.setup.fieldPreset;
+  resultats.lesDeuxOntLeMemeVent =
+    (terrainInvite.wind?.direction ?? null) === (conditions.setup.wind?.direction ?? null) &&
+    (terrainInvite.wind?.force ?? null) === (conditions.setup.wind?.force ?? null);
   // Le baton est un skin personnel : chacun garde le sien (hote : sniper, invite : base).
   resultats.chacunGardeSonBaton = conditions.setup.batons.blue === 'sniper' && conditions.setup.batons.red === 'base';
   resultats.abandonParOngletFermeDetectable = conditionsInvite.pending === '1';

@@ -28,7 +28,7 @@ async function mesurer(terrain) {
   await attendreSonTour(page);
   const releve = await page.evaluate(async () => {
     const scene = window.__kubb.scene.getScene('MatchScene');
-    scene.throwX[scene.activeTeam] = 120;
+    scene.throwX[scene.activeTeam] = 300;
     // 70 degres vers la gauche : le baton va frapper la bande de gauche.
     scene.aimAngle = scene.forwardAngle() - (70 * Math.PI) / 180;
     scene.aimPower = 0.75;

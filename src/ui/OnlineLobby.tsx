@@ -13,7 +13,7 @@ import { createMatchTransport, transportKind } from '../game/online/transportFac
 import { setCurrentSession } from '../game/online/currentSession';
 import { OnlineSession } from '../game/online/session';
 import { PROTOCOL_VERSION, type MatchSetup, type PlayerCard } from '../game/online/protocol';
-import { WIND_DIRECTIONS, drawStartingTeam, type FieldPresetId } from '../game/rules';
+import { FIELD_PRESETS, WIND_DIRECTIONS, drawStartingTeam, type FieldPresetId } from '../game/rules';
 import type { BatonId } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { useRankName } from './RankBadge';
@@ -50,6 +50,12 @@ function drawSetup(
     batons: { blue: batonId, red: 'base' },
     startingTeam: drawStartingTeam()
   };
+}
+
+/** Terrain tire au hasard pour une partie classee. */
+function randomPreset(): FieldPresetId {
+  const ids = Object.keys(FIELD_PRESETS) as FieldPresetId[];
+  return ids[Math.floor(Math.random() * ids.length)];
 }
 
 export function OnlineLobby() {
@@ -159,11 +165,11 @@ export function OnlineLobby() {
     wire(
       OnlineSession.host(
         createMatchTransport(code, onTransportError),
-        // Partie classee : conditions fixes, les memes pour tous (terrain
-        // classique, sans vent ni kubb de champ). Les skins (kubbs, baton, trainee)
+        // Partie classee : terrain ET vent tires au hasard par l'hote (les memes pour les deux joueurs),
+        // jamais de kubbs de champ (reserves aux parties entre amis). Les skins (kubbs, baton, trainee)
         // sont personnels et purement visuels : ils voyagent, sans rien changer au jeu.
         ranked
-          ? drawSetup('classique', false, false, batonId)
+          ? drawSetup(randomPreset(), Math.random() < 0.5, false, batonId)
           : drawSetup(fieldPreset, windEnabled, fieldKubbsEnabled, batonId),
         `hote-${code}`,
         card

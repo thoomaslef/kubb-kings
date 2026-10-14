@@ -88,7 +88,7 @@ const fr: Record<string, string> = {
   'ranks.peak': 'meilleur rang : {rank}',
   'ranks.rule.step': 'Une victoire fait monter d\'une division, une defaite fait descendre d\'une division. Un match nul ne change rien.',
   'ranks.rule.divisions': 'Six rangs de trois divisions : la division 3 est la plus haute. Or 2 + une victoire = Or 3, puis Platine 1.',
-  'ranks.rule.fixed': 'Terrain classique, sans vent, sans kubb de champ : les memes regles pour tous. Vos skins (kubbs, baton, trainee) restent a vous et se voient chez l\'adversaire, mais ne changent rien au jeu.',
+  'ranks.rule.fixed': 'Terrain et vent tires au hasard, les memes pour les deux joueurs ; jamais de kubbs de champ (reserves aux parties entre amis). Vos skins (kubbs, baton, trainee) restent a vous et se voient chez l\'adversaire, mais ne changent rien au jeu.',
   'ranks.rule.forfeit': 'Quitter une partie en cours, ou fermer l\'onglet, compte comme une defaite. Si votre adversaire part, vous gagnez.',
   'ranks.rule.bot': 'Sans adversaire au bout d\'une minute, vous jouez un bot pour vous entrainer : cette partie ne change pas votre rang.',
   'ranks.how.title': 'Comment ca marche',
@@ -105,7 +105,6 @@ const fr: Record<string, string> = {
   'online.rankedTitle': 'Recherche d\'un adversaire classe',
   'online.rankedText': 'Rang {rank} — joueurs en file : {n}. Sans adversaire, un bot d\'entrainement (sans effet sur le rang) vous affrontera dans {s} s.',
   'online.rankedFound': 'Adversaire classe trouve, connexion...',
-  'online.rankedIntro': 'Partie classee : terrain classique, sans vent, projectile de base.',
   'online.rankedBot': 'Entrainement contre un bot : cette partie ne change pas votre rang.',
 
   // ---- Compte joueur (src/game/account/)
@@ -690,7 +689,7 @@ const en: Record<string, string> = {
   'ranks.peak': 'best rank: {rank}',
   'ranks.rule.step': 'A win moves you up one division, a loss moves you down one division. A draw changes nothing.',
   'ranks.rule.divisions': 'Six ranks of three divisions: division 3 is the highest. Gold 2 + a win = Gold 3, then Platinum 1.',
-  'ranks.rule.fixed': 'Classic field, no wind, no field kubbs: same rules for everyone. Your skins (kubbs, baton, trail) stay yours and show on your opponent\'s screen, but change nothing in the game.',
+  'ranks.rule.fixed': 'Random field and wind, the same for both players; never field kubbs (friends-only). Your skins (kubbs, baton, trail) stay yours and show on your opponent\'s screen, but change nothing in the game.',
   'ranks.rule.forfeit': 'Leaving a match in progress, or closing the tab, counts as a loss. If your opponent leaves, you win.',
   'ranks.rule.bot': 'With no opponent after a minute, you play a practice bot: that match does not change your rank.',
   'ranks.how.title': 'How it works',
@@ -707,7 +706,6 @@ const en: Record<string, string> = {
   'online.rankedTitle': 'Looking for a ranked opponent',
   'online.rankedText': 'Rank {rank} — players in queue: {n}. With no opponent, a practice bot (no effect on your rank) will face you in {s} s.',
   'online.rankedFound': 'Ranked opponent found, connecting...',
-  'online.rankedIntro': 'Ranked match: classic field, no wind, base projectile.',
   'online.rankedBot': 'Practice against a bot: this match does not change your rank.',
 
   // ---- Player account (src/game/account/)

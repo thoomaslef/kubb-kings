@@ -68,10 +68,10 @@ tombe jamais sur une partie amicale. Les joueurs sont couples par ordre d'arrive
 encore par proximite de rang** : avec peu de joueurs, une file triee par niveau ne
 couplerait personne. A faire quand il y aura du monde.
 
-**Conditions imposees**, les memes pour tous (l'hote les inscrit, c'est lui qui decide) :
-terrain classique, sans vent, sans kubb de champ, chacun garde son propre baton (cosmetique) et ses **skins personnels** (kubbs, trainee).
-Rien de ce qu'on a achete a la boutique ni regle au menu n'ENTRE EN JEU (hors cosmetique) — verifie en navigateur
-avec des reglages volontairement hostiles (vent actif, glace, kubbs de champ).
+**Conditions** (l'hote les tire, les memes pour les deux joueurs) : **terrain et vent aleatoires** (une chance sur deux
+d'avoir du vent), **jamais de kubbs de champ** — c'est un mode alternatif reserve aux parties entre amis. Chacun garde son
+propre baton (cosmetique) et ses **skins personnels** (kubbs, trainee). Rien de ce qu'on a regle au menu n'entre en jeu :
+le terrain et le vent d'une partie classee ne dependent que du tirage.
 
 **Pas de revanche** en classe (le rang est deja joue) ; l'ecran de resultat propose
 « Autre partie classee ».

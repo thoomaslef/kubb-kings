@@ -17,7 +17,7 @@ const ecran = () => page.evaluate(() => window.__kubbStoreApi.getState().screen)
 const nbGroupes = () => page.locator('.segmented').count();
 
 const groupesMenu = await nbGroupes();
-resultats.menu_neGardeQueLesReglagesDePartie = groupesMenu === 2; // vent + kubbs de champ
+resultats.menu_plusAucunReglage = groupesMenu === 0; // vent et kubbs de champ sont sur l'ecran du terrain
 resultats.menu_aLeBoutonApparence = (await page.locator('button', { hasText: /^Apparence$/ }).count()) === 1;
 
 await page.locator('button', { hasText: /^Apparence$/ }).click();

@@ -24,6 +24,10 @@ export function MapSelect() {
   const fieldPreset = useGameStore((s) => s.fieldPreset);
   const setFieldPreset = useGameStore((s) => s.setFieldPreset);
   const setMode = useGameStore((s) => s.setMode);
+  const windEnabled = useGameStore((s) => s.windEnabled);
+  const setWindEnabled = useGameStore((s) => s.setWindEnabled);
+  const fieldKubbsEnabled = useGameStore((s) => s.fieldKubbsEnabled);
+  const setFieldKubbsEnabled = useGameStore((s) => s.setFieldKubbsEnabled);
   const ownedItems = useGameStore((s) => s.ownedItems);
   const progression = useGameStore((s) => s.progression);
   const level = levelFromXp(progression.totalXp).level;
@@ -88,6 +92,49 @@ export function MapSelect() {
               </button>
             );
           })}
+        </div>
+
+        {/* Vent et kubbs de champ se reglent ici, avec le terrain, pour toute partie choisie (amis, solo, local, 2v2, tournoi) ; en ligne, l'hote les fixe pour les deux. */}
+        <div className="map-options" data-testid="game-options">
+          <p className="segmented-label">{t('menu.windAria')}</p>
+          <div className="segmented" role="group" aria-label={t('menu.windAria')}>
+            <button
+              className={`segmented__item${!windEnabled ? ' segmented__item--on' : ''}`}
+              aria-pressed={!windEnabled}
+              onClick={() => setWindEnabled(false)}
+            >
+              {t('menu.windOff')}
+            </button>
+            <button
+              className={`segmented__item${windEnabled ? ' segmented__item--on' : ''}`}
+              aria-pressed={windEnabled}
+              onClick={() => setWindEnabled(true)}
+            >
+              {t('menu.windOn')}
+            </button>
+          </div>
+          <p className="footnote footnote--tight">{t(windEnabled ? 'menu.windOnHint' : 'menu.windOffHint')}</p>
+
+          <p className="segmented-label">{t('menu.fieldKubbsAria')}</p>
+          <div className="segmented" role="group" aria-label={t('menu.fieldKubbsAria')}>
+            <button
+              className={`segmented__item${!fieldKubbsEnabled ? ' segmented__item--on' : ''}`}
+              aria-pressed={!fieldKubbsEnabled}
+              onClick={() => setFieldKubbsEnabled(false)}
+            >
+              {t('menu.fieldKubbsOff')}
+            </button>
+            <button
+              className={`segmented__item${fieldKubbsEnabled ? ' segmented__item--on' : ''}`}
+              aria-pressed={fieldKubbsEnabled}
+              onClick={() => setFieldKubbsEnabled(true)}
+            >
+              {t('menu.fieldKubbsOn')}
+            </button>
+          </div>
+          <p className="footnote footnote--tight">
+            {t(fieldKubbsEnabled ? 'menu.fieldKubbsOnHint' : 'menu.fieldKubbsOffHint')}
+          </p>
         </div>
 
         {/* L'indice et l'action restent sous les yeux pendant qu'on fait
