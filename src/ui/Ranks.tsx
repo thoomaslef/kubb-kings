@@ -65,13 +65,6 @@ export function Ranks() {
     void loadBoard();
   }, [loadBoard, account.status]);
 
-  const reroll = async () => {
-    setBusy(true);
-    const pseudo = await rerollMyPseudo();
-    setBusy(false);
-    if (pseudo) await loadBoard();
-  };
-
   const toggleVisible = async () => {
     if (!standing) return;
     setBusy(true);
@@ -203,14 +196,11 @@ export function Ranks() {
                     : ` — ${t(standing.visible ? 'ranks.board.notRanked' : 'ranks.board.hidden')}`}
                 </p>
                 <div className="button-column">
-                  <button className="btn btn--ghost" onClick={reroll} disabled={busy}>
-                    {t('ranks.board.reroll')}
-                  </button>
                   <button className="btn btn--ghost" onClick={toggleVisible} disabled={busy}>
                     {t(standing.visible ? 'ranks.board.hide' : 'ranks.board.show')}
                   </button>
                 </div>
-                <PseudoEditor showRandom={false} onChanged={() => void loadBoard()} />
+                <PseudoEditor onChanged={() => void loadBoard()} />
                 <p className="footnote">{t('ranks.board.pseudoNote')}</p>
               </>
             ) : (

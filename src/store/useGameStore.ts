@@ -418,6 +418,8 @@ interface GameState {
    * achat desactive cote UI dans ces cas).
    */
   purchaseItem: (itemId: string) => void;
+  /** Depense des pieces (ex. changer de pseudo) ; false, sans rien depenser, si le solde ne suffit pas. */
+  spendCoins: (amount: number) => boolean;
   /**
    * Marque comme possedes les succes donnes, en filtrant ceux deja
    * debloques (idempotent, meme discipline que purchaseItem) : persiste la
@@ -559,6 +561,17 @@ export const useGameStore = create<GameState>((set) => ({
       saveOwnedItems(ownedItems);
       return { coins, ownedItems };
     }),
+  spendCoins: (amount) => {
+    let spent = false;
+    set((state) => {
+      if (!Number.isFinite(amount) || amount <= 0 || state.coins < amount) return state;
+      const coins = state.coins - amount;
+      saveCurrency({ coins });
+      spent = true;
+      return { coins };
+    });
+    return spent;
+  },
   unlockAchievements: (ids) =>
     set((state) => {
       const newOnes = ids.filter((id) => !state.unlockedAchievements.includes(id));

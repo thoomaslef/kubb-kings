@@ -140,7 +140,8 @@ async function piecesGagnees(perks) {
     window.__kubbStoreApi.setState({ unlockedAchievements: [] });
     const s = window.__kubb.scene.getScene('MatchScene');
     s.finish({ winner: 'blue', reason: 'king-down', knockedDown: { blue: 5, red: 0 } }, 100000);
-    return window.__kubbStoreApi.getState().lastCoinsAward;
+    // On retire les pieces de succes de CETTE manche (variables d'une mesure a l'autre) : reste le bareme.
+    return window.__kubbStoreApi.getState().lastCoinsAward - s.achievementRewards.coins;
   });
 }
 const piecesSans = await piecesGagnees([]);
@@ -180,10 +181,10 @@ const resultats = {
   sansBonusLEffetDeVolEgaleLEffetLu: Math.abs(base.vol - base.lu) < 1e-6,
   effetAppuyeRenforceLaForce: Math.abs(appuye.vol - appuye.lu * 1.25) < 0.02 && Math.abs(appuye.lu - base.lu) < 0.05,
   poignetSoupleNeChangePasLaForce: Math.abs(souple.vol - souple.lu) < 1e-6,
-  // Les pieces de succes (identiques d'une mesure a l'autre) s'ajoutent au bareme : on compare par DIFFERENCE.
-  pillageAjouteHuitPiecesParKubb: piecesPillage - piecesSans === 5 * 8,
-  // (20 + 5 x 18 + 50) x 1,5 = 240 contre 120 sans bonus : +120.
-  pillageSeCumuleAvecBoursePleine: piecesPillageEtBourse - piecesSans === 240 - 120,
+  // (20 + 5 x 10 + 50) = 120 sans bonus ; avec Pillage : 20 + 5 x 18 + 50 = 160.
+  pillageAjouteHuitPiecesParKubb: piecesSans === 120 && piecesPillage === 160,
+  // (20 + 5 x 18 + 50) x 1,5 = 240.
+  pillageSeCumuleAvecBoursePleine: piecesPillageEtBourse === 240,
   traitGuideDessineLaFleche: traitGuide.ok && traitGuide.traits > 0,
   roiTombeSansPoigneFerme: roiSans7 === true,
   poigneFermeProtegeLeRoiDunChocMoyen: roiAvec7 === false,

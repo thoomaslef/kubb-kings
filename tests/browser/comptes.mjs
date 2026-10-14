@@ -676,7 +676,7 @@ const B = await appareil('B');
   await I.contexte.close();
 
   // H : un joueur connecte, rang Or 1 (marche 10), 12 victoires.
-  const H = await appareil('H', { 'kubb-kings.rank': { index: 10, wins: 12, losses: 3, peak: 10 } });
+  const H = await appareil('H', { 'kubb-kings.rank': { index: 10, wins: 12, losses: 3, peak: 10 }, 'kubb-kings.currency': { coins: 250 } });
   await ouvrirCompte(H.page);
   await H.page.locator('button', { hasText: /^Creer un compte$/ }).click();
   await remplir(H.page, { email: 'classe@example.com', mdp: 'motdepasse1', confirmation: 'motdepasse1' });
@@ -697,12 +697,13 @@ const B = await appareil('B');
   resultats.classement_MaPlace = /3e sur 4/.test(standing ?? '');
   resultats.classement_LEmailNApparaitJamais = !((await H.page.locator('.panel--ranks').textContent()) ?? '').includes('classe@example.com');
 
-  // Le pseudo peut etre tire au hasard : « Changer de pseudo » en donne un autre, sans rien saisir.
+  // Le pseudo peut etre tire au hasard (pour 100 pieces) : on en obtient un autre, sans rien saisir.
   const avant = await H.page.locator('[data-testid="my-pseudo"]').textContent();
-  await H.page.locator('button', { hasText: /Changer de pseudo/ }).click();
+  await H.page.locator('button', { hasText: /Un pseudo au hasard/ }).click();
   await attendre(H.page, (a) => document.querySelector('[data-testid="my-pseudo"]')?.textContent !== a, avant);
   const apres = await H.page.locator('[data-testid="my-pseudo"]').textContent();
   resultats.classement_NouveauPseudoGenere = !!apres && apres !== avant;
+  resultats.classement_LeTirageAuHasardCoute100Pieces = (await etat(H.page)).coins === 150;
   // Le seul champ de saisie de l'ecran est celui du pseudo (regles verifiees plus bas, section 11).
   resultats.classement_LeSeulChampEstCeluiDuPseudo =
     (await H.page.locator('.panel--ranks input').count()) === 1 && (await H.page.locator('.panel--ranks [data-testid="pseudo-input"]').count()) === 1;
@@ -790,7 +791,7 @@ const B = await appareil('B');
     });
 
   // P1 : un pseudo choisi des la creation du compte.
-  const P1 = await appareil('P1');
+  const P1 = await appareil('P1', { 'kubb-kings.currency': { coins: 250 } });
   await creer(P1.page, 'ra@example.com', 'Thomas_Ra');
   await synchroOk(P1.page);
   // Le pseudo voulu est applique apres la premiere synchronisation : on laisse le temps a cette seconde requete.
@@ -829,6 +830,8 @@ const B = await appareil('B');
     await P1.page.locator('[data-testid="pseudo-editor"] button[type="submit"]').click();
   };
 
+  const pieces = () => P1.page.evaluate(() => window.__kubbStoreApi.getState().coins);
+  resultats.boutique_leCoutEstAffiche = /100 pieces/.test((await P1.page.locator('[data-testid="pseudo-cost"]').textContent()) ?? '');
   await saisir('Connard');
   resultats.boutique_interditRefuse = /pas autorise/.test((await msg()) ?? '');
   await saisir('x');
@@ -840,16 +843,27 @@ const B = await appareil('B');
   await P1.page.waitForTimeout(serveur.delaiPseudo + 300);
   await saisir(pseudoServeur('autre@example.com') ?? 'x');
   resultats.boutique_prisRefuseParLeServeur = /deja pris/.test((await msg()) ?? '');
+  resultats.boutique_unRefusNeCoutePasDePieces = (await pieces()) === 250;
   await saisir('Nouveau_Nom');
   resultats.boutique_renommage = (await attendre(P1.page, () => document.querySelector('[data-testid="pseudo-current"]')?.textContent === 'Nouveau_Nom')) && pseudoServeur('ra@example.com') === 'Nouveau_Nom';
+  resultats.boutique_leRenommageCoute100Pieces = (await pieces()) === 150 && (await P1.page.evaluate(() => JSON.parse(localStorage.getItem('kubb-kings.currency')).coins)) === 150;
   await saisir('Encore_Un');
   resultats.boutique_trop_tot_RefuseParLeServeur = /quelques minutes/.test((await msg()) ?? '') && (await courant()) === 'Nouveau_Nom';
+
+  // Solde insuffisant : le bouton est bloque, le prix manquant est dit, et AUCUNE requete ne part.
+  await P1.page.evaluate(() => window.__kubbStoreApi.setState({ coins: 40 }));
+  const avantRequetes = serveur.journal.filter((l) => l.includes('set_pseudo')).length;
+  await P1.page.locator('[data-testid="pseudo-input"]').fill('Sans_Sou');
+  resultats.boutique_sansPieces_BoutonBloque = await P1.page.locator('[data-testid="pseudo-editor"] button[type="submit"]').isDisabled();
+  resultats.boutique_sansPieces_LeManqueEstDit = /manque 60 pieces/.test((await P1.page.locator('[data-testid="pseudo-cost"]').textContent()) ?? '');
+  resultats.boutique_sansPieces_AucuneRequete = serveur.journal.filter((l) => l.includes('set_pseudo')).length === avantRequetes;
+  await P1.page.evaluate(() => window.__kubbStoreApi.setState({ coins: 250 }));
 
   // Script SQL pas encore relance : on le dit, sans rien casser.
   serveur.setPseudoAbsent = true;
   await P1.page.waitForTimeout(serveur.delaiPseudo + 300);
   await saisir('Autre_Nom');
-  resultats.boutique_sqlPasRelance_OnLeDit = /pas encore disponible/.test((await msg()) ?? '') && (await courant()) === 'Nouveau_Nom';
+  resultats.boutique_sqlPasRelance_OnLeDit = /pas encore disponible/.test((await msg()) ?? '') && (await courant()) === 'Nouveau_Nom' && (await pieces()) === 250;
   serveur.setPseudoAbsent = false;
 
   // Sans compte : une invitation a se connecter, pas de champ.

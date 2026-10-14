@@ -33,14 +33,19 @@ async function mesurer(terrain) {
     scene.aimAngle = scene.forwardAngle() - (70 * Math.PI) / 180;
     scene.aimPower = 0.75;
     scene.aimSpin = 0;
-    scene.launch();
+    // Un releve PAR IMAGE du jeu (pas un minuteur : sous charge, un setTimeout laisse passer le mur
+    // entre deux mesures et le premier releve peut deja le montrer touche).
     const points = [];
-    for (let i = 0; i < 220; i += 1) {
-      await new Promise((r) => setTimeout(r, 12));
+    const noter = () => {
       const b = scene.baton;
-      if (!b) break;
-      points.push({ mur: scene.bouncedWallThisThrow, fa: b.sprite.body.frictionAir, v: b.speed, rest: b.sprite.body.restitution, preset: scene.fieldPreset });
-    }
+      if (b) points.push({ mur: scene.bouncedWallThisThrow, fa: b.sprite.body.frictionAir, v: b.speed, rest: b.sprite.body.restitution, preset: scene.fieldPreset });
+    };
+    scene.events.on('update', noter);
+    scene.launch();
+    noter();
+    const debut = Date.now();
+    while (Date.now() - debut < 3500 && !(points.length > 12 && !scene.baton)) await new Promise((r) => setTimeout(r, 50));
+    scene.events.off('update', noter);
     return points;
   });
   await contexte.close();

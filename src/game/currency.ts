@@ -5,6 +5,9 @@ export interface CurrencyState {
 
 export const INITIAL_CURRENCY: CurrencyState = { coins: 0 };
 
+/** Prix d'un changement de pseudo apres l'inscription (le choix fait a la creation du compte est gratuit). */
+export const PSEUDO_CHANGE_COST = 100;
+
 /**
  * Pieces gagnees a la fin d'un match, cote equipe Bleue (le profil, comme
  * l'XP — cf. progression.ts). Bareme simple : une base de participation, un

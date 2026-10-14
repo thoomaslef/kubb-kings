@@ -154,10 +154,18 @@ C'est du **texte libre affiche publiquement** : le jeu est ouvert a tous les age
 | Filtre de termes interdits : accents et substitutions (0->o, 1->i, 3->e, 4->a, 5->s, @->a, $->s, 7->t) defaites ; termes **courts** refuses comme mot entier seulement (« Classic » passe, « pute » non) ; noms reserves (admin, support, kubbkings...) | client ET serveur, **meme liste** |
 | Unicite, sans tenir compte de la casse | serveur (index unique) |
 | Un changement toutes les 5 minutes au plus (le premier est libre) | serveur (`pseudo_changed_at`) |
+| **Un changement apres l'inscription coute 100 pieces** (`PSEUDO_CHANGE_COST`, `currency.ts`) ; le choix fait a l'inscription est gratuit | client (`PseudoEditor`) |
 
 Le **serveur fait foi** ; le client ne fait que repondre plus vite. Les deux filtres sont deux ecritures de la meme
 regle : [`pseudoSql.test.ts`](../src/game/account/pseudoSql.test.ts) execute le VRAI SQL (PGlite, un Postgres embarque)
 et le client sur les memes pseudos et exige le meme verdict — changer une liste sans l'autre fait echouer `npm test`.
+
+**Le prix.** Depuis la Boutique ou l'ecran des classes, changer de pseudo — au choix ou au hasard — coute 100 pieces.
+Elles ne sont debitees qu'une fois le serveur d'accord : un refus (deja pris, interdit, trop tot, service
+injoignable) ne coute rien. Solde insuffisant : le bouton est bloque et le manque est dit, sans requete. Le prix est
+controle cote client (les pieces sont une donnee de l'appareil, comme le reste de la progression, cf. limites ci-dessus) ;
+le delai de 5 minutes, lui, est impose par le serveur. L'attribution automatique d'un pseudo a un ancien compte qui n'en
+avait pas reste gratuite : ce n'est pas un changement voulu.
 
 **Choix a l'inscription.** Le profil en ligne n'existe qu'apres la premiere synchronisation : le pseudo voulu est
 donc garde (`kubb-kings.pending-pseudo`) puis applique juste apres. Un echec passager (reseau, delai) le laisse en

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { changeMyPseudo, fetchStanding, rerollMyPseudo } from '../game/account/sync';
 import { PSEUDO_MAX, PSEUDO_MIN } from '../game/account/pseudo';
+import { PSEUDO_CHANGE_COST } from '../game/currency';
 import { useT } from '../i18n/useT';
 
 /**
@@ -13,12 +14,15 @@ export function PseudoEditor({ onChanged, showRandom = true }: { onChanged?: () 
   const t = useT();
   const account = useGameStore((s) => s.account);
   const setScreen = useGameStore((s) => s.setScreen);
+  const coins = useGameStore((s) => s.coins);
+  const spendCoins = useGameStore((s) => s.spendCoins);
   const [current, setCurrent] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   const signedIn = account.status === 'signedIn';
+  const canPay = coins >= PSEUDO_CHANGE_COST;
 
   useEffect(() => {
     if (!signedIn) {
@@ -48,10 +52,16 @@ export function PseudoEditor({ onChanged, showRandom = true }: { onChanged?: () 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     setMessage(null);
+    if (!canPay) {
+      setMessage({ ok: false, text: t('pseudo.error.coins', { n: PSEUDO_CHANGE_COST }) });
+      return;
+    }
     setBusy(true);
     const outcome = await changeMyPseudo(draft);
     setBusy(false);
     if (outcome.ok) {
+      // Les pieces ne partent qu'une fois le serveur d'accord : un refus (pris, interdit, trop tot) ne coute rien.
+      spendCoins(PSEUDO_CHANGE_COST);
       setCurrent(outcome.pseudo);
       setDraft('');
       setMessage({ ok: true, text: t('pseudo.saved', { pseudo: outcome.pseudo }) });
@@ -63,10 +73,15 @@ export function PseudoEditor({ onChanged, showRandom = true }: { onChanged?: () 
 
   const random = async () => {
     setMessage(null);
+    if (!canPay) {
+      setMessage({ ok: false, text: t('pseudo.error.coins', { n: PSEUDO_CHANGE_COST }) });
+      return;
+    }
     setBusy(true);
     const pseudo = await rerollMyPseudo();
     setBusy(false);
     if (pseudo) {
+      spendCoins(PSEUDO_CHANGE_COST);
       setCurrent(pseudo);
       setMessage({ ok: true, text: t('pseudo.saved', { pseudo }) });
       onChanged?.();
@@ -93,12 +108,12 @@ export function PseudoEditor({ onChanged, showRandom = true }: { onChanged?: () 
         data-testid="pseudo-input"
       />
       <div className="button-column">
-        <button type="submit" className="btn" disabled={busy || draft.trim().length === 0}>
-          {t('pseudo.save')}
+        <button type="submit" className="btn" disabled={busy || draft.trim().length === 0 || !canPay}>
+          {t('pseudo.save', { n: PSEUDO_CHANGE_COST })}
         </button>
         {showRandom && (
-          <button type="button" className="btn btn--ghost" onClick={random} disabled={busy}>
-            {t('pseudo.random')}
+          <button type="button" className="btn btn--ghost" onClick={random} disabled={busy || !canPay}>
+            {t('pseudo.random', { n: PSEUDO_CHANGE_COST })}
           </button>
         )}
       </div>
@@ -107,6 +122,9 @@ export function PseudoEditor({ onChanged, showRandom = true }: { onChanged?: () 
           {message.text}
         </p>
       )}
+      <p className={`footnote${canPay ? '' : ' footnote--locked'}`} data-testid="pseudo-cost">
+        {t(canPay ? 'pseudo.cost' : 'pseudo.costMissing', { n: PSEUDO_CHANGE_COST, missing: PSEUDO_CHANGE_COST - coins })}
+      </p>
       <p className="footnote">{t('pseudo.rules', { min: PSEUDO_MIN, max: PSEUDO_MAX })}</p>
     </form>
   );
