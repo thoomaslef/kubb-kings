@@ -12,10 +12,6 @@ import { RankBadge, useRankName } from './RankBadge';
 import { isSafeMode, leaveSafeMode, safeModeReason } from '../game/safeMode';
 import { gameUrl, shareGame, type ShareData, type ShareOutcome } from '../game/shareLink';
 import { accountAvailable } from '../game/account/sync';
-import type { Lang } from '../i18n/translate';
-
-const LANGS: Lang[] = ['fr', 'en'];
-const LANG_AUTONYM: Record<Lang, string> = { fr: 'Français', en: 'English' };
 
 export function Menu() {
   const t = useT();
@@ -49,8 +45,6 @@ export function Menu() {
   const setWindEnabled = useGameStore((s) => s.setWindEnabled);
   const fieldKubbsEnabled = useGameStore((s) => s.fieldKubbsEnabled);
   const setFieldKubbsEnabled = useGameStore((s) => s.setFieldKubbsEnabled);
-  const lang = useGameStore((s) => s.lang);
-  const setLang = useGameStore((s) => s.setLang);
   const setMode = useGameStore((s) => s.setMode);
   const online = useGameStore((s) => s.online);
   const endOnline = useGameStore((s) => s.endOnline);
@@ -339,20 +333,9 @@ export function Menu() {
             {t('menu.achievements')}
           </button>
 
-          <p className="segmented-label">{t('menu.langAria')}</p>
-          <div className="segmented" role="group" aria-label={t('menu.langAria')}>
-            {LANGS.map((code) => (
-              <button
-                key={code}
-                className={`segmented__item${code === lang ? ' segmented__item--on' : ''}`}
-                aria-pressed={code === lang}
-                onClick={() => setLang(code)}
-              >
-                {LANG_AUTONYM[code]}
-              </button>
-            ))}
-          </div>
-
+          <button className="btn" onClick={() => setScreen('options')}>
+            {t('menu.options')}
+          </button>
           <button className="btn" onClick={() => setScreen('rules')}>
             {t('menu.rules')}
           </button>
