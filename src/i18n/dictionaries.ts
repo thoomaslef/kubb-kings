@@ -24,6 +24,9 @@ const fr: Record<string, string> = {
   'menu.tournament': 'Tournoi local — 4 ou 8 joueurs',
   'menu.online': 'Jouer avec un ami',
   'menu.playLocal': 'Jouer hors ligne',
+  'menu.playOnline': 'Jouer en ligne',
+  'hub.online.title': 'Jouer en ligne',
+  'hub.online.find': 'Trouver une partie',
   'hub.local.title': 'Jouer hors ligne',
   'hub.back': 'Retour',
 
@@ -172,8 +175,6 @@ const fr: Record<string, string> = {
   'online.anyDeviceHint':
     "Votre adversaire peut etre sur un autre appareil, ou l'ordinateur d'a cote : il lui suffit du code.",
   'online.connectionFailed': "Service en ligne injoignable. Verifiez votre connexion, puis reessayez.",
-  'online.quick': 'Partie rapide',
-  'online.quickHint': "Un adversaire au hasard, en partie classee. Si personne n'arrive en une minute, vous jouez contre un bot.",
   'online.searchingTitle': "Recherche d'un adversaire",
   'online.searchingText': "Joueurs en file : {n}. Sans adversaire, un bot (difficile) vous affrontera dans {s} s.",
   'online.quickFound': 'Adversaire trouve, connexion...',
@@ -635,6 +636,9 @@ const en: Record<string, string> = {
   'menu.tournament': 'Local tournament — 4 or 8 players',
   'menu.online': 'Play with a friend',
   'menu.playLocal': 'Play offline',
+  'menu.playOnline': 'Play online',
+  'hub.online.title': 'Play online',
+  'hub.online.find': 'Find a match',
   'hub.local.title': 'Play offline',
   'hub.back': 'Back',
 
@@ -782,8 +786,6 @@ const en: Record<string, string> = {
     'Here both players must be in two tabs of the SAME browser: with no online service configured, matches do not travel between devices.',
   'online.anyDeviceHint': 'Your opponent can be on another device, anywhere: all they need is the code.',
   'online.connectionFailed': 'Online service unreachable. Check your connection, then try again.',
-  'online.quick': 'Quick match',
-  'online.quickHint': 'A random opponent, in a ranked match. If nobody shows up within a minute, you play a bot.',
   'online.searchingTitle': 'Looking for an opponent',
   'online.searchingText': 'Players in queue: {n}. With no opponent, a bot (hard) will face you in {s} s.',
   'online.quickFound': 'Opponent found, connecting...',

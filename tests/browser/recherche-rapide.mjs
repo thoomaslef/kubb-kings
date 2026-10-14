@@ -19,10 +19,10 @@ const contexte = await navigateur.newContext({ viewport: { width: 420, height: 9
 const erreurs = [];
 const resultats = {};
 
-/** Menu -> « Partie rapide » (la recherche classee demarre seule). */
+/** Menu -> Jouer en ligne -> « Trouver une partie » (la recherche classee demarre seule). */
 async function chercher(page) {
   await ouvrirUnHub(page, 'online');
-  await page.locator('button', { hasText: /Partie rapide/i }).first().click();
+  await page.locator('button', { hasText: /Trouver une partie/i }).first().click();
   // La recherche demarre a l'arrivee sur l'ecran du salon : on attend que le salon prive (sans recherche) ait disparu.
   // Le couplage peut etre instantane : on ne guette donc pas un titre precis.
   await page.waitForFunction(() => !document.body.innerText.includes('Creer une partie'), null, { timeout: 8000, polling: 200 });

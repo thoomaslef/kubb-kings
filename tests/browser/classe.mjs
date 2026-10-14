@@ -47,16 +47,15 @@ async function nouvellePage(nom, indexDeRang = OR_2, { pending = false } = {}) {
 const rang = (page) => page.evaluate(() => window.__kubbStoreApi.getState().rank);
 const dernierMouvement = (page) => page.evaluate(() => window.__kubbStoreApi.getState().lastRankChange);
 
-/** Menu -> « Partie rapide » (recherche classee). */
+/** Menu -> Jouer en ligne -> « Trouver une partie » (recherche classee). */
 async function chercherClasse(page) {
   await ouvrirUnHub(page, 'online');
-  await page.locator('button', { hasText: /Partie rapide/i }).first().click();
+  await page.locator('button', { hasText: /Trouver une partie/i }).first().click();
 }
 
 // ---------------------------------------------------------------- 1. l'ecran des rangs
 {
   const p = await nouvellePage('menu');
-  await ouvrirUnHub(p, 'online');
   const libelleMenu = await p.locator('button', { hasText: /Classement —/ }).first().textContent();
   await p.locator('button', { hasText: /Classement —/ }).first().click();
   await p.waitForTimeout(400);

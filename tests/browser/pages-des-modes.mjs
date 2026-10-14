@@ -1,6 +1,6 @@
 /**
  * Les deux pages qui reunissent les modes : « Jouer hors ligne » (solo, 1v1,
- * 2v2) ; le en ligne (partie rapide classee, entre amis, classement) est directement au menu.
+ * 2v2) ; « Jouer en ligne » (trouver une partie classee, jouer avec un ami) ; le classement est au menu.
  *
  * Verifie dans un vrai navigateur : le menu n'expose plus que ces deux
  * entrees (plus de bouton de mode en vrac), chaque page porte ses trois
@@ -29,9 +29,9 @@ const present = async (page, motif) => (await page.locator('button', { hasText: 
 // ---- le menu
 {
   const { page, contexte } = await nouvelle('menu');
-  resultats.menu_deuxEntrees = (await present(page, /Jouer hors ligne/)) && (await present(page, /Partie rapide/));
+  resultats.menu_deuxEntrees = (await present(page, /Jouer hors ligne/)) && (await present(page, /Jouer en ligne/));
   const haut = (motif) => page.locator('button', { hasText: motif }).first().evaluate((b) => b.getBoundingClientRect().top);
-  resultats.menu_enLigneAuDessusDeHorsLigne = (await haut(/Partie rapide/)) < (await haut(/Jouer hors ligne/));
+  resultats.menu_enLigneAuDessusDeHorsLigne = (await haut(/Jouer en ligne/)) < (await haut(/Jouer hors ligne/));
   resultats.menu_plusDeModeEnVrac =
     !(await present(page, /^Solo/)) && !(await present(page, /1v1 local/)) && !(await present(page, /2v2 local/)) &&
     !(await present(page, /Partie privee/));
@@ -70,49 +70,43 @@ const present = async (page, motif) => (await page.locator('button', { hasText: 
   await contexte.close();
 }
 
-// ---- le menu porte directement le en ligne : plus de page intermediaire
+// ---- page en ligne : deux choix
 {
   const { page, contexte } = await nouvelle('en-ligne');
-  resultats.enLigne_toutEstAuMenu =
-    (await present(page, /Partie rapide/)) && (await present(page, /Jouer avec un ami/)) && (await present(page, /Classement —/));
-  resultats.enLigne_plusDePageIntermediaire = !(await present(page, /Jouer en ligne/));
+  resultats.enLigne_menuPorteLeBouton = (await present(page, /Jouer en ligne/)) && !(await present(page, /Partie rapide/)) && !(await present(page, /Jouer avec un ami/));
+  resultats.enLigne_aucunTexteSousLeBouton = !/Un adversaire au hasard/.test(await page.evaluate(() => document.body.innerText));
+  await bouton(page, /Jouer en ligne/).click();
+  await page.waitForTimeout(300);
+  resultats.enLigne_ecran = (await ecran(page)) === 'online-hub';
+  resultats.enLigne_deuxChoix = (await present(page, /Trouver une partie/)) && (await present(page, /Jouer avec un ami/));
 
   await bouton(page, /Jouer avec un ami/).click();
   await page.waitForSelector('.map-grid', { timeout: 10000 });
   resultats.enLigne_amiPasseParLeTerrain = (await page.evaluate(() => window.__kubbStoreApi.getState().mapIntent)) === 'online';
   await bouton(page, /Retour|Annuler|Menu/).click().catch(() => {});
   await page.waitForTimeout(300);
-  resultats.enLigne_amiRetourAuMenu = (await ecran(page)) === 'menu';
+  resultats.enLigne_amiRetourALaPage = (await ecran(page)) === 'online-hub';
 
-  await bouton(page, /Classement —/).click();
-  await page.waitForTimeout(300);
-  resultats.enLigne_classementOuvreLesRangs = (await ecran(page)) === 'ranks';
-  const page_ = await page.evaluate(() => document.body.innerText);
-  resultats.enLigne_classementExpliqueLeFonctionnement = /Comment ca marche/.test(page_) && /classee/.test(page_);
-  await bouton(page, /Retour/).click();
-  await page.waitForTimeout(300);
-  resultats.enLigne_classementRetourAuMenu = (await ecran(page)) === 'menu';
-  console.log(await textes(page));
-  await contexte.close();
-}
-
-// ---- partie rapide : directement une recherche CLASSEE, sans reglage
-{
-  const { page, contexte } = await nouvelle('rapide');
-  await bouton(page, /Partie rapide/).click();
+  // Trouver une partie : recherche CLASSEE immediate.
+  await bouton(page, /Trouver une partie/).click();
   await page.waitForTimeout(800);
   const e = await page.evaluate(() => ({ ecran: window.__kubbStoreApi.getState().screen, classe: window.__kubbStoreApi.getState().rankedLobby, texte: document.body.innerText }));
-  resultats.rapide_lanceDirectementLaRecherche = e.ecran === 'online' && /Recherche/i.test(e.texte);
-  resultats.rapide_estClassee = e.classe === true;
+  resultats.trouver_lanceLaRecherche = e.ecran === 'online' && /Recherche/i.test(e.texte);
+  resultats.trouver_estClassee = e.classe === true;
   await bouton(page, /Annuler/).click();
   await page.waitForTimeout(300);
-  resultats.rapide_annulerRameneAuMenu = (await ecran(page)) === 'menu';
-  // Le salon entre amis, lui, n'a pas de recherche.
-  await bouton(page, /Jouer avec un ami/).click();
-  await page.waitForSelector('.map-grid');
-  await page.locator('.map-actions .btn--primary').first().click();
-  await page.waitForTimeout(500);
-  resultats.rapide_salonAmiSansRecherche = (await ecran(page)) === 'online' && !(await present(page, /Partie rapide/));
+  resultats.trouver_annulerRamenePage = (await ecran(page)) === 'online-hub';
+  await bouton(page, /Retour/).click();
+  await page.waitForTimeout(300);
+  resultats.enLigne_retourAuMenu = (await ecran(page)) === 'menu';
+
+  // Le classement reste au menu et explique le fonctionnement.
+  await bouton(page, /Classement —/).click();
+  await page.waitForTimeout(300);
+  resultats.classement_ouvreLesRangs = (await ecran(page)) === 'ranks';
+  const txt = await page.evaluate(() => document.body.innerText);
+  resultats.classement_expliqueLeFonctionnement = /Comment ca marche/.test(txt) && /classee/.test(txt);
+  resultats.classement_neLancePasDeRecherche = !(await present(page, /Partie rapide|Trouver une partie/));
   await contexte.close();
 }
 

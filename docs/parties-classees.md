@@ -58,7 +58,7 @@ deja installee) ; rien d'autre a configurer.
 Depuis le menu : le bouton « Classement — Or 2 » (avec l'insigne du rang). L'ecran presente
 le rang actuel, la prochaine marche, le bilan (victoires, defaites, meilleur rang), l'echelle
 des six rangs avec la position du joueur, le classement et « Comment ca marche ». Cet ecran
-ne lance rien : la recherche part du bouton « Partie rapide » du menu.
+ne lance rien : la recherche part de « Jouer en ligne » > « Trouver une partie ».
 
 ## Le matchmaking classe
 
@@ -127,12 +127,12 @@ l'applique ne prouverait rien.
 
 ## Organisation du menu
 
-Le en ligne est directement au menu, sans page intermediaire :
+Le menu porte :
 
-- **Partie rapide** : lance tout de suite une recherche d'adversaire — et TOUTE partie rapide est
-  classee (bot d'entrainement au bout d'une minute, sans effet sur le rang).
-- **Classement** : l'ecran des rangs (comment ca marche, echelle, classement des joueurs).
-- **Jouer avec un ami** : un code a partager, tchat, conditions au choix — jamais classee.
-- **Jouer hors ligne** (page `src/ui/Hubs.tsx`) : Solo (avec le niveau de l'IA), 1v1 local, 2v2 local, Tournoi local.
+- **Jouer en ligne** : une page a deux choix — **Trouver une partie** (recherche d'adversaire lancee tout de suite ;
+  TOUTE partie trouvee ainsi est classee, bot d'entrainement au bout d'une minute, sans effet sur le rang) et
+  **Jouer avec un ami** (code a partager, tchat, conditions au choix, jamais classee).
+- **Classement** : l'ecran des rangs (comment ca marche, echelle, classement des joueurs) ; il ne lance rien.
+- **Jouer hors ligne** : Solo (avec le niveau de l'IA), 1v1 local, 2v2 local, Tournoi local.
 
 Defi reste sur le menu principal. « Retour » ramene a la page d'ou l'on vient.

@@ -55,3 +55,34 @@ export function LocalHub() {
     </div>
   );
 }
+
+/** Jouer en ligne : deux choix, trouver un adversaire (partie classee) ou jouer avec un ami (code). */
+export function OnlineHub() {
+  const t = useT();
+  const setScreen = useGameStore((s) => s.setScreen);
+  const openMapSelect = useGameStore((s) => s.openMapSelect);
+
+  const find = () => {
+    useGameStore.getState().setRankedLobby(true);
+    setScreen('online');
+  };
+
+  return (
+    <div className="overlay overlay--solid">
+      <div className="panel">
+        <h2 className="panel__title">{t('hub.online.title')}</h2>
+        <div className="button-column">
+          <button className="btn btn--primary" onClick={find}>
+            {t('hub.online.find')}
+          </button>
+          <button className="btn" onClick={() => openMapSelect('online')}>
+            {t('menu.online')}
+          </button>
+          <button className="btn btn--ghost" onClick={() => setScreen('menu')}>
+            {t('hub.back')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

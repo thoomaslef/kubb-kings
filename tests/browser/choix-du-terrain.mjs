@@ -98,7 +98,7 @@ for (const [bouton, attendu, cle] of [
   [/Tournoi/i, 'tournament-setup', 'tournoiAboutitAuReglage']
 ]) {
   const { contexte, page } = await ouvrir();
-  if (attendu !== 'online') await page.locator('button', { hasText: /Jouer hors ligne/i }).first().click();
+  await page.locator('button', { hasText: attendu === 'online' ? /Jouer en ligne/i : /Jouer hors ligne/i }).first().click();
   await page.locator('button', { hasText: bouton }).first().click();
   await page.waitForSelector('.map-grid', { timeout: 10000 });
   const passeParLEcran = (await ecran(page)) === 'map-select';

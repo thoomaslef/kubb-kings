@@ -277,7 +277,7 @@ export function OnlineLobby() {
     sessionRef.current = null;
     setCurrentSession(null);
     endOnline();
-    setScreen('menu');
+    setScreen('online-hub');
   };
 
   if (kind === 'aucun') {

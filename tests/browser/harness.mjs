@@ -224,12 +224,15 @@ export async function passerLeChoixDuTerrain(page, delaiMs = 20000) {
   await page.waitForFunction(() => !document.querySelector('.map-grid'), null, { timeout: delaiMs });
 }
 
-/** Depuis le menu : ouvre la page des modes hors ligne ('local'). En ligne, tout est directement au menu. */
+/** Depuis le menu : ouvre la page des modes hors ligne ('local') ou en ligne ('online'). */
 export async function ouvrirUnHub(page, hub) {
   await focus(page);
-  if (hub === 'online') return;
-  await page.locator('button', { hasText: /Jouer hors ligne|Play offline/i }).first().click();
-  await page.waitForFunction(() => window.__kubbStoreApi.getState().screen === 'local-hub', null, { timeout: 10000 });
+  await page.locator('button', { hasText: hub === 'online' ? /Jouer en ligne|Play online/i : /Jouer hors ligne|Play offline/i }).first().click();
+  await page.waitForFunction(
+    (attendu) => window.__kubbStoreApi.getState().screen === attendu,
+    hub === 'online' ? 'online-hub' : 'local-hub',
+    { timeout: 10000 }
+  );
 }
 
 /** Depuis le menu : choisit un mode (dans sa page) et traverse le choix du terrain. */

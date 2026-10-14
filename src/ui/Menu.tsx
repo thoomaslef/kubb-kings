@@ -39,12 +39,6 @@ export function Menu() {
   const clearRankChange = useGameStore((s) => s.clearRankChange);
   const rankName = useRankName();
   const rank = useGameStore((s) => s.rank);
-  const openMapSelect = useGameStore((s) => s.openMapSelect);
-  // « Partie rapide » = une partie classee, lancee tout de suite (la recherche demarre en arrivant).
-  const quickMatch = () => {
-    useGameStore.getState().setRankedLobby(true);
-    setScreen('online');
-  };
   const kubbSkin = useGameStore((s) => s.kubbSkin);
   const setKubbSkin = useGameStore((s) => s.setKubbSkin);
   const kingSkin = useGameStore((s) => s.kingSkin);
@@ -211,16 +205,12 @@ export function Menu() {
         )}
 
         <div className="button-column">
-          <button className="btn btn--primary" onClick={quickMatch}>
-            {t('online.quick')}
+          <button className="btn btn--primary" onClick={() => setScreen('online-hub')}>
+            {t('menu.playOnline')}
           </button>
-          <p className="footnote footnote--tight">{t('online.quickHint')}</p>
           <button className="btn btn--ranked" onClick={() => setScreen('ranks')}>
             <RankBadge index={rank.index} size="sm" />
             {t('menu.ranked', { rank: rankName(rank.index) })}
-          </button>
-          <button className="btn" onClick={() => openMapSelect('online')}>
-            {t('menu.online')}
           </button>
           <button className="btn btn--primary" onClick={() => setScreen('local-hub')}>
             {t('menu.playLocal')}
