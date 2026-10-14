@@ -142,8 +142,8 @@ cascade`). La progression gardee sur l'appareil, elle, reste.
 ## Pseudo
 
 A la creation du compte, un pseudo est **genere** par le serveur (« RapideViking42 »). Le joueur peut le
-**choisir** : un champ facultatif a l'inscription, et ensuite un bloc « Mon pseudo » dans la **Boutique** (et sur
-l'ecran des classes) — [`PseudoEditor.tsx`](../src/ui/PseudoEditor.tsx). Sans compte, il n'y a pas de pseudo : le bloc
+**choisir** : un champ facultatif a l'inscription, et ensuite un bloc « Mon pseudo » dans la **Boutique** (l'ecran des
+classes l'affiche mais ne l'edite pas) — [`PseudoEditor.tsx`](../src/ui/PseudoEditor.tsx). Sans compte, il n'y a pas de pseudo : le bloc
 invite a se connecter.
 
 C'est du **texte libre affiche publiquement** : le jeu est ouvert a tous les ages, donc des barrieres a trois niveaux.
@@ -160,7 +160,7 @@ Le **serveur fait foi** ; le client ne fait que repondre plus vite. Les deux fil
 regle : [`pseudoSql.test.ts`](../src/game/account/pseudoSql.test.ts) execute le VRAI SQL (PGlite, un Postgres embarque)
 et le client sur les memes pseudos et exige le meme verdict — changer une liste sans l'autre fait echouer `npm test`.
 
-**Le prix.** Depuis la Boutique ou l'ecran des classes, changer de pseudo — au choix ou au hasard — coute 100 pieces.
+**Le prix.** Depuis la Boutique, changer de pseudo — au choix ou au hasard — coute 100 pieces.
 Elles ne sont debitees qu'une fois le serveur d'accord : un refus (deja pris, interdit, trop tot, service
 injoignable) ne coute rien. Solde insuffisant : le bouton est bloque et le manque est dit, sans requete. Le prix est
 controle cote client (les pieces sont une donnee de l'appareil, comme le reste de la progression, cf. limites ci-dessus) ;

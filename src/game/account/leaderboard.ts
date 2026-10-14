@@ -20,8 +20,6 @@ export interface LeaderboardEntry {
 
 export interface Standing {
   pseudo: string | null;
-  /** Le joueur accepte d'apparaitre au classement. */
-  visible: boolean;
   /** null : pas classe (aucune partie classee jouee, ou masque). */
   place: number | null;
   /** Joueurs classes en tout. */
@@ -73,7 +71,6 @@ export function sanitizeStanding(raw: unknown): Standing | null {
   const place = nonNegativeInt(r.place);
   return {
     pseudo: cleanPseudo(r.pseudo),
-    visible: r.visible !== false,
     place: place > 0 ? place : null,
     total: nonNegativeInt(r.total)
   };

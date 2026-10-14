@@ -548,10 +548,6 @@ export async function rerollMyPseudo(): Promise<string | null> {
   return pseudo;
 }
 
-export async function setMyLeaderboardVisible(visible: boolean): Promise<boolean> {
-  return backend && store().account.status === 'signedIn' ? backend.setLeaderboardVisible(visible) : false;
-}
-
 /** Pour les verifications : relance un rapprochement a la demande. */
 export function syncNow(): Promise<void> {
   const user = currentUser();

@@ -79,8 +79,6 @@ export interface AccountBackend {
   rerollPseudo(): Promise<string | null>;
   /** Choisit son pseudo ; le serveur applique les regles (alphabet, termes interdits, unicite, delai). */
   setPseudo(pseudo: string): Promise<PseudoResult>;
-  /** Apparaitre ou non au classement. */
-  setLeaderboardVisible(visible: boolean): Promise<boolean>;
   /** Supprime le compte ET son profil (cf. supabase/comptes.sql). */
   deleteAccount(): Promise<boolean>;
   /** Appelee quand la session change hors de nos actions (jeton revoque, compte supprime ailleurs). */
@@ -219,15 +217,6 @@ export function createSupabaseBackend(): AccountBackend | null {
         return { ok: false, error: code };
       } catch {
         return { ok: false, error: 'network' };
-      }
-    },
-
-    async setLeaderboardVisible(visible) {
-      try {
-        const { error } = await (await client()).rpc('set_leaderboard_visible', { p_visible: visible });
-        return !error;
-      } catch {
-        return false;
       }
     },
 

@@ -12,7 +12,7 @@
 --   * `delete_my_account` : suppression du compte et de ses donnees (RGPD) ;
 --   * le CLASSEMENT des parties classees : pseudo (genere au depart, que le joueur peut ensuite CHOISIR : `set_pseudo`), rang extrait du profil,
 --     `get_leaderboard` (lisible sans compte), `my_standing`, `reroll_pseudo`,
---     `set_leaderboard_visible`. Relancer ce fichier met a jour une base deja installee.
+--     (apparaitre au classement est obligatoire des qu'on a joue en classee). Relancer ce fichier met a jour une base deja installee.
 
 create table if not exists public.profiles (
   user_id    uuid primary key references auth.users (id) on delete cascade,
@@ -158,7 +158,7 @@ as $$
   select row_number() over (order by p.rank_index desc, p.rank_peak desc, p.rank_wins desc, p.user_id) as place,
          p.pseudo, p.rank_index, p.rank_peak, p.rank_wins, p.rank_losses, (p.user_id = auth.uid()) as is_me
     from public.profiles p
-   where p.show_in_leaderboard and p.pseudo is not null and (p.rank_wins + p.rank_losses) > 0
+   where p.pseudo is not null and (p.rank_wins + p.rank_losses) > 0
    order by place
    limit least(greatest(p_limit, 1), 100);
 $$;
@@ -175,9 +175,9 @@ as $$
     select p.user_id,
            row_number() over (order by p.rank_index desc, p.rank_peak desc, p.rank_wins desc, p.user_id) as place
       from public.profiles p
-     where p.show_in_leaderboard and p.pseudo is not null and (p.rank_wins + p.rank_losses) > 0
+     where p.pseudo is not null and (p.rank_wins + p.rank_losses) > 0
   )
-  select me.pseudo, me.show_in_leaderboard,
+  select me.pseudo, true,
          (select c.place from classes c where c.user_id = me.user_id),
          (select count(*) from classes)
     from public.profiles me
@@ -279,19 +279,9 @@ begin
 end;
 $$;
 
-create or replace function public.set_leaderboard_visible(p_visible boolean)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if auth.uid() is null then
-    raise exception 'non connecte';
-  end if;
-  update public.profiles set show_in_leaderboard = p_visible where user_id = auth.uid();
-end;
-$$;
+-- Apparaitre au classement n'est PLUS un choix : quiconque a joue une partie classee y figure. La fonction
+-- `set_leaderboard_visible` d'une version precedente est retiree (la colonne `show_in_leaderboard` reste, inutilisee).
+drop function if exists public.set_leaderboard_visible(boolean);
 
 create or replace function public.delete_my_account()
 returns void
@@ -318,7 +308,6 @@ revoke all on function public.my_standing() from public, anon;
 revoke all on function public.reroll_pseudo() from public, anon;
 revoke all on function public.pseudo_is_allowed(text) from public, anon, authenticated;
 revoke all on function public.set_pseudo(text) from public, anon;
-revoke all on function public.set_leaderboard_visible(boolean) from public, anon;
 grant execute on function public.load_profile() to authenticated;
 grant execute on function public.save_profile(jsonb, integer) to authenticated;
 grant execute on function public.delete_my_account() to authenticated;
@@ -327,4 +316,3 @@ grant execute on function public.get_leaderboard(integer) to anon, authenticated
 grant execute on function public.my_standing() to authenticated;
 grant execute on function public.reroll_pseudo() to authenticated;
 grant execute on function public.set_pseudo(text) to authenticated;
-grant execute on function public.set_leaderboard_visible(boolean) to authenticated;

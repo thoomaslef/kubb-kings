@@ -53,13 +53,11 @@ describe('sanitizeStanding', () => {
   it('lit la premiere ligne, un tableau ou un objet', () => {
     expect(sanitizeStanding([{ pseudo: 'A1', visible: true, place: 4, total: 30 }])).toEqual({
       pseudo: 'A1',
-      visible: true,
       place: 4,
       total: 30
     });
     expect(sanitizeStanding({ pseudo: 'B', visible: false, place: null, total: 2 })).toEqual({
       pseudo: 'B',
-      visible: false,
       place: null,
       total: 2
     });

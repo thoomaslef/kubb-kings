@@ -255,11 +255,6 @@ async function gerer(route) {
       p.pseudoChange = Date.now();
       return repondre(route, 200, { ok: true, pseudo: v });
     }
-    if (nom === 'set_leaderboard_visible') {
-      const p = serveur.profils.get(id);
-      if (p) p.visible = corps.p_visible === true;
-      return repondre(route, 204);
-    }
     if (nom === 'delete_my_account') {
       for (const [email, u] of serveur.users) if (u.id === id) serveur.users.delete(email);
       serveur.profils.delete(id);
@@ -697,16 +692,14 @@ const B = await appareil('B');
   resultats.classement_MaPlace = /3e sur 4/.test(standing ?? '');
   resultats.classement_LEmailNApparaitJamais = !((await H.page.locator('.panel--ranks').textContent()) ?? '').includes('classe@example.com');
 
-  // Le pseudo peut etre tire au hasard (pour 100 pieces) : on en obtient un autre, sans rien saisir.
-  const avant = await H.page.locator('[data-testid="my-pseudo"]').textContent();
-  await H.page.locator('button', { hasText: /Un pseudo au hasard/ }).click();
-  await attendre(H.page, (a) => document.querySelector('[data-testid="my-pseudo"]')?.textContent !== a, avant);
-  const apres = await H.page.locator('[data-testid="my-pseudo"]').textContent();
-  resultats.classement_NouveauPseudoGenere = !!apres && apres !== avant;
-  resultats.classement_LeTirageAuHasardCoute100Pieces = (await etat(H.page)).coins === 150;
-  // Le seul champ de saisie de l'ecran est celui du pseudo (regles verifiees plus bas, section 11).
-  resultats.classement_LeSeulChampEstCeluiDuPseudo =
-    (await H.page.locator('.panel--ranks input').count()) === 1 && (await H.page.locator('.panel--ranks [data-testid="pseudo-input"]').count()) === 1;
+  // L'ecran des classes n'edite plus rien : ni champ de saisie, ni tirage de pseudo, ni masquage du classement
+  // (le pseudo se change depuis la Boutique ; figurer au classement va de soi quand on joue en classee).
+  resultats.classement_AucunChampDeSaisie = (await H.page.locator('.panel--ranks input').count()) === 0;
+  resultats.classement_AucuneEditionDePseudoIci =
+    (await H.page.locator('.panel--ranks button', { hasText: /pseudo au hasard|Enregistrer/ }).count()) === 0;
+  resultats.classement_OnNePeutPasSeRetirer =
+    (await H.page.locator('.panel--ranks button', { hasText: /Ne plus apparaitre|Apparaitre au classement/ }).count()) === 0;
+  resultats.classement_LePseudoResteAffiche = ((await H.page.locator('[data-testid="my-pseudo"]').textContent()) ?? '').length > 2;
 
   // Un rang joue : il monte au classement (envoi immediat avant la lecture).
   await H.page.evaluate(() => window.__kubbStoreApi.getState().recordRankedMatch('win', 'match'));
@@ -715,14 +708,6 @@ const B = await appareil('B');
   const l2 = await lignes(H.page);
   resultats.classement_LeRangJoueMonte = /Platine 3/.test(l2.find((l) => l.moi)?.texte ?? '');
 
-  // Se retirer du classement, puis y revenir.
-  await H.page.locator('button', { hasText: /Ne plus apparaitre/ }).click();
-  await attendre(H.page, () => /masque du classement/.test(document.querySelector('[data-testid="my-standing"]')?.textContent ?? ''));
-  const l3 = await lignes(H.page);
-  resultats.classement_OnPeutSeRetirer = l3.length === 3 && !l3.some((l) => l.moi);
-  await H.page.locator('button', { hasText: /^Apparaitre au classement$/ }).click();
-  await attendre(H.page, () => !/masque/.test(document.querySelector('[data-testid="my-standing"]')?.textContent ?? 'masque'));
-  resultats.classement_OnPeutRevenir = (await lignes(H.page)).some((l) => l.moi);
   await H.contexte.close();
 
   // Y : un compte cree AVANT l'arrivee du classement (profil sans pseudo) en recoit un a l'ouverture de
@@ -856,6 +841,15 @@ const B = await appareil('B');
   await saisir('Encore_Un');
   resultats.boutique_trop_tot_RefuseParLeServeur = /quelques minutes/.test((await msg()) ?? '') && (await courant()) === 'Nouveau_Nom';
 
+  // Un pseudo au hasard : un autre pseudo, pour le meme prix.
+  await P1.page.waitForTimeout(serveur.delaiPseudo + 300);
+  const avantHasard = await courant();
+  const piecesAvant = await pieces();
+  await P1.page.locator('[data-testid="pseudo-editor"] button', { hasText: /Un pseudo au hasard/ }).click();
+  const change = await attendre(P1.page, (a) => document.querySelector('[data-testid="pseudo-current"]')?.textContent !== a, avantHasard);
+  resultats.boutique_pseudoAuHasard = change && (await pieces()) === piecesAvant - 100;
+  await P1.page.evaluate((p) => window.__kubbStoreApi.setState({ coins: p }), piecesAvant);
+
   // Solde insuffisant : le bouton est bloque, le prix manquant est dit, et AUCUNE requete ne part.
   await P1.page.evaluate(() => window.__kubbStoreApi.setState({ coins: 40 }));
   const avantRequetes = serveur.journal.filter((l) => l.includes('set_pseudo')).length;
@@ -866,10 +860,11 @@ const B = await appareil('B');
   await P1.page.evaluate(() => window.__kubbStoreApi.setState({ coins: 250 }));
 
   // Script SQL pas encore relance : on le dit, sans rien casser.
+  const avantSql = await courant();
   serveur.setPseudoAbsent = true;
   await P1.page.waitForTimeout(serveur.delaiPseudo + 300);
   await saisir('Autre_Nom');
-  resultats.boutique_sqlPasRelance_OnLeDit = /pas encore disponible/.test((await msg()) ?? '') && (await courant()) === 'Nouveau_Nom' && (await pieces()) === 250;
+  resultats.boutique_sqlPasRelance_OnLeDit = /pas encore disponible/.test((await msg()) ?? '') && (await courant()) === avantSql && (await pieces()) === 250;
   serveur.setPseudoAbsent = false;
 
   // Sans compte : une invitation a se connecter, pas de champ.

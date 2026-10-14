@@ -39,8 +39,9 @@ c'est un revirement assume — le premier choix de conception etait « jamais de
 PUBLIC avec des noms libres demande de moderer des insultes et que le jeu est joue par des enfants. Un pseudo choisi
 est donc encadre (3 a 16 caracteres, alphabet restreint, filtre de termes interdits, unicite, delai entre deux
 changements) — mais un filtre n'est pas une moderation, et il n'y a pas de bouton « signaler » : voir
-[`comptes-joueurs.md`](comptes-joueurs.md#pseudo). L'e-mail et le nom n'y figurent jamais. Le joueur peut aussi **ne
-plus apparaitre** au classement, et supprimer son compte l'en retire.
+[`comptes-joueurs.md`](comptes-joueurs.md#pseudo). L'e-mail et le nom n'y figurent jamais. **Figurer au classement n'est pas un choix** : quiconque a un compte et a joue une partie classee y apparait (c'est le principe
+d'un classement). Supprimer son compte l'en retire. (Une ancienne option « ne plus apparaitre » a ete retiree ; la colonne
+`show_in_leaderboard` reste en base, inutilisee.) L'ecran des rangs n'edite rien : le pseudo se change depuis la Boutique.
 
 **Ce que le classement ne prouve PAS.** Les rangs sont declares par les clients. Une seule defense, minimale :
 le serveur n'accepte dans le classement qu'un rang **coherent** (impossible d'etre a la marche N avec moins de N

@@ -76,7 +76,7 @@ export function Legal() {
           tout moment depuis le jeu : adresse e-mail et progression en ligne sont alors effacees
           definitivement. Le classement des parties classees est public et lisible sans compte :
           il affiche le pseudo, le rang et le bilan, jamais l&apos;adresse e-mail ni le
-          nom ; vous pouvez changer de pseudo ou ne plus y apparaitre, et supprimer votre compte
+          nom ; tout joueur avec un compte y figure des qu'il a joue une partie classee ; vous pouvez changer de pseudo, et supprimer votre compte
           vous en retire. Les rangs ne sont pas verifies par un serveur. Une connexion avec Google peut aussi etre proposee ; lorsqu&apos;elle l&apos;est, Google transmet alors
           votre adresse e-mail, et Supabase peut conserver avec elle le nom et la photo de
           profil que Google lui communique ; le jeu ne les affiche ni ne les utilise, aucun mot

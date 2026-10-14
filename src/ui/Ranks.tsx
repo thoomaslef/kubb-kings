@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PseudoEditor } from './PseudoEditor';
 import { useGameStore } from '../store/useGameStore';
 import {
   fetchLeaderboard,
   fetchStanding,
-  rerollMyPseudo,
-  setMyLeaderboardVisible
+  rerollMyPseudo
 } from '../game/account/sync';
 import type { LeaderboardEntry, Standing } from '../game/account/leaderboard';
 import { DIVISIONS_PER_TIER, RANK_COLORS, RANK_COUNT, RANK_TIERS, rankPosition } from '../game/ranks';
@@ -38,7 +36,6 @@ export function Ranks() {
   const account = useGameStore((s) => s.account);
   const [board, setBoard] = useState<Board>({ state: 'loading' });
   const [standing, setStanding] = useState<Standing | null>(null);
-  const [busy, setBusy] = useState(false);
   const pseudoRequested = useRef(false);
 
   const loadBoard = useCallback(async () => {
@@ -64,14 +61,6 @@ export function Ranks() {
   useEffect(() => {
     void loadBoard();
   }, [loadBoard, account.status]);
-
-  const toggleVisible = async () => {
-    if (!standing) return;
-    setBusy(true);
-    const ok = await setMyLeaderboardVisible(!standing.visible);
-    setBusy(false);
-    if (ok) await loadBoard();
-  };
 
   const current = rankPosition(rank.index);
   const total = rank.wins + rank.losses;
@@ -193,14 +182,8 @@ export function Ranks() {
                   {t('ranks.board.yourPseudo')} <strong data-testid="my-pseudo">{standing.pseudo ?? '—'}</strong>
                   {standing.place !== null
                     ? ` — ${t('ranks.board.yourPlace', { place: standing.place, total: standing.total })}`
-                    : ` — ${t(standing.visible ? 'ranks.board.notRanked' : 'ranks.board.hidden')}`}
+                    : ` — ${t('ranks.board.notRanked')}`}
                 </p>
-                <div className="button-column">
-                  <button className="btn btn--ghost" onClick={toggleVisible} disabled={busy}>
-                    {t(standing.visible ? 'ranks.board.hide' : 'ranks.board.show')}
-                  </button>
-                </div>
-                <PseudoEditor onChanged={() => void loadBoard()} />
                 <p className="footnote">{t('ranks.board.pseudoNote')}</p>
               </>
             ) : (
