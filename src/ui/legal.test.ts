@@ -213,6 +213,7 @@ describe("le reseau reellement present est divulgue", () => {
       "reroll_pseudo",
       "save_profile",
       "set_leaderboard_visible",
+      "set_pseudo",
     ]);
   });
 
@@ -221,7 +222,7 @@ describe("le reseau reellement present est divulgue", () => {
     expect(backendSource).toContain("get_leaderboard");
     for (const chemin of [POLITIQUE, ECRAN]) {
       const texte = texteJoueur(chemin);
-      for (const fait of ["classement", "public", "pseudo genere", "ne plus y apparaitre|ne plus apparaitre"]) {
+      for (const fait of ["classement", "public", "pseudo", "de votre choix", "filtre", "ne plus y apparaitre|ne plus apparaitre"]) {
         const ok = fait.split("|").some((variante) => texte.includes(variante));
         expect(ok, `"${fait}" manque dans ${chemin}`).toBe(true);
       }

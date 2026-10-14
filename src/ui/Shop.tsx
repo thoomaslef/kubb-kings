@@ -1,3 +1,4 @@
+import { PseudoEditor } from './PseudoEditor';
 import { useGameStore } from '../store/useGameStore';
 import { SHOP_ITEMS, isShopItemLevelUnlocked, type ShopCategory, type ShopItem } from '../game/shop';
 import { levelFromXp } from '../game/progression';
@@ -31,6 +32,12 @@ export function Shop() {
         <h2 className="panel__title">{t('shop.title')}</h2>
         <p className="panel__text">{t('shop.intro')}</p>
         <p className="shop-balance">{t('shop.balance', { n: coins })}</p>
+
+        {/* Le pseudo se change ici aussi : c'est un reglage du profil, comme les skins. */}
+        <div className="shop-section">
+          <h3 className="shop-section__title">{t('pseudo.title')}</h3>
+          <PseudoEditor />
+        </div>
 
         {CATEGORIES.map((category) => {
           const items = SHOP_ITEMS.filter((item) => item.category === category);

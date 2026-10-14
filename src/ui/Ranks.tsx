@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { PseudoEditor } from './PseudoEditor';
 import { useGameStore } from '../store/useGameStore';
 import {
   fetchLeaderboard,
@@ -209,6 +210,7 @@ export function Ranks() {
                     {t(standing.visible ? 'ranks.board.hide' : 'ranks.board.show')}
                   </button>
                 </div>
+                <PseudoEditor showRandom={false} onChanged={() => void loadBoard()} />
                 <p className="footnote">{t('ranks.board.pseudoNote')}</p>
               </>
             ) : (

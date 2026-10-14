@@ -67,13 +67,15 @@ export function Legal() {
           <strong>Compte joueur (facultatif).</strong> Si vous en creez un, Supabase (region
           Europe) enregistre votre adresse e-mail, qui ne sert qu&apos;a vous connecter, votre
           mot de passe sous forme chiffree, et votre progression : niveau, pieces, succes,
-          articles, rang des parties classees, meilleures series, plus un pseudo genere
-          automatiquement (jamais un texte saisi) pour le classement. Ni historique de parties,
+          articles, rang des parties classees, meilleures series, plus un pseudo pour le
+          classement : attribue automatiquement a la creation du compte, que vous pouvez
+          remplacer par un pseudo de votre choix (texte libre de 3 a 16 caracteres, soumis a un
+          filtre de termes interdits ; n&apos;y mettez aucune donnee personnelle). Ni historique de parties,
           ni messages, ni nom. Ces donnees ne servent qu&apos;a restaurer votre
           progression et ne sont ni vendues ni partagees. Vous pouvez supprimer votre compte a
           tout moment depuis le jeu : adresse e-mail et progression en ligne sont alors effacees
           definitivement. Le classement des parties classees est public et lisible sans compte :
-          il affiche le pseudo genere, le rang et le bilan, jamais l&apos;adresse e-mail ni le
+          il affiche le pseudo, le rang et le bilan, jamais l&apos;adresse e-mail ni le
           nom ; vous pouvez changer de pseudo ou ne plus y apparaitre, et supprimer votre compte
           vous en retire. Les rangs ne sont pas verifies par un serveur. Une connexion avec Google peut aussi etre proposee ; lorsqu&apos;elle l&apos;est, Google transmet alors
           votre adresse e-mail, et Supabase peut conserver avec elle le nom et la photo de

@@ -71,6 +71,8 @@ const serveur = {
   confirmerEmail: false,
   limiter: false,
   oauthEchec: false,
+  setPseudoAbsent: false,
+  delaiPseudo: 1500,
   journal: [],
   suivant: 1
 };
@@ -235,6 +237,23 @@ async function gerer(route) {
       if (!p) return repondre(route, 200, null);
       p.pseudo = `Nouveau${serveur.suivant++}`;
       return repondre(route, 200, p.pseudo);
+    }
+    if (nom === 'set_pseudo') {
+      // Le faux serveur applique les memes REGLES que comptes.sql (verifiees par tests/sql/comptes-sql.mjs) :
+      // ici on ne teste que ce que le client en fait.
+      if (serveur.setPseudoAbsent) {
+        return repondre(route, 404, { code: 'PGRST202', message: 'Could not find the function public.set_pseudo(p_pseudo) in the schema cache' });
+      }
+      const p = serveur.profils.get(id);
+      if (!p) return repondre(route, 200, { ok: false, error: 'not-ready' });
+      const v = String(corps.p_pseudo ?? '').trim();
+      if (/merde/i.test(v)) return repondre(route, 200, { ok: false, error: 'forbidden' });
+      const pris = [...serveur.profils.entries()].some(([k, q]) => k !== id && (q.pseudo ?? '').toLowerCase() === v.toLowerCase());
+      if (pris) return repondre(route, 200, { ok: false, error: 'taken' });
+      if (p.pseudoChange && Date.now() - p.pseudoChange < serveur.delaiPseudo) return repondre(route, 200, { ok: false, error: 'too-soon' });
+      p.pseudo = v;
+      p.pseudoChange = Date.now();
+      return repondre(route, 200, { ok: true, pseudo: v });
     }
     if (nom === 'set_leaderboard_visible') {
       const p = serveur.profils.get(id);
@@ -678,13 +697,15 @@ const B = await appareil('B');
   resultats.classement_MaPlace = /3e sur 4/.test(standing ?? '');
   resultats.classement_LEmailNApparaitJamais = !((await H.page.locator('.panel--ranks').textContent()) ?? '').includes('classe@example.com');
 
-  // Le pseudo est genere : changer de pseudo en donne un autre, sans rien saisir.
+  // Le pseudo peut etre tire au hasard : « Changer de pseudo » en donne un autre, sans rien saisir.
   const avant = await H.page.locator('[data-testid="my-pseudo"]').textContent();
   await H.page.locator('button', { hasText: /Changer de pseudo/ }).click();
   await attendre(H.page, (a) => document.querySelector('[data-testid="my-pseudo"]')?.textContent !== a, avant);
   const apres = await H.page.locator('[data-testid="my-pseudo"]').textContent();
   resultats.classement_NouveauPseudoGenere = !!apres && apres !== avant;
-  resultats.classement_AucunChampDeSaisieDePseudo = (await H.page.locator('.panel--ranks input').count()) === 0;
+  // Le seul champ de saisie de l'ecran est celui du pseudo (regles verifiees plus bas, section 11).
+  resultats.classement_LeSeulChampEstCeluiDuPseudo =
+    (await H.page.locator('.panel--ranks input').count()) === 1 && (await H.page.locator('.panel--ranks [data-testid="pseudo-input"]').count()) === 1;
 
   // Un rang joue : il monte au classement (envoi immediat avant la lecture).
   await H.page.evaluate(() => window.__kubbStoreApi.getState().recordRankedMatch('win', 'match'));
@@ -746,6 +767,100 @@ const B = await appareil('B');
   console.log({ tricheur: lx.map((l) => l.texte) });
   resultats.classement_UnRangIncoherentEstRefuse = !lx.some((l) => /Master 3/.test(l.texte)) && !lx.some((l) => l.moi);
   await X.contexte.close();
+}
+
+// ------------------------------------------------------------------ 11. pseudo choisi par le joueur
+{
+  serveur.profils.clear();
+  const pseudoServeur = (email) => {
+    const id = serveur.users.get(email)?.id;
+    return id ? serveur.profils.get(id)?.pseudo : undefined;
+  };
+  const creer = async (page, email, pseudo) => {
+    await ouvrirCompte(page);
+    await page.locator('button', { hasText: /^Creer un compte$/ }).click();
+    await remplir(page, { email, mdp: 'motdepasse1', confirmation: 'motdepasse1' });
+    if (pseudo !== undefined) await page.locator('[data-testid="signup-pseudo"]').fill(pseudo);
+    await page.locator('button[type="submit"]').click();
+  };
+  const synchroOk = (page) =>
+    attendre(page, () => {
+      const s = window.__kubbStoreApi.getState();
+      return s.account.status === 'signedIn' && s.account.sync === 'ok';
+    });
+
+  // P1 : un pseudo choisi des la creation du compte.
+  const P1 = await appareil('P1');
+  await creer(P1.page, 'ra@example.com', 'Thomas_Ra');
+  await synchroOk(P1.page);
+  // Le pseudo voulu est applique apres la premiere synchronisation : on laisse le temps a cette seconde requete.
+  for (let i = 0; i < 40 && pseudoServeur('ra@example.com') !== 'Thomas_Ra'; i += 1) await P1.page.waitForTimeout(150);
+  resultats.pseudo_choisiALaCreation = pseudoServeur('ra@example.com') === 'Thomas_Ra';
+  resultats.pseudo_leChoixEnAttenteEstNettoye = (await P1.page.evaluate(() => localStorage.getItem('kubb-kings.pending-pseudo'))) === null;
+  resultats.pseudo_aucunAvertissementSiToutVaBien = (await P1.page.locator('[data-testid="account-notice"]').count()) === 0;
+
+  // P2 : le meme pseudo (autre casse) est deja pris : le compte est cree, un pseudo attribue, et on le dit.
+  const P2 = await appareil('P2');
+  await creer(P2.page, 'autre@example.com', 'thomas_ra');
+  await synchroOk(P2.page);
+  const prevenu = await attendre(P2.page, () => window.__kubbStoreApi.getState().account.notice === 'pseudo-taken');
+  resultats.pseudo_prisALaCreation_UnPseudoEstAttribueEtOnLeDit =
+    prevenu && /^Pseudo\d+$/.test(pseudoServeur('autre@example.com') ?? '') && (await P2.page.locator('[data-testid="account-notice"]').count()) === 1;
+
+  // P3 : un pseudo interdit est refuse AVANT toute requete, sans creer de compte.
+  const P3 = await appareil('P3');
+  const avant = serveur.journal.filter((l) => l.includes('/auth/v1/signup')).length;
+  await creer(P3.page, 'vilain@example.com', 'Connard42');
+  const refus = ((await message(P3.page)) ?? '');
+  resultats.pseudo_interditRefuseALaCreation = /pas autorise/.test(refus) && serveur.journal.filter((l) => l.includes('/auth/v1/signup')).length === avant;
+  await P3.page.locator('[data-testid="signup-pseudo"]').fill('A!');
+  await P3.page.locator('button[type="submit"]').click();
+  resultats.pseudo_caracteresRefusesALaCreation = /Seuls les lettres|minimum/.test(((await message(P3.page)) ?? ''));
+  await P3.contexte.close();
+
+  // P4 : renommer depuis la Boutique.
+  await P1.page.evaluate(() => window.__kubbStoreApi.getState().setScreen('shop'));
+  await P1.page.waitForSelector('[data-testid="pseudo-editor"]');
+  const courant = async () => P1.page.locator('[data-testid="pseudo-current"]').textContent();
+  resultats.boutique_affiche_LePseudoActuel = await attendre(P1.page, () => document.querySelector('[data-testid="pseudo-current"]')?.textContent === 'Thomas_Ra');
+  const msg = () => P1.page.locator('[data-testid="pseudo-message"]').textContent({ timeout: 4000 }).catch(() => null);
+  const saisir = async (texte) => {
+    await P1.page.locator('[data-testid="pseudo-input"]').fill(texte);
+    await P1.page.locator('[data-testid="pseudo-editor"] button[type="submit"]').click();
+  };
+
+  await saisir('Connard');
+  resultats.boutique_interditRefuse = /pas autorise/.test((await msg()) ?? '');
+  await saisir('x');
+  resultats.boutique_tropCourtRefuse = /minimum/.test((await msg()) ?? '');
+  await saisir('Roi du Kubb');
+  resultats.boutique_caracteresRefuses = /Seuls les lettres/.test((await msg()) ?? '');
+
+  // Le serveur applique un delai entre deux changements ; on attend qu'il soit ecoule.
+  await P1.page.waitForTimeout(serveur.delaiPseudo + 300);
+  await saisir(pseudoServeur('autre@example.com') ?? 'x');
+  resultats.boutique_prisRefuseParLeServeur = /deja pris/.test((await msg()) ?? '');
+  await saisir('Nouveau_Nom');
+  resultats.boutique_renommage = (await attendre(P1.page, () => document.querySelector('[data-testid="pseudo-current"]')?.textContent === 'Nouveau_Nom')) && pseudoServeur('ra@example.com') === 'Nouveau_Nom';
+  await saisir('Encore_Un');
+  resultats.boutique_trop_tot_RefuseParLeServeur = /quelques minutes/.test((await msg()) ?? '') && (await courant()) === 'Nouveau_Nom';
+
+  // Script SQL pas encore relance : on le dit, sans rien casser.
+  serveur.setPseudoAbsent = true;
+  await P1.page.waitForTimeout(serveur.delaiPseudo + 300);
+  await saisir('Autre_Nom');
+  resultats.boutique_sqlPasRelance_OnLeDit = /pas encore disponible/.test((await msg()) ?? '') && (await courant()) === 'Nouveau_Nom';
+  serveur.setPseudoAbsent = false;
+
+  // Sans compte : une invitation a se connecter, pas de champ.
+  const P5 = await appareil('P5');
+  await P5.page.evaluate(() => window.__kubbStoreApi.getState().setScreen('shop'));
+  await P5.page.waitForSelector('[data-testid="pseudo-editor"]');
+  resultats.boutique_sansCompte_Invitation =
+    (await P5.page.locator('[data-testid="pseudo-input"]').count()) === 0 && /Connectez-vous/.test((await P5.page.locator('[data-testid="pseudo-editor"]').textContent()) ?? '');
+  await P5.contexte.close();
+  await P1.contexte.close();
+  await P2.contexte.close();
 }
 
 conclure(resultats, erreurs);

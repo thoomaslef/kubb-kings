@@ -33,11 +33,14 @@ rang egal : meilleur rang atteint, puis nombre de victoires). **Lisible sans com
 place, insigne, pseudo, rang, bilan (« 12V 3D »). La ligne du joueur connecte est mise en evidence ;
 s'il est hors des 20 premiers, sa place est affichee en dessous (« 37e sur 412 »).
 
-**Pseudos generes, jamais saisis.** Le serveur attribue un pseudo du type « RapideViking42 » (adjectif +
-nom + nombre, unique) ; le joueur peut en demander un autre, mais **n'ecrit rien**. C'est voulu : un
-classement PUBLIC avec des noms libres demanderait de moderer des insultes, et le jeu est joue par des
-enfants (meme raisonnement que l'absence de tchat contre un inconnu). L'e-mail et le nom n'y figurent
-jamais. Le joueur peut aussi **ne plus apparaitre** au classement, et supprimer son compte l'en retire.
+**Pseudo : genere, puis au choix du joueur.** Le serveur attribue d'abord un pseudo du type « RapideViking42 »
+(adjectif + nom + nombre, unique). Le joueur peut le **choisir** (a l'inscription, ou depuis la Boutique / cet ecran) :
+c'est un revirement assume — le premier choix de conception etait « jamais de texte libre », parce qu'un classement
+PUBLIC avec des noms libres demande de moderer des insultes et que le jeu est joue par des enfants. Un pseudo choisi
+est donc encadre (3 a 16 caracteres, alphabet restreint, filtre de termes interdits, unicite, delai entre deux
+changements) — mais un filtre n'est pas une moderation, et il n'y a pas de bouton « signaler » : voir
+[`comptes-joueurs.md`](comptes-joueurs.md#pseudo). L'e-mail et le nom n'y figurent jamais. Le joueur peut aussi **ne
+plus apparaitre** au classement, et supprimer son compte l'en retire.
 
 **Ce que le classement ne prouve PAS.** Les rangs sont declares par les clients. Une seule defense, minimale :
 le serveur n'accepte dans le classement qu'un rang **coherent** (impossible d'etre a la marche N avec moins de N

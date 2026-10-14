@@ -226,6 +226,41 @@ body {
   color: #2a1e04;
 }
 
+.input {
+  /* Champ de saisie (compte, code de salon, pseudo) : sans cette regle il restait un champ
+     blanc du navigateur, tres en retrait du reste de l'interface. */
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px; /* 16 px : en dessous, iOS zoome sur la page au focus */
+}
+
+.input::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.pseudo-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pseudo-editor .panel__text,
+.pseudo-editor .footnote {
+  margin: 0;
+}
+
 .btn--ghost {
   background: transparent;
   color: var(--muted);

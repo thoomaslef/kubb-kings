@@ -29,6 +29,22 @@ export type AuthResult =
   | { ok: true; user: AccountUser | null; needsEmailConfirmation: boolean }
   | { ok: false; error: AccountErrorCode };
 
+/** Pourquoi un pseudo a ete refuse (cf. pseudo.ts pour les regles, comptes.sql::set_pseudo pour le serveur). */
+export type PseudoErrorCode =
+  | 'too-short'
+  | 'too-long'
+  | 'chars'
+  | 'forbidden'
+  | 'taken'
+  | 'too-soon'
+  | 'not-ready'
+  | 'unavailable'
+  | 'network';
+
+export type PseudoResult = { ok: true; pseudo: string } | { ok: false; error: PseudoErrorCode };
+
+const PSEUDO_ERRORS: readonly string[] = ['too-short', 'too-long', 'chars', 'forbidden', 'taken', 'too-soon', 'not-ready'];
+
 export interface RemoteProfile {
   data: unknown;
   revision: number;
@@ -61,6 +77,8 @@ export interface AccountBackend {
   myStanding(): Promise<Standing | null>;
   /** Nouveau pseudo GENERE par le serveur (le joueur ne saisit rien) ; null en cas d'echec. */
   rerollPseudo(): Promise<string | null>;
+  /** Choisit son pseudo ; le serveur applique les regles (alphabet, termes interdits, unicite, delai). */
+  setPseudo(pseudo: string): Promise<PseudoResult>;
   /** Apparaitre ou non au classement. */
   setLeaderboardVisible(visible: boolean): Promise<boolean>;
   /** Supprime le compte ET son profil (cf. supabase/comptes.sql). */
@@ -182,6 +200,25 @@ export function createSupabaseBackend(): AccountBackend | null {
         return error ? null : cleanPseudo(data);
       } catch {
         return null;
+      }
+    },
+
+    async setPseudo(pseudo) {
+      try {
+        const { data, error } = await (await client()).rpc('set_pseudo', { p_pseudo: pseudo });
+        if (error) {
+          // La fonction n'existe pas : le script SQL n'a pas ete relance depuis cette version.
+          return { ok: false, error: /function|schema cache|not find/i.test(error.message) ? 'unavailable' : 'network' };
+        }
+        const r = (Array.isArray(data) ? data[0] : data) as { ok?: unknown; pseudo?: unknown; error?: unknown } | null;
+        if (r && r.ok === true) {
+          const clean = cleanPseudo(r.pseudo);
+          return clean ? { ok: true, pseudo: clean } : { ok: false, error: 'network' };
+        }
+        const code = typeof r?.error === 'string' && PSEUDO_ERRORS.includes(r.error) ? (r.error as PseudoErrorCode) : 'network';
+        return { ok: false, error: code };
+      } catch {
+        return { ok: false, error: 'network' };
       }
     },
 

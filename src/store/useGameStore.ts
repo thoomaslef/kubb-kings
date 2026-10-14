@@ -88,7 +88,7 @@ export interface AccountState {
   sync: 'idle' | 'syncing' | 'ok' | 'error';
   lastSyncAt: number | null;
   /** Retour d'une connexion Google qui a echoue ou ete annulee, a annoncer sur l'ecran Compte. */
-  notice: 'oauth-error' | null;
+  notice: 'oauth-error' | 'pseudo-taken' | 'pseudo-refused' | null;
 }
 
 /** Premier rapprochement d'un appareil et d'un compte qui ont chacun leur histoire : au joueur de trancher. */

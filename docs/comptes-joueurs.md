@@ -133,12 +133,50 @@ cascade`). La progression gardee sur l'appareil, elle, reste.
 - **Mot de passe oublie : pas de reinitialisation** pour l'instant (elle repose sur l'envoi
   d'e-mails, dont l'offre gratuite est tres limitee). Un mot de passe perdu = un compte perdu ; la
   progression, elle, reste sur l'appareil.
-- **Pseudo genere, pas de nom libre** : le compte porte l'e-mail, la progression et un pseudo attribue par
-  le serveur, utilise uniquement pour le classement des parties classees (cf. `parties-classees.md`). Le
-  classement est amical : les rangs sont declares par les clients, avec pour seule defense un controle de
-  coherence cote serveur.
+- **Pseudo** : le compte porte l'e-mail, la progression et un pseudo, utilise uniquement pour le classement des
+  parties classees (cf. `parties-classees.md`). Voir la section « Pseudo » ci-dessous. Le classement est amical :
+  les rangs sont declares par les clients, avec pour seule defense un controle de coherence cote serveur.
 - **Pause du projet** apres 7 jours d'inactivite (offre gratuite) : les comptes deviennent alors
   indisponibles jusqu'a la reprise du projet, mais la progression locale continue de fonctionner.
+
+## Pseudo
+
+A la creation du compte, un pseudo est **genere** par le serveur (« RapideViking42 »). Le joueur peut le
+**choisir** : un champ facultatif a l'inscription, et ensuite un bloc « Mon pseudo » dans la **Boutique** (et sur
+l'ecran des classes) — [`PseudoEditor.tsx`](../src/ui/PseudoEditor.tsx). Sans compte, il n'y a pas de pseudo : le bloc
+invite a se connecter.
+
+C'est du **texte libre affiche publiquement** : le jeu est ouvert a tous les ages, donc des barrieres a trois niveaux.
+
+| Regle | Ou |
+| --- | --- |
+| 3 a 16 caracteres ; lettres, chiffres, tiret, tiret bas ; **ni espace, ni lien, ni adresse, ni symbole** | client (`pseudo.ts`) ET serveur (`set_pseudo`) |
+| Filtre de termes interdits : accents et substitutions (0->o, 1->i, 3->e, 4->a, 5->s, @->a, $->s, 7->t) defaites ; termes **courts** refuses comme mot entier seulement (« Classic » passe, « pute » non) ; noms reserves (admin, support, kubbkings...) | client ET serveur, **meme liste** |
+| Unicite, sans tenir compte de la casse | serveur (index unique) |
+| Un changement toutes les 5 minutes au plus (le premier est libre) | serveur (`pseudo_changed_at`) |
+
+Le **serveur fait foi** ; le client ne fait que repondre plus vite. Les deux filtres sont deux ecritures de la meme
+regle : [`pseudoSql.test.ts`](../src/game/account/pseudoSql.test.ts) execute le VRAI SQL (PGlite, un Postgres embarque)
+et le client sur les memes pseudos et exige le meme verdict — changer une liste sans l'autre fait echouer `npm test`.
+
+**Choix a l'inscription.** Le profil en ligne n'existe qu'apres la premiere synchronisation : le pseudo voulu est
+donc garde (`kubb-kings.pending-pseudo`) puis applique juste apres. Un echec passager (reseau, delai) le laisse en
+attente ; un refus definitif (pris, interdit) l'abandonne, le joueur garde le pseudo attribue et en est prevenu sur
+l'ecran Compte. Se deconnecter efface le choix en attente.
+
+**Limites assumees.** Un filtre de mots n'est pas une moderation : il en laisse passer (orthographes inventees,
+autres langues). Il n'y a pas de bouton « signaler » ; les mentions legales donnent l'adresse de contact, et un pseudo
+inapproprie signale y est reinitialise. Le pseudo n'est jamais affiche en partie (ni tchat, ni adversaire) : seulement
+au classement.
+
+> **A faire une fois : relancer `supabase/comptes.sql`** (SQL Editor, coller, Run — sans danger a relancer). Il ajoute
+> `set_pseudo`. Tant que ce n'est pas fait, le jeu fonctionne : l'ecran dit « Le changement de pseudo n'est pas encore
+> disponible » et chacun garde son pseudo genere.
+
+**Verification.** `npm run test:sql` execute le script en entier dans PGlite (il s'execute, se relance, et les regles de
+`set_pseudo` tiennent avec de vrais utilisateurs et la vraie contrainte d'unicite). `npm run test:comptes` couvre le client
+contre un faux Supabase : choix a la creation, pseudo deja pris, interdit refuse avant toute requete, renommage depuis la
+Boutique, delai, script SQL pas encore relance.
 
 ## Tchat et parties tirees au sort
 

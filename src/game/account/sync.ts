@@ -1,7 +1,14 @@
 import { useGameStore } from '../../store/useGameStore';
 import { getBestStage } from '../roguelite';
 import type { LeaderboardEntry, Standing } from './leaderboard';
-import { createSupabaseBackend, type AccountBackend, type AccountErrorCode, type AccountUser } from './backend';
+import {
+  createSupabaseBackend,
+  type AccountBackend,
+  type AccountErrorCode,
+  type AccountUser,
+  type PseudoErrorCode
+} from './backend';
+import { validatePseudo, type PseudoProblem } from './pseudo';
 import {
   emptySnapshot,
   isPristine,
@@ -333,6 +340,7 @@ export async function initAccount(): Promise<void> {
     setSignedIn(user);
     watchAuth();
     await reconcile(user);
+    await applyPendingPseudo();
   } catch {
     // Hors ligne au demarrage : on reste « connecte » d'apres la session conservee, sans synchroniser.
     store().setAccount({ status: 'signedOut' });
@@ -395,7 +403,7 @@ async function authenticate(kind: 'signIn' | 'signUp', email: string, password: 
   if (result.user) {
     setSignedIn(result.user);
     watchAuth();
-    void reconcile(result.user);
+    void reconcile(result.user).then(applyPendingPseudo);
   }
   return { ok: true, needsEmailConfirmation: result.needsEmailConfirmation };
 }
@@ -416,7 +424,13 @@ export async function signInWithGoogle(): Promise<AuthOutcome> {
 }
 
 export const signInAccount = (email: string, password: string) => authenticate('signIn', email, password);
-export const signUpAccount = (email: string, password: string) => authenticate('signUp', email, password);
+export function signUpAccount(email: string, password: string, pseudo?: string): Promise<AuthOutcome> {
+  // Le pseudo voulu est applique APRES la premiere synchronisation : c'est elle qui cree la ligne du
+  // profil en ligne, et le serveur ne sait pas renommer un profil qui n'existe pas encore.
+  const check = pseudo ? validatePseudo(pseudo) : null;
+  if (check?.ok) savePendingPseudo(check.pseudo);
+  return authenticate('signUp', email, password);
+}
 
 /**
  * Deconnexion. La progression reste sur l'appareil : se deconnecter n'est pas
@@ -424,6 +438,7 @@ export const signUpAccount = (email: string, password: string) => authenticate('
  * un premier rapprochement et devra choisir — cf. `reconcileNow`, cas 5.)
  */
 export async function signOutAccount(): Promise<void> {
+  clearPendingPseudo();
   if (backend) await backend.signOut();
   setSignedOut();
 }
@@ -453,6 +468,63 @@ export async function fetchStanding(): Promise<Standing | null> {
   ensureBackend();
   if (!backend || store().account.status !== 'signedIn') return null;
   return backend.myStanding();
+}
+
+// ------------------------------------------------------------------ pseudo choisi
+
+const PENDING_PSEUDO_KEY = 'kubb-kings.pending-pseudo';
+
+function savePendingPseudo(pseudo: string) {
+  try {
+    window.localStorage?.setItem(PENDING_PSEUDO_KEY, pseudo);
+  } catch {
+    // Sans stockage, le pseudo voulu est perdu : le joueur gardera celui qu'on lui attribue et pourra le changer.
+  }
+}
+
+function loadPendingPseudo(): string | null {
+  try {
+    return window.localStorage?.getItem(PENDING_PSEUDO_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function clearPendingPseudo() {
+  try {
+    window.localStorage?.removeItem(PENDING_PSEUDO_KEY);
+  } catch {
+    // rien a nettoyer
+  }
+}
+
+/**
+ * Applique le pseudo choisi a la creation du compte, une fois le profil en ligne cree. Les echecs
+ * passagers (reseau, profil pas encore la, delai) laissent le pseudo en attente pour une prochaine
+ * synchronisation ; un refus definitif (pris, interdit...) l'abandonne et previent le joueur : il
+ * garde le pseudo attribue et peut en choisir un autre depuis la Boutique.
+ */
+async function applyPendingPseudo(): Promise<void> {
+  const pending = loadPendingPseudo();
+  if (!pending || !backend || store().account.status !== 'signedIn') return;
+  const result = await backend.setPseudo(pending);
+  if (result.ok) {
+    clearPendingPseudo();
+    return;
+  }
+  if (result.error === 'network' || result.error === 'not-ready' || result.error === 'too-soon') return;
+  clearPendingPseudo();
+  store().setAccount({ notice: result.error === 'taken' ? 'pseudo-taken' : 'pseudo-refused' });
+}
+
+export type ChangePseudoResult = { ok: true; pseudo: string } | { ok: false; error: PseudoProblem | PseudoErrorCode };
+
+/** Change son pseudo : les regles du client d'abord (reponse immediate), puis celles du serveur, qui font foi. */
+export async function changeMyPseudo(raw: string): Promise<ChangePseudoResult> {
+  const check = validatePseudo(raw);
+  if (!check.ok) return { ok: false, error: check.reason };
+  if (!backend || store().account.status !== 'signedIn') return { ok: false, error: 'network' };
+  return backend.setPseudo(check.pseudo);
 }
 
 export async function rerollMyPseudo(): Promise<string | null> {

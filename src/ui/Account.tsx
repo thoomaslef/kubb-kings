@@ -10,6 +10,7 @@ import {
   type AuthOutcome
 } from '../game/account/sync';
 import { GOOGLE_SIGN_IN_ENABLED } from '../game/account/config';
+import { PSEUDO_MAX, PSEUDO_MIN, validatePseudo } from '../game/account/pseudo';
 import { useT } from '../i18n/useT';
 
 /** Longueur minimale d'un mot de passe, controlee ici AVANT l'envoi (le service impose son propre minimum, plus bas). */
@@ -40,6 +41,7 @@ export function Account() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [pseudo, setPseudo] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -63,10 +65,18 @@ export function Account() {
         setMessage(t('account.error.mismatch'));
         return;
       }
+      // Pseudo facultatif : vide = un pseudo sera attribue. Rempli, il doit respecter les regles.
+      if (pseudo.trim() !== '') {
+        const check = validatePseudo(pseudo);
+        if (!check.ok) {
+          setMessage(t(`pseudo.error.${check.reason}`, { min: PSEUDO_MIN, max: PSEUDO_MAX }));
+          return;
+        }
+      }
     }
     setBusy(true);
     const outcome: AuthOutcome =
-      mode === 'signup' ? await signUpAccount(address, password) : await signInAccount(address, password);
+      mode === 'signup' ? await signUpAccount(address, password, pseudo.trim() || undefined) : await signInAccount(address, password);
     setBusy(false);
     if (!outcome.ok) {
       setMessage(t(`account.error.${outcome.error}`, { n: MIN_PASSWORD_LENGTH }));
@@ -74,6 +84,7 @@ export function Account() {
     }
     setPassword('');
     setConfirm('');
+    setPseudo('');
     if (outcome.needsEmailConfirmation) setMessage(t('account.checkEmail'));
   };
 
@@ -129,6 +140,11 @@ export function Account() {
           <p className="footnote" data-testid="account-sync">
             {t(syncKey)}
           </p>
+          {(account.notice === 'pseudo-taken' || account.notice === 'pseudo-refused') && (
+            <p className="footnote" role="alert" data-testid="account-notice">
+              {t(`account.notice.${account.notice}`)}
+            </p>
+          )}
           <p className="footnote">{t('account.whatSyncs')}</p>
           {message && <p className="footnote">{message}</p>}
           <div className="button-column">
@@ -228,6 +244,23 @@ export function Account() {
               placeholder={t('account.confirmPassword')}
               aria-label={t('account.confirmPassword')}
             />
+          )}
+          {mode === 'signup' && (
+            <>
+              <input
+                className="input"
+                value={pseudo}
+                maxLength={PSEUDO_MAX}
+                onChange={(e) => setPseudo(e.target.value)}
+                placeholder={t('account.pseudo.placeholder')}
+                aria-label={t('account.pseudo.placeholder')}
+                autoComplete="nickname"
+                autoCapitalize="off"
+                spellCheck={false}
+                data-testid="signup-pseudo"
+              />
+              <p className="footnote footnote--tight">{t('account.pseudo.hint')}</p>
+            </>
           )}
           {message && (
             <p className="footnote" role="alert" data-testid="account-message">
