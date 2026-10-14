@@ -133,5 +133,35 @@ const statut = async (page) => (await page.locator('[data-testid="share-status"]
   await contexte.close();
 }
 
+// ------------------------------------------------------------ 5. « Inviter un joueur » sur l'ecran de fin de partie
+{
+  const { page, contexte } = await menu('resultat', {
+    suffixe: '?code=secret123#frag',
+    initScript: () => {
+      window.__partages = [];
+      navigator.share = async (d) => {
+        window.__partages.push(d);
+      };
+    }
+  });
+  await page.evaluate(() =>
+    window.__kubbStoreApi.setState({
+      screen: 'result',
+      result: { winner: 'blue', reason: 'king-down', knockedDown: { blue: 5, red: 2 } }
+    })
+  );
+  await page.waitForSelector('[data-testid="invite-button"]');
+  resultats.resultat_PlusDePartageDImage = (await page.locator('button', { hasText: /Partager le resultat/ }).count()) === 0;
+  await page.locator('[data-testid="invite-button"]').click();
+  await page.waitForTimeout(400);
+  const recu = await page.evaluate(() => window.__partages);
+  console.log({ recuResultat: recu });
+  resultats.resultat_UnSeulPartage = recu.length === 1;
+  resultats.resultat_LeLienEstLAdresseNueDuJeu = recu[0]?.url === new URL(JEU).origin + new URL(JEU).pathname && !/[?#]|secret123/.test(recu[0]?.url ?? '');
+  resultats.resultat_LeMessageDonneLeScore = /5\/5/.test(recu[0]?.text ?? '') && /defier/.test(recu[0]?.text ?? '');
+  resultats.resultat_LeJeuLeConfirme = /Lien partage/.test((await page.locator('[data-testid="invite-status"]').textContent({ timeout: 3000 }).catch(() => null)) ?? '');
+  await contexte.close();
+}
+
 conclure(resultats, erreurs);
 await navigateur.close();

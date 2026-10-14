@@ -4,7 +4,7 @@ import { bridge } from '../game/GameBridge';
 import { TEAMS, OPPONENT, type TeamId } from '../game/entities/teamData';
 import { levelFromXp } from '../game/progression';
 import { LADDER, setBestStageIfHigher } from '../game/roguelite';
-import { downloadBlob, shareCardBlob } from '../game/shareCard';
+import { gameUrl, shareGame, type ShareData, type ShareOutcome } from '../game/shareLink';
 import { translate, type Lang } from '../i18n/translate';
 import { rankPosition } from '../game/ranks';
 import { RankBadge, useRankName } from './RankBadge';
@@ -12,7 +12,6 @@ import { useT } from '../i18n/useT';
 import { getCurrentSession } from '../game/online/currentSession';
 import type { MatchResult } from '../store/useGameStore';
 
-type ShareStatus = 'idle' | 'sharing' | 'shared' | 'downloaded' | 'error';
 
 /**
  * En solo (et en Defi, qui en est une variante) le joueur n'est pas
@@ -100,7 +99,8 @@ export function ResultScreen() {
     setBestStageIfHigher(stagesCleared);
   }, [isDefi, result, stagesCleared]);
 
-  const [shareStatus, setShareStatus] = useState<ShareStatus>('idle');
+  // Invitation d'un ami : `null` tant que rien n'a ete tente.
+  const [shareState, setShareState] = useState<ShareOutcome | null>(null);
 
   if (!result) return null;
 
@@ -143,53 +143,18 @@ export function ResultScreen() {
   const blueLabel = isTournamentMatch ? tournamentPending.blueName : sideLabel('blue');
   const redLabel = isTournamentMatch ? tournamentPending.redName : sideLabel('red');
 
-  const levelLine = lastXpAward
-    ? [
-        t('progression.level', { n: levelInfo.level }),
-        t('progression.xpGained', { n: lastXpAward.total }),
-        ...(lastCoinsAward !== null ? [t('result.coinsGainedPlain', { n: lastCoinsAward })] : [])
-      ].join(' · ')
-    : null;
-
-  const handleShare = async () => {
-    setShareStatus('sharing');
-    let blob: Blob;
-    try {
-      blob = await shareCardBlob({
-        tagline: t('menu.subtitle'),
-        headline: headlineText,
-        detail: detailText,
-        blueLabel,
-        blueScore: result.knockedDown.blue,
-        redLabel,
-        redScore: result.knockedDown.red,
-        blueColor: TEAMS.blue.cssColor,
-        redColor: TEAMS.red.cssColor,
-        accent,
-        levelLine
-      });
-    } catch {
-      setShareStatus('error');
-      return;
-    }
-
-    const file = new File([blob], 'kubb-kings-resultat.png', { type: 'image/png' });
-    try {
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: t('result.shareTitle'), text: t('result.shareText') });
-        setShareStatus('shared');
-        return;
+  const shareUrl = gameUrl(window.location.origin, import.meta.env.BASE_URL);
+  /** Inviter un ami a jouer : le lien du jeu, avec mon score pour donner envie de me defier. */
+  const inviteFriend = async () => {
+    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
+    const outcome = await shareGame(
+      { title: t('menu.share.title'), text: t('result.invite.text', { n: result.knockedDown[profileTeam] }), url: shareUrl },
+      {
+        share: typeof nav.share === 'function' ? (d) => nav.share!(d) : undefined,
+        writeText: navigator.clipboard?.writeText ? (text) => navigator.clipboard.writeText(text) : undefined
       }
-    } catch (err) {
-      if ((err as DOMException)?.name === 'AbortError') {
-        setShareStatus('idle');
-        return;
-      }
-      // Le partage a echoue (ex : navigateur qui accepte canShare mais rejette
-      // ensuite) : on retombe sur le telechargement plutot que d'abandonner.
-    }
-    downloadBlob(file, 'kubb-kings-resultat.png');
-    setShareStatus('downloaded');
+    );
+    setShareState(outcome === 'cancelled' ? null : outcome);
   };
 
   // Demander la revanche, sans la declencher : c'est la session qui tranche
@@ -244,12 +209,31 @@ export function ResultScreen() {
         </div>
 
         <div className="button-column" style={{ marginTop: 16, marginBottom: 16 }}>
-          <button className="btn btn--ghost" onClick={handleShare} disabled={shareStatus === 'sharing'}>
-            {t('result.share')}
+          <button className="btn btn--ghost" onClick={inviteFriend} data-testid="invite-button">
+            {t('result.invite')}
           </button>
-          {shareStatus === 'shared' && <p className="footnote footnote--tight">{t('result.shareDone')}</p>}
-          {shareStatus === 'downloaded' && <p className="footnote footnote--tight">{t('result.shareDownloaded')}</p>}
-          {shareStatus === 'error' && <p className="footnote footnote--tight">{t('result.shareError')}</p>}
+          {shareState === 'copied' && (
+            <p className="footnote footnote--tight" role="status" data-testid="invite-status">
+              {t('menu.share.copied')}
+            </p>
+          )}
+          {shareState === 'shared' && (
+            <p className="footnote footnote--tight" role="status" data-testid="invite-status">
+              {t('menu.share.shared')}
+            </p>
+          )}
+          {shareState === 'manual' && (
+            <div role="status" data-testid="invite-status">
+              <p className="footnote footnote--tight">{t('menu.share.manual')}</p>
+              <input
+                className="input"
+                readOnly
+                value={shareUrl}
+                aria-label={t('result.invite')}
+                onFocus={(e) => e.currentTarget.select()}
+              />
+            </div>
+          )}
         </div>
 
         {lastXpAward && (
