@@ -51,6 +51,7 @@ let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let busy: Promise<void> = Promise.resolve();
 let offAuth: (() => void) | null = null;
 let offStore: (() => void) | null = null;
+let offRecovery: (() => void) | null = null;
 
 const store = () => useGameStore.getState();
 
@@ -310,7 +311,7 @@ function setSignedOut() {
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = null;
   store().setAccountConflict(null);
-  store().setAccount({ status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null, pseudo: null });
+  store().setAccount({ status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null, pseudo: null, recovering: false });
 }
 
 /** Un compte est possible : le service est configure. */
@@ -341,6 +342,14 @@ export async function initAccount(): Promise<void> {
 
   const comeback = oauthComeback();
   if (comeback === 'error') store().setAccount({ notice: 'oauth-error' });
+  // Le lien « mot de passe oublie » revient sur le jeu avec un code, comme Google : l'evenement de reinitialisation
+  // part pendant l'echange de ce code (dans restore), donc on l'ecoute AVANT.
+  if (comeback === 'code') {
+    offRecovery = backend.onPasswordRecovery(() => {
+      store().setAccount({ recovering: true });
+      store().setScreen('account');
+    });
+  }
   if (!hasStoredSession() && comeback !== 'code') return;
   store().setAccount({ status: 'checking' });
   try {
@@ -434,6 +443,31 @@ export async function signInWithGoogle(): Promise<AuthOutcome> {
   store().setAccount({ notice: null });
   const result = await backend.signInWithGoogle(returnUrl());
   return result.ok ? { ok: true, needsEmailConfirmation: false } : { ok: false, error: result.error };
+}
+
+/** Demande l'e-mail de reinitialisation. L'adresse inconnue n'est jamais signalee (cf. AccountBackend). */
+export async function requestPasswordReset(email: string): Promise<{ ok: true } | { ok: false; error: AccountErrorCode | 'unavailable' }> {
+  ensureBackend();
+  if (!backend) return { ok: false, error: 'unavailable' };
+  return backend.requestPasswordReset(email.trim(), returnUrl());
+}
+
+/** Enregistre le nouveau mot de passe choisi apres le lien recu par e-mail. */
+export async function setNewPassword(password: string): Promise<{ ok: true } | { ok: false; error: AccountErrorCode | 'unavailable' }> {
+  ensureBackend();
+  if (!backend) return { ok: false, error: 'unavailable' };
+  const result = await backend.updatePassword(password);
+  if (result.ok) {
+    // On reste sur l'ecran Compte (et non sur le menu que la scene a repose) pour que la confirmation soit vue.
+    store().setScreen('account');
+    store().setAccount({ recovering: false });
+  }
+  return result;
+}
+
+/** Abandonne la reinitialisation : la session ouverte par le lien reste, le mot de passe n'a pas change. */
+export function cancelRecovery() {
+  store().setAccount({ recovering: false });
 }
 
 export const signInAccount = (email: string, password: string) => authenticate('signIn', email, password);
@@ -570,6 +604,8 @@ export function syncNow(): Promise<void> {
 export function resetAccountForTests() {
   offAuth?.();
   offStore?.();
+  offRecovery?.();
+  offRecovery = null;
   offAuth = null;
   offStore = null;
   backend = null;

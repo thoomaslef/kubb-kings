@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import {
   accountAvailable,
+  cancelRecovery,
   deleteAccount,
+  requestPasswordReset,
+  setNewPassword,
   signInAccount,
   signInWithGoogle,
   signOutAccount,
@@ -45,6 +48,9 @@ export function Account() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  /** « Mot de passe oublie » : on ne demande plus que l'adresse. */
+  const [forgot, setForgot] = useState(false);
+  const [sent, setSent] = useState(false);
 
   const back = () => setScreen('menu');
 
@@ -88,6 +94,48 @@ export function Account() {
     if (outcome.needsEmailConfirmation) setMessage(t('account.checkEmail'));
   };
 
+  const sendReset = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setMessage(null);
+    const address = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
+      setMessage(t('account.error.invalid-email'));
+      return;
+    }
+    setBusy(true);
+    const outcome = await requestPasswordReset(address);
+    setBusy(false);
+    if (!outcome.ok) {
+      setMessage(t(`account.error.${outcome.error}`, { n: MIN_PASSWORD_LENGTH }));
+      return;
+    }
+    // Meme message que l'adresse ait un compte ou non : on ne le dit jamais.
+    setSent(true);
+  };
+
+  const saveNewPassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setMessage(null);
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setMessage(t('account.error.weak-password', { n: MIN_PASSWORD_LENGTH }));
+      return;
+    }
+    if (password !== confirm) {
+      setMessage(t('account.error.mismatch'));
+      return;
+    }
+    setBusy(true);
+    const outcome = await setNewPassword(password);
+    setBusy(false);
+    if (!outcome.ok) {
+      setMessage(t(`account.error.${outcome.error}`, { n: MIN_PASSWORD_LENGTH }));
+      return;
+    }
+    setPassword('');
+    setConfirm('');
+    setMessage(t('account.reset.done'));
+  };
+
   const google = async () => {
     setMessage(null);
     setBusy(true);
@@ -123,6 +171,50 @@ export function Account() {
               {t('online.back')}
             </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Arrive par le lien de reinitialisation : un seul geste a faire, choisir le nouveau mot de passe.
+  if (account.status === 'signedIn' && account.recovering) {
+    return (
+      <div className="overlay overlay--solid">
+        <div className="panel">
+          <h2 className="panel__title">{t('account.reset.newTitle')}</h2>
+          <p className="panel__text">{t('account.reset.newIntro')}</p>
+          <form className="button-column" onSubmit={saveNewPassword} noValidate>
+            <input
+              className="input"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t('account.reset.newPassword')}
+              aria-label={t('account.reset.newPassword')}
+              data-testid="new-password"
+            />
+            <input
+              className="input"
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder={t('account.confirmPassword')}
+              aria-label={t('account.confirmPassword')}
+            />
+            {message && (
+              <p className="footnote" role="alert" data-testid="account-message">
+                {message}
+              </p>
+            )}
+            <button className="btn btn--primary" type="submit" disabled={busy}>
+              {t('account.reset.save')}
+            </button>
+            <button type="button" className="btn btn--ghost" onClick={cancelRecovery} disabled={busy}>
+              {t('account.reset.skip')}
+            </button>
+          </form>
         </div>
       </div>
     );
@@ -167,6 +259,57 @@ export function Account() {
               </button>
             )}
             <button className="btn btn--ghost" onClick={back}>
+              {t('online.back')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (forgot) {
+    return (
+      <div className="overlay overlay--solid">
+        <div className="panel">
+          <h2 className="panel__title">{t('account.reset.title')}</h2>
+          {sent ? (
+            <p className="panel__text" data-testid="reset-sent">
+              {t('account.reset.sent')}
+            </p>
+          ) : (
+            <>
+              <p className="panel__text">{t('account.reset.intro')}</p>
+              <form className="button-column" onSubmit={sendReset} noValidate>
+                <input
+                  className="input"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t('account.email')}
+                  aria-label={t('account.email')}
+                />
+                {message && (
+                  <p className="footnote" role="alert" data-testid="account-message">
+                    {message}
+                  </p>
+                )}
+                <button className="btn btn--primary" type="submit" disabled={busy}>
+                  {t('account.reset.send')}
+                </button>
+              </form>
+            </>
+          )}
+          <div className="button-column">
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => {
+                setForgot(false);
+                setSent(false);
+                setMessage(null);
+              }}
+            >
               {t('online.back')}
             </button>
           </div>
@@ -270,6 +413,11 @@ export function Account() {
           <button className="btn btn--primary" type="submit" disabled={busy || account.status === 'checking'}>
             {t(mode === 'signup' ? 'account.createAccount' : 'account.loginAction')}
           </button>
+          {mode === 'login' && (
+            <button type="button" className="link-btn" onClick={() => setForgot(true)}>
+              {t('account.reset.link')}
+            </button>
+          )}
           <button type="button" className="btn btn--ghost" onClick={back}>
             {t('online.back')}
           </button>

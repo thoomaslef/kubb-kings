@@ -93,6 +93,8 @@ export interface AccountState {
   notice: 'oauth-error' | 'pseudo-taken' | 'pseudo-refused' | null;
   /** Pseudo du classement, une fois lu sur le serveur (affiche au menu) ; null tant qu'on ne le connait pas. */
   pseudo: string | null;
+  /** Le joueur arrive par le lien « mot de passe oublie » : l'ecran Compte lui demande un nouveau mot de passe. */
+  recovering: boolean;
 }
 
 /** Premier rapprochement d'un appareil et d'un compte qui ont chacun leur histoire : au joueur de trancher. */
@@ -476,7 +478,7 @@ export const useGameStore = create<GameState>((set) => ({
   onlineWinStreak: loadOnlineStreak(),
   ...settleRankAtStartup(),
   rankedLobby: false,
-  account: { status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null, pseudo: null },
+  account: { status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null, pseudo: null, recovering: false },
   accountConflict: null,
 
   mapIntent: null,

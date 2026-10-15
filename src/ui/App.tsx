@@ -36,6 +36,9 @@ export function App() {
   const screen = useGameStore((s) => s.screen);
   const lang = useGameStore((s) => s.lang);
   const accountConflict = useGameStore((s) => s.accountConflict);
+  // Lien « mot de passe oublie » : la scene du menu repose l'ecran « menu » en demarrant, donc on n'attend pas
+  // `screen === 'account'` pour montrer le formulaire.
+  const recovering = useGameStore((s) => s.account.recovering && s.account.status === 'signedIn');
 
   // index.html fixe lang="fr" au chargement (page statique) : ce n'est plus
   // exact des que le joueur choisit l'anglais, important pour les lecteurs
@@ -85,7 +88,7 @@ export function App() {
       {screen === 'about' && <About />}
       {screen === 'online' && <OnlineLobby />}
       {screen === 'ranks' && <Ranks />}
-      {screen === 'account' && <Account />}
+      {(screen === 'account' || (recovering && screen !== 'match')) && <Account />}
       {accountConflict && screen !== 'match' && <AccountConflict />}
       {screen === 'map-select' && <MapSelect />}
       {screen === 'local-hub' && <LocalHub />}

@@ -70,6 +70,7 @@ const serveur = {
   profils: new Map(), // id -> { data, revision }
   confirmerEmail: false,
   limiter: false,
+  recoveries: new Map(), // code -> email (le lien « mot de passe oublie » recu par e-mail)
   oauthEchec: false,
   setPseudoAbsent: false,
   delaiPseudo: 1500,
@@ -144,6 +145,10 @@ async function gerer(route) {
     if (!corps.auth_code || !corps.code_verifier) {
       return repondre(route, 400, { code: 400, error_code: 'validation_failed', msg: 'pkce' });
     }
+    if (String(corps.auth_code).startsWith('rcode-')) {
+      const cible = serveur.users.get(serveur.recoveries.get(corps.auth_code));
+      return cible ? repondre(route, 200, session(cible)) : repondre(route, 400, { code: 400, error_code: 'validation_failed', msg: 'code' });
+    }
     let user = serveur.users.get('google@example.com');
     if (!user) {
       user = { id: `u-${serveur.suivant++}`, email: 'google@example.com', password: null };
@@ -181,6 +186,18 @@ async function gerer(route) {
     }
   }
   if (chemin === '/auth/v1/logout') return repondre(route, 204);
+  if (chemin === '/auth/v1/recover') {
+    // Jamais de difference entre une adresse connue et une inconnue.
+    return repondre(route, 200, {});
+  }
+  if (chemin === '/auth/v1/user' && req.method() === 'PUT') {
+    const id = idDuJeton(req);
+    const user = [...serveur.users.values()].find((u) => u.id === id);
+    if (!user) return repondre(route, 401, { code: 401, msg: 'jwt' });
+    if (corps.password === user.password) return repondre(route, 422, { code: 422, error_code: 'same_password', msg: 'New password should be different from the old password.' });
+    user.password = corps.password;
+    return repondre(route, 200, session(user).user);
+  }
   if (chemin === '/auth/v1/user') {
     const id = idDuJeton(req);
     const user = [...serveur.users.values()].find((u) => u.id === id);
@@ -513,6 +530,80 @@ const B = await appareil('B');
   await attendre(N.page, () => window.__kubbStoreApi.getState().progression.totalXp === 1500);
   resultats.autreCompte_LePremierRetrouveLaSienne = (await etat(N.page)).xp === 1500;
   await N.contexte.close();
+}
+
+// ------------------------------------------------------------------ 5c. mot de passe oublie
+{
+  const R = await appareil('R');
+  await ouvrirCompte(R.page);
+  await R.page.locator('button', { hasText: /^Creer un compte$/ }).click();
+  await remplir(R.page, { email: 'oubli@example.com', mdp: 'ancienmdp1', confirmation: 'ancienmdp1' });
+  await R.page.locator('button[type="submit"]').click();
+  await attendre(R.page, () => window.__kubbStoreApi.getState().account.sync === 'ok');
+  await R.page.locator('button', { hasText: /^Se deconnecter$/ }).click();
+  await attendre(R.page, () => window.__kubbStoreApi.getState().account.status === 'signedOut');
+  await ouvrirCompte(R.page);
+  await R.page.locator('button', { hasText: /^Connexion$/ }).click();
+
+  // Une adresse inconnue recoit EXACTEMENT la meme reponse qu'une adresse connue.
+  const demander = async (adresse) => {
+    await R.page.locator('button', { hasText: /^Mot de passe oublie \?$/ }).click();
+    await R.page.locator('input[type="email"]').fill(adresse);
+    await R.page.locator('button[type="submit"]').click();
+    await R.page.waitForSelector('[data-testid="reset-sent"]', { timeout: 10000 });
+    const texte = await R.page.locator('[data-testid="reset-sent"]').textContent();
+    await R.page.locator('button', { hasText: /^Retour$/ }).click();
+    return texte;
+  };
+  const texteInconnue = await demander('personne@example.com');
+  const texteConnue = await demander('oubli@example.com');
+  resultats.oubli_laDemandePartAuServeur = serveur.journal.filter((l) => l.includes('/auth/v1/recover')).length === 2;
+  resultats.oubli_leLienDemandeUnRetourSurLeJeu = serveur.journal.some((l) => l.includes('/auth/v1/recover') && /redirect_to/.test(l));
+  resultats.oubli_aucuneFuiteSurLExistenceDuCompte = texteInconnue === texteConnue && !/n'existe pas|inconnu/i.test(texteConnue ?? '');
+  resultats.oubli_adresseInvalideRefusee = await (async () => {
+    await R.page.locator('button', { hasText: /^Mot de passe oublie \?$/ }).click();
+    await R.page.locator('input[type="email"]').fill('pas-une-adresse');
+    await R.page.locator('button[type="submit"]').click();
+    const m = /pas valide/.test((await message(R.page)) ?? '');
+    await R.page.locator('button', { hasText: /^Retour$/ }).click();
+    return m;
+  })();
+
+  // Le joueur clique le lien recu par e-mail : retour sur le jeu avec un code.
+  serveur.recoveries.set('rcode-1', 'oubli@example.com');
+  await R.page.goto(`${JEU}?code=rcode-1`);
+  await R.page.waitForFunction(() => Boolean(window.__kubbStoreApi), null, { timeout: 30000 });
+  const formulaire = await attendre(R.page, () => !!document.querySelector('[data-testid="new-password"]'));
+  resultats.oubli_leLienOuvreLeFormulaireDeNouveauMotDePasse = formulaire;
+  resultats.oubli_leCodeEstRetireDeLAdresse = !/[?&]code=/.test(R.page.url());
+
+  // Trop court, puis different, puis l'ancien mot de passe refuse, puis accepte.
+  const saisir = async (a, b) => {
+    await R.page.locator('[data-testid="new-password"]').fill(a);
+    await R.page.locator('input[type="password"]').nth(1).fill(b);
+    await R.page.locator('button[type="submit"]').click();
+  };
+  await saisir('court', 'court');
+  resultats.oubli_motDePasseTropCourtRefuse = /8 caracteres/.test((await message(R.page)) ?? '');
+  await saisir('nouveaumdp1', 'autrechose1');
+  resultats.oubli_motsDePasseDifferentsRefuses = /ne correspondent pas/.test((await message(R.page)) ?? '');
+  await saisir('ancienmdp1', 'ancienmdp1');
+  resultats.oubli_memeMotDePasseRefuse = /different de l'ancien/.test((await message(R.page)) ?? '');
+  await saisir('nouveaumdp1', 'nouveaumdp1');
+  resultats.oubli_nouveauMotDePasseEnregistre = (await attendre(R.page, () => /modifie/.test(document.body.innerText))) && serveur.users.get('oubli@example.com').password === 'nouveaumdp1';
+  resultats.oubli_lePrecedentLienNEstPasRejoue = (await etat(R.page)).compte.recovering === false;
+
+  // Ensuite : l'ancien mot de passe ne marche plus, le nouveau si.
+  await R.page.locator('button', { hasText: /^Se deconnecter$/ }).click();
+  await attendre(R.page, () => window.__kubbStoreApi.getState().account.status === 'signedOut');
+  await ouvrirCompte(R.page);
+  await remplir(R.page, { email: 'oubli@example.com', mdp: 'ancienmdp1' });
+  await R.page.locator('button[type="submit"]').click();
+  resultats.oubli_lAncienMotDePasseNeMarchePlus = /incorrect/.test((await message(R.page)) ?? '');
+  await remplir(R.page, { email: 'oubli@example.com', mdp: 'nouveaumdp1' });
+  await R.page.locator('button[type="submit"]').click();
+  resultats.oubli_leNouveauMarche = await attendre(R.page, () => window.__kubbStoreApi.getState().account.status === 'signedIn');
+  await R.contexte.close();
 }
 
 // ------------------------------------------------------------------ 6. deux histoires : le joueur choisit

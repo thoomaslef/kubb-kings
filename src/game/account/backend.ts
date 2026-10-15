@@ -20,6 +20,7 @@ export type AccountErrorCode =
   | 'invalid-credentials'
   | 'email-taken'
   | 'weak-password'
+  | 'same-password'
   | 'invalid-email'
   | 'rate-limited'
   | 'network'
@@ -67,6 +68,15 @@ export interface AccountBackend {
    */
   signInWithGoogle(redirectTo: string): Promise<{ ok: true } | { ok: false; error: AccountErrorCode }>;
   signOut(): Promise<void>;
+  /**
+   * Envoie un e-mail de reinitialisation du mot de passe. Reussit MEME si l'adresse n'a pas de compte
+   * (le service ne dit jamais si une adresse existe : sinon n'importe qui pourrait les sonder).
+   */
+  requestPasswordReset(email: string, redirectTo: string): Promise<{ ok: true } | { ok: false; error: AccountErrorCode }>;
+  /** Choisit un nouveau mot de passe, depuis la session ouverte par le lien recu par e-mail. */
+  updatePassword(password: string): Promise<{ ok: true } | { ok: false; error: AccountErrorCode }>;
+  /** Appelee quand le joueur arrive par le lien de reinitialisation (a brancher AVANT `restore()`). */
+  onPasswordRecovery(callback: () => void): () => void;
   /** null : le compte n'a pas encore de profil enregistre. Leve en cas de panne reseau. */
   loadProfile(): Promise<RemoteProfile | null>;
   /** Ecriture optimiste : n'aboutit que si la revision attendue est encore la bonne. */
@@ -92,6 +102,7 @@ export function mapAuthError(error: Pick<AuthError, 'code' | 'message' | 'status
   const message = (error.message ?? '').toLowerCase();
   if (code === 'invalid_credentials' || message.includes('invalid login credentials')) return 'invalid-credentials';
   if (code === 'user_already_exists' || code === 'email_exists' || message.includes('already registered')) return 'email-taken';
+  if (code === 'same_password' || message.includes('different from the old password')) return 'same-password';
   if (code === 'weak_password' || message.includes('password should be')) return 'weak-password';
   if (code === 'email_address_invalid' || code === 'validation_failed' || message.includes('invalid email')) return 'invalid-email';
   if (error.status === 429 || code.includes('rate_limit') || message.includes('rate limit')) return 'rate-limited';
@@ -155,6 +166,40 @@ export function createSupabaseBackend(): AccountBackend | null {
       } catch {
         // Hors ligne : la session locale est quand meme effacee par le SDK.
       }
+    },
+
+    async requestPasswordReset(email, redirectTo) {
+      try {
+        const { error } = await (await client()).auth.resetPasswordForEmail(email, { redirectTo });
+        return error ? { ok: false, error: mapAuthError(error) } : { ok: true };
+      } catch {
+        return { ok: false, error: 'network' };
+      }
+    },
+
+    async updatePassword(password) {
+      try {
+        const { error } = await (await client()).auth.updateUser({ password });
+        return error ? { ok: false, error: mapAuthError(error) } : { ok: true };
+      } catch {
+        return { ok: false, error: 'network' };
+      }
+    },
+
+    onPasswordRecovery(callback) {
+      let unsubscribe = () => {};
+      let cancelled = false;
+      void client().then((c) => {
+        if (cancelled) return;
+        const { data } = c.auth.onAuthStateChange((event) => {
+          if (event === 'PASSWORD_RECOVERY') callback();
+        });
+        unsubscribe = () => data.subscription.unsubscribe();
+      });
+      return () => {
+        cancelled = true;
+        unsubscribe();
+      };
     },
 
     async loadProfile() {

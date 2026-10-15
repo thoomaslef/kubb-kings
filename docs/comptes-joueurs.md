@@ -214,3 +214,24 @@ Le tchat reste dans les parties privees (par code de salon), entre gens qui se c
   les trois choix du dialogue, la deconnexion, la confirmation d'e-mail et la suppression.
 - **Non verifie** : le vrai service Supabase ET le vrai Google (ecran de consentement, liaison avec un compte e-mail de meme adresse) (non joignable depuis l'atelier) — notamment que votre
   projet a bien le script SQL et le reglage « Confirm email » voulus.
+
+## Mot de passe oublie
+
+Sur l'ecran Compte (onglet « Connexion ») : « Mot de passe oublie ? » -> l'adresse -> un e-mail avec un lien. Le lien
+revient sur le jeu avec un code (meme principe que Google : PKCE), le SDK l'echange contre une session et emet
+`PASSWORD_RECOVERY` ; le jeu affiche alors **un seul formulaire**, « Nouveau mot de passe »
+(`sync.ts::initAccount` ecoute l'evenement AVANT `restore()`, `App.tsx` montre le formulaire meme si la scene du menu
+repose l'ecran « menu » en demarrant). Le message est le meme que l'adresse ait un compte ou non : on ne laisse
+jamais sonder les adresses.
+
+**A faire une fois, par vous (le jeu ne peut pas le faire) — un vrai envoi d'e-mails** : l'offre gratuite de Supabase n'envoie
+que quelques e-mails par heure, et seulement a l'equipe du projet tant qu'aucun fournisseur n'est branche. Sans cela,
+la reinitialisation ne fonctionnera que pour vous.
+1. Creer un compte chez un fournisseur d'envoi avec une offre gratuite (Resend, Brevo, Mailjet...) et **verifier votre domaine**
+   (ou, a defaut, une adresse d'expediteur).
+2. Supabase -> *Authentication -> Emails -> SMTP Settings* : activer « Custom SMTP », renseigner hote, port, identifiants,
+   adresse et nom de l'expediteur.
+3. Supabase -> *Authentication -> URL Configuration* : « Redirect URLs » doit contenir `https://thoomaslef.github.io/kubb-kings/`
+   (avec le `/` final) — sinon le lien renvoie sur la mauvaise page.
+4. *Authentication -> Emails -> Templates -> Reset Password* : traduire si voulu (le lien `{{ .ConfirmationURL }}` doit rester).
+Verification : « Mot de passe oublie ? » avec votre adresse -> l'e-mail doit arriver en quelques secondes.
