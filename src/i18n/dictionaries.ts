@@ -293,6 +293,16 @@ const fr: Record<string, string> = {
   'king.argent.hint': 'Couronne polie et froide (boutique)',
   'king.obsidienne.label': 'Obsidienne',
   'king.obsidienne.hint': 'Verre volcanique sombre, joyaux rouges (boutique)',
+  'king.rubis.label': 'Rubis',
+  'king.rubis.hint': 'Rouge profond, joyaux dores (boutique)',
+  'king.emeraude.label': 'Emeraude',
+  'king.emeraude.hint': 'Vert vif et joyaux clairs (boutique)',
+  'king.saphir.label': 'Saphir',
+  'king.saphir.hint': 'Bleu royal, joyaux glaces (boutique)',
+  'king.bronze.label': 'Bronze',
+  'king.bronze.hint': 'Metal chaud et patine (boutique)',
+  'king.cristal.label': 'Cristal',
+  'king.cristal.hint': 'Glace translucide et lumineuse (boutique)',
 
   // ---- baton (batons.ts) — n'affecte que le joueur, jamais l'IA
   'baton.base.label': 'Naturel',
@@ -893,6 +903,16 @@ const en: Record<string, string> = {
   'king.argent.hint': 'Polished, cold-toned crown (shop)',
   'king.obsidienne.label': 'Obsidian',
   'king.obsidienne.hint': 'Dark volcanic glass, red gems (shop)',
+  'king.rubis.label': 'Ruby',
+  'king.rubis.hint': 'Deep red with golden jewels (shop)',
+  'king.emeraude.label': 'Emerald',
+  'king.emeraude.hint': 'Bright green with pale jewels (shop)',
+  'king.saphir.label': 'Sapphire',
+  'king.saphir.hint': 'Royal blue with icy jewels (shop)',
+  'king.bronze.label': 'Bronze',
+  'king.bronze.hint': 'Warm metal with a patina (shop)',
+  'king.cristal.label': 'Crystal',
+  'king.cristal.hint': 'Translucent, glowing ice (shop)',
 
   // ---- baton (batons.ts) — affects the player only, never the AI
   'baton.base.label': 'Natural',

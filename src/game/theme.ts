@@ -113,9 +113,9 @@ export const FREE_KUBB_SKINS: readonly KubbSkin[] = ['bois'];
  * texture differente. Seul "or" (le look d'origine) reste disponible
  * d'office ; les autres sont des articles de boutique (src/game/shop.ts).
  */
-export type KingSkin = 'or' | 'argent' | 'obsidienne';
+export type KingSkin = 'or' | 'argent' | 'obsidienne' | 'rubis' | 'emeraude' | 'saphir' | 'bronze' | 'cristal';
 
-export const KING_SKINS: KingSkin[] = ['or', 'argent', 'obsidienne'];
+export const KING_SKINS: KingSkin[] = ['or', 'argent', 'obsidienne', 'rubis', 'emeraude', 'saphir', 'bronze', 'cristal'];
 
 /** Seul habillage disponible d'office, sans passer par la boutique. */
 export const FREE_KING_SKINS: readonly KingSkin[] = ['or'];
@@ -137,7 +137,12 @@ export const KING_SKIN_COLORS: Record<KingSkin, { base: number; light: number; d
     light: PALETTE.obsidianLight,
     dark: PALETTE.obsidianDark,
     gem: PALETTE.obsidianGem
-  }
+  },
+  rubis: { base: 0xc0283d, light: 0xe8586c, dark: 0x5e0f1c, gem: 0xffe3b0 },
+  emeraude: { base: 0x1f9d63, light: 0x56d696, dark: 0x0b4a2e, gem: 0xf4ffd0 },
+  saphir: { base: 0x2f5fd0, light: 0x6f9bff, dark: 0x13296b, gem: 0xd8f0ff },
+  bronze: { base: 0xb5772f, light: 0xdea25a, dark: 0x5c3512, gem: 0xffe9b8 },
+  cristal: { base: 0x9fe3ee, light: 0xe6fbff, dark: 0x3a8fa3, gem: 0xffffff }
 };
 
 // Libelles et indices : src/i18n/dictionaries.ts (king.<id>.label / .hint).

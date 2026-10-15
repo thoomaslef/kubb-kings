@@ -67,7 +67,12 @@ export const SHOP_ITEMS: readonly ShopItem[] = [
   { id: 'baton-fouet', category: 'baton', refId: 'fouet', price: 750, minLevel: 29 },
   { id: 'terrain-verger', category: 'terrain', refId: 'verger', price: 550, minLevel: 30 },
   { id: 'terrain-boue', category: 'terrain', refId: 'boue', price: 500, minLevel: 31 },
-  { id: 'terrain-riviere', category: 'terrain', refId: 'riviere', price: 550, minLevel: 33 }
+  { id: 'terrain-riviere', category: 'terrain', refId: 'riviere', price: 550, minLevel: 33 },
+  { id: 'king-rubis', category: 'king', refId: 'rubis', price: 300, minLevel: 34 },
+  { id: 'king-emeraude', category: 'king', refId: 'emeraude', price: 300, minLevel: 35 },
+  { id: 'king-saphir', category: 'king', refId: 'saphir', price: 350, minLevel: 36 },
+  { id: 'king-bronze', category: 'king', refId: 'bronze', price: 400, minLevel: 37 },
+  { id: 'king-cristal', category: 'king', refId: 'cristal', price: 450, minLevel: 38 }
 ];
 
 /**

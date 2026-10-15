@@ -303,8 +303,8 @@ n&apos;est necessaire pour cette fonctionnalite. Stocke dans le store
 
 ## Skins de roi
 
-Meme principe que les skins de kubbs, applique a la piece centrale : trois
-habillages, choisis au menu, generes dans `BootScene.ts`
+Meme principe que les skins de kubbs, applique a la piece centrale : huit
+habillages, choisis dans l&apos;ecran Apparence, generes dans `BootScene.ts`
 (`buildKingTextures`, parametree par `KingSkin` au lieu d&apos;une methode par
 piece — un seul roi, pas d&apos;equipe a teinter).
 
@@ -312,9 +312,14 @@ piece — un seul roi, pas d&apos;equipe a teinter).
 | ---------------- | ---------------------------------------------------------------- | :-----------: |
 | **Or**           | Look d&apos;origine : couronne doree, joyaux blancs               | 1 (des le debut) |
 | **Argent**       | Couronne polie et froide, joyaux blanc-bleute                     | 21 |
-| **Obsidienne**   | Verre volcanique sombre, joyaux rouges — le plus tardif du jeu     | 22 |
+| **Obsidienne**   | Verre volcanique sombre, joyaux rouges                             | 22 |
+| **Rubis**        | Rouge profond, joyaux dores                                        | 34 |
+| **Emeraude**     | Vert vif, joyaux clairs                                            | 35 |
+| **Saphir**       | Bleu royal, joyaux glaces                                          | 36 |
+| **Bronze**       | Metal chaud et patine                                              | 37 |
+| **Cristal**      | Glace translucide et lumineuse — le plus tardif du jeu             | 38 |
 
-Seul "Or" reste disponible d&apos;office : les deux autres sont des articles de
+Seul "Or" reste disponible d&apos;office : les sept autres sont des articles de
 boutique (`src/game/shop.ts`, categorie `'king'`), niveau ET pieces necessaires comme
 tout le reste du catalogue (cf. section "Boutique" plus bas). Purement cosmetique : la
 hitbox (`HITBOX.kingRadius` dans `rules.ts`) et le corps Matter (`KING_BODY`) ne
@@ -377,6 +382,11 @@ existaient deja) :
 | Metal (skin de kubb)            | Skin               | 200  | 19            |
 | Argent (skin de roi)            | Skin de roi        | 250  | 21            |
 | Obsidienne (skin de roi)        | Skin de roi        | 350  | 22            |
+| Rubis (skin de roi)             | Skin de roi        | 300  | 34            |
+| Emeraude (skin de roi)          | Skin de roi        | 300  | 35            |
+| Saphir (skin de roi)            | Skin de roi        | 350  | 36            |
+| Bronze (skin de roi)            | Skin de roi        | 400  | 37            |
+| Cristal (skin de roi)           | Skin de roi        | 450  | 38            |
 
 Les deux conditions sont necessaires pour acheter (`ShopItem.minLevel`,
 `useGameStore::purchaseItem`) : avoir assez de pieces ET avoir atteint ce niveau. Le
