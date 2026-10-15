@@ -5,6 +5,7 @@ import { GameCanvas } from './GameCanvas';
 import { Menu } from './Menu';
 import { LocalHub, OnlineHub } from './Hubs';
 import { Options } from './Options';
+import { track } from '../game/analytics';
 import { Appearance } from './Appearance';
 import { Rules } from './Rules';
 import { HUD } from './HUD';
@@ -51,6 +52,7 @@ export function App() {
   // le service que dans ce cas, cf. account/sync.ts::initAccount).
   useEffect(() => {
     void initAccount();
+    track('session_start');
   }, []);
 
   // Musique d'ambiance : demarree sur le tout premier geste du joueur, ou

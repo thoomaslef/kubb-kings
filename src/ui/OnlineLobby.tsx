@@ -18,6 +18,7 @@ import { rankedConditions } from '../game/online/rankedSetup';
 import type { BatonId } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { useRankName } from './RankBadge';
+import { track } from '../game/analytics';
 import { useT } from '../i18n/useT';
 
 /**
@@ -221,6 +222,7 @@ export function OnlineLobby() {
       since,
       onMatch: ({ role, code }) => {
         const arrivedAt = matchmakerRef.current?.since ?? since ?? Date.now();
+        track('search', { mode: 'ranked', result: 'matched', seconds: (Date.now() - arrivedAt) / 1000 });
         if (searchTimerRef.current) clearInterval(searchTimerRef.current);
         searchTimerRef.current = null;
         matchmakerRef.current = null;
@@ -240,6 +242,7 @@ export function OnlineLobby() {
         }, ROOM_WAIT_MS);
       },
       onBot: () => {
+        track('search', { mode: 'ranked', result: 'bot', seconds: (Date.now() - (matchmakerRef.current?.since ?? Date.now())) / 1000 });
         if (searchTimerRef.current) clearInterval(searchTimerRef.current);
         searchTimerRef.current = null;
         matchmakerRef.current = null;
@@ -273,6 +276,9 @@ export function OnlineLobby() {
   }, []);
 
   const back = () => {
+    if (matchmakerRef.current) {
+      track('search', { mode: 'ranked', result: 'cancelled', seconds: (Date.now() - matchmakerRef.current.since) / 1000 });
+    }
     stopSearch();
     setSearching(null);
     setQuickRoom(false);

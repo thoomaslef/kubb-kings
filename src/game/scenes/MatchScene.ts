@@ -90,6 +90,7 @@ import {
 } from '../achievements';
 import { endOfMatchAchievements } from '../matchEndAchievements';
 import { levelFromXp } from '../progression';
+import { track, type UsageMode } from '../analytics';
 
 /** La plus proche d'un ensemble de positions de lancer (voir THROW_POSITIONS). */
 function nearestThrowPosition(x: number, positions: readonly number[]): number {
@@ -147,6 +148,8 @@ export class MatchScene extends Phaser.Scene {
   private session: OnlineSession | null = null;
   /** Depart en cours : empeche `handleLeave` de se rappeler lui-meme (cf. plus bas). */
   private leaving = false;
+  /** Heure de depart de la partie, pour la duree mesuree (cf. analytics.ts). */
+  private startedAt = Date.now();
   /**
    * Lancer de l'adversaire en train d'etre rejoue. Tant qu'il est present,
    * la fin de vol ne resout PAS le tour localement : c'est l'instantane
@@ -348,6 +351,8 @@ export class MatchScene extends Phaser.Scene {
         }
       : null;
     this.mode = mode;
+    this.startedAt = Date.now();
+    track('match_start', { mode: this.usageMode() });
     // Partie classee : le rang est en jeu. On pose le marqueur d'abandon tout de
     // suite — fermer l'onglet en cours de partie comptera comme une defaite
     // (cf. rankPersistence.ts).
@@ -1645,6 +1650,11 @@ export class MatchScene extends Phaser.Scene {
     // ici que les deux ETATS CUMULATIFS a mettre a jour avant de decider, et
     // l'affichage des bandeaux.
     const won = result.winner === this.profileTeam;
+    track('match_end', {
+      mode: this.usageMode(),
+      result: result.winner === 'draw' ? 'draw' : won ? 'win' : 'loss',
+      seconds: (Date.now() - this.startedAt) / 1000
+    });
     // L'ordre compte : ces deux ecritures sont synchrones (Zustand), la
     // decision qui suit lit donc bien la partie du jour incluse.
     if (won) gameStore.getState().recordTerrainWin(this.fieldPreset);
@@ -2176,11 +2186,23 @@ export class MatchScene extends Phaser.Scene {
     this.king.setTargetGlow(canTarget);
   }
 
+  /** Le mode de jeu tel que la mesure le nomme (cf. analytics.ts) — jamais rien de plus fin. */
+  private usageMode(): UsageMode {
+    const s = gameStore.getState();
+    if (this.mode === 'online') return s.online?.ranked ? 'ranked' : 'friend';
+    if (this.mode === 'solo' && s.difficultyOverride) return 'bot';
+    return this.mode;
+  }
+
   private handleLeave() {
     // Reentrance : quitter ferme la session, ce qui rappelle ce meme code
     // par `onClosed`. Sans ce verrou la scene serait relancee deux fois.
     if (this.leaving) return;
     this.leaving = true;
+    // Abandon = on part en cours de partie (pas quand c'est l'adversaire qui a coupe la liaison).
+    if (this.phase !== 'over' && (!this.session || this.session.state === 'ready')) {
+      track('match_abandon', { mode: this.usageMode(), seconds: (Date.now() - this.startedAt) / 1000 });
+    }
     if (this.session) {
       // Session encore ouverte = c'est NOUS qui partons. Si elle est deja
       // fermee, c'est la partie qui s'est arretee sans nous : on garde alors

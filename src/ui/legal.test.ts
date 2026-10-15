@@ -8,6 +8,7 @@ import clientSource from "../game/online/supabaseClient.ts?raw";
 import backendSource from "../game/account/backend.ts?raw";
 import chatUiSource from "./Chat.tsx?raw";
 import chatSource from "../game/online/chat.ts?raw";
+import analyticsSource from "../game/analytics.ts?raw";
 
 /**
  * Les textes legaux doivent dire la verite sur le reseau.
@@ -215,6 +216,24 @@ describe("le reseau reellement present est divulgue", () => {
       "save_profile",
       "set_pseudo",
     ]);
+  });
+
+  it("la mesure d'usage anonyme est decrite : ce qui part, combien de temps, et comment la couper", () => {
+    // Ancrage sur le CODE : tant que le jeu envoie une mesure, les deux formes doivent la decrire.
+    expect(analyticsSource).toContain("track_usage");
+    for (const chemin of [POLITIQUE, ECRAN]) {
+      const texte = texteJoueur(chemin);
+      for (const fait of ["mesure d'usage anonyme", "identifiant aleatoire", "13 mois", "Options", "Do Not Track", "Jamais de nom"]) {
+        expect(texte, `"${fait}" manque dans ${chemin}`).toContain(fait);
+      }
+    }
+  });
+
+  it("aucune page ne pretend plus qu'aucune connexion n'est etablie hors mode en ligne", () => {
+    for (const chemin of [POLITIQUE, ECRAN]) {
+      expect(texteJoueur(chemin), `${chemin} nie encore toute connexion hors ligne`).not.toMatch(/fonctionnent entierement hors\s+ligne/);
+      expect(texteJoueur(chemin)).not.toContain("aucun outil d'analyse (analytics)");
+    }
   });
 
   it("le signalement de pseudo est decrit dans les pages, et ce que le serveur en garde", () => {

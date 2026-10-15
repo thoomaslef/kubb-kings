@@ -67,13 +67,15 @@
       <p class="updated">KUBB: Kings &mdash; derniere mise a jour : 14/10/2026</p>
 
       <p>
-        KUBB: Kings n&rsquo;utilise aucun outil d&rsquo;analyse (analytics), aucun SDK tiers de
-        suivi et aucune publicite. Un <strong>compte joueur</strong> est propose, mais il est
+        KUBB: Kings n&rsquo;utilise aucun outil d&rsquo;analyse externe, aucun SDK tiers de
+        suivi et aucune publicite ; il envoie seulement une <strong>mesure d&rsquo;usage
+        anonyme</strong>, decrite plus bas et que vous pouvez couper. Un <strong>compte joueur</strong> est propose, mais il est
         <strong>facultatif</strong> : le jeu se joue en entier sans.
       </p>
       <p>
-        Les modes <strong>solo, local, Defi et tournoi</strong> fonctionnent entierement hors
-        ligne : aucune connexion n&rsquo;est etablie. Le <strong>mode en ligne</strong>, lui, a
+        Les modes <strong>solo, local, Defi et tournoi</strong> se jouent entierement hors
+        ligne : aucune connexion n&rsquo;est necessaire, la seule exception etant la mesure d&rsquo;usage
+        anonyme decrite plus bas. Le <strong>mode en ligne</strong>, lui, a
         besoin d&rsquo;un service tiers pour relayer les coups entre les deux joueurs. Cette page
         explique exactement ce qui y transite.
       </p>
@@ -205,6 +207,22 @@
         Ce traitement repose sur l&rsquo;execution du service que vous demandez en lancant une
         partie en ligne (article 6.1.b du RGPD). <strong>Le mode en ligne est facultatif</strong>
         : si vous ne l&rsquo;utilisez pas, aucune connexion n&rsquo;est etablie.
+      </p>
+
+      <p>
+        <strong>Mesure d&rsquo;usage anonyme.</strong> Pour savoir si le jeu plait &mdash; combien de parties sont
+        jouees, dans quels modes, combien sont abandonnees, si l&rsquo;on revient le lendemain &mdash;, le jeu
+        envoie a Supabase, sans aucun SDK tiers, de petits messages : un <strong>identifiant aleatoire</strong>
+        propre a l&rsquo;appareil (sans lien avec un compte, une adresse e-mail ou un pseudo), le nom de
+        l&rsquo;evenement (ouverture du jeu, debut, fin ou abandon d&rsquo;une partie, recherche d&rsquo;adversaire), le
+        mode joue (solo, local, 2v2, Defi, ami, classee, bot), l&rsquo;issue (victoire, defaite, nul), une duree en
+        secondes et le numero de version du jeu. Jamais de nom, d&rsquo;adresse e-mail, de pseudo, de message ni de
+        position. L&rsquo;adresse IP est vue par le fournisseur pour acheminer la requete, mais n&rsquo;est pas
+        enregistree par l&rsquo;editeur. Ces donnees sont conservees <strong>13 mois</strong> au plus, ne sont ni
+        vendues ni partagees, et reposent sur l&rsquo;interet legitime de l&rsquo;editeur a mesurer l&rsquo;usage de son
+        jeu (article 6.1.f du RGPD). <strong>Vous pouvez couper cette mesure a tout moment</strong> dans
+        <em>Options</em> ; elle est aussi coupee d&rsquo;office si votre navigateur demande de ne pas etre suivi
+        (&laquo;&nbsp;Do Not Track&nbsp;&raquo;).
       </p>
 
       <h2>Services tiers</h2>

@@ -28,7 +28,7 @@
  *   - confirmation d'e-mail exigee par le service : le jeu l'explique ;
  *   - suppression du compte.
  */
-import { conclure, lancerNavigateur, surveiller, focus } from './harness.mjs';
+import { conclure, lancerNavigateur, surveiller, focus, lancerDepuisLeMenu, attendreEcran, lancer } from './harness.mjs';
 
 const JEU = process.env.KUBB_URL ?? 'http://localhost:4174/kubb-kings/';
 const FAUX = 'fake.supabase.test';
@@ -70,6 +70,7 @@ const serveur = {
   profils: new Map(), // id -> { data, revision }
   confirmerEmail: false,
   limiter: false,
+  mesures: [], // { anon, events, entetes } : tout ce que la mesure d'usage envoie
   signalements: [], // { par, pseudo, motif }
   signalementRefus: null, // code d'erreur a renvoyer
   recoveries: new Map(), // code -> email (le lien « mot de passe oublie » recu par e-mail)
@@ -209,6 +210,11 @@ async function gerer(route) {
   if (chemin === '/rest/v1/rpc/get_leaderboard') {
     // Lisible sans compte (cle anonyme) ; `is_me` n'est vrai que pour un joueur connecte.
     return repondre(route, 200, classement(idDuJeton(req)).slice(0, Math.min(100, corps.p_limit ?? 20)));
+  }
+
+  if (chemin === '/rest/v1/rpc/track_usage') {
+    serveur.mesures.push({ anon: corps.p_anon, events: corps.p_events, corps: JSON.stringify(corps) });
+    return repondre(route, 200, Array.isArray(corps.p_events) ? corps.p_events.length : 0);
   }
 
   if (chemin.startsWith('/rest/v1/rpc/')) {
@@ -613,6 +619,77 @@ const B = await appareil('B');
   await R.contexte.close();
 }
 
+// ------------------------------------------------------------------ 5d. mesure d'usage anonyme
+{
+  const envoyer = async (page) => {
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+    await page.waitForTimeout(700);
+  };
+  const evenements = () => serveur.mesures.flatMap((m) => m.events ?? []);
+  const M = await appareil('M');
+  await envoyer(M.page);
+  resultats.mesure_OuvrirLeJeuEstMesure = evenements().some((e) => e.name === 'session_start');
+
+  // Une partie locale : debut, puis fin (un tir droit sur le roi trop tot la termine).
+  await lancerDepuisLeMenu(M.page, /1v1/i);
+  await attendreEcran(M.page, 'match');
+  await M.page.waitForTimeout(1200);
+  await lancer(M.page, 0.9, { surLeRoi: true });
+  await M.page.waitForTimeout(1500);
+  await envoyer(M.page);
+  const debut = evenements().find((e) => e.name === 'match_start');
+  const fin = evenements().find((e) => e.name === 'match_end');
+  resultats.mesure_LeDebutDeParties = debut?.mode === 'local';
+  resultats.mesure_LaFinDeParties = fin?.mode === 'local' && ['win', 'loss'].includes(fin.result) && Number.isInteger(fin.seconds);
+
+  // Un abandon : on quitte en cours de partie.
+  await M.page.reload();
+  await M.page.waitForSelector('.panel--menu', { timeout: 30000 });
+  await lancerDepuisLeMenu(M.page, /1v1/i);
+  await attendreEcran(M.page, 'match');
+  await M.page.waitForTimeout(1200);
+  await M.page.evaluate(() => window.__kubb.scene.getScene('MatchScene').handleLeave());
+  await M.page.waitForTimeout(500);
+  await envoyer(M.page);
+  resultats.mesure_UnAbandonEstCompte = evenements().some((e) => e.name === 'match_abandon' && e.mode === 'local');
+
+  // Le MEME identifiant d'un jour a l'autre (c'est ce qui permet de savoir si l'on rejoue), et rien de personnel.
+  // (D'autres appareils du test ferment leurs onglets et envoient leurs derniers evenements avec retard : on isole M.)
+  const idM = await M.page.evaluate(() => JSON.parse(localStorage.getItem('kubb-kings.analytics') ?? '{}').id);
+  const duM = serveur.mesures.filter((m) => m.anon === idM);
+  resultats.mesure_UnSeulIdentifiantParAppareil = /^[0-9a-f-]{36}$/.test(idM ?? '') && duM.length >= 3;
+  const champs = new Set(evenements().flatMap((e) => Object.keys(e)));
+  resultats.mesure_SeulsLesChampsPrevusPartent = [...champs].every((c) => ['name', 'mode', 'result', 'seconds', 'version'].includes(c));
+  const brut = serveur.mesures.map((m) => m.corps).join('');
+  resultats.mesure_AucuneDonneePersonnelle = !/@|example\.com|pseudo|motdepasse/i.test(brut);
+
+  // Couper la mesure (Options) : plus rien ne part, meme a l'ouverture du jeu.
+  await M.page.evaluate(() => window.__kubbStoreApi.getState().setScreen('options'));
+  await M.page.locator('[data-testid="measure-options"] .segmented__item', { hasText: /Coupee/ }).click();
+  const avant = evenements().length;
+  await M.page.reload();
+  await M.page.waitForSelector('.panel--menu', { timeout: 30000 });
+  await lancerDepuisLeMenu(M.page, /1v1/i);
+  await attendreEcran(M.page, 'match');
+  await M.page.waitForTimeout(1000);
+  await envoyer(M.page);
+  resultats.mesure_CouperLaMesureArreteTout = evenements().length === avant;
+  resultats.mesure_LeChoixSeRetrouveAuRechargement = (await M.page.evaluate(() => JSON.parse(localStorage.getItem('kubb-kings.analytics') ?? '{}').enabled)) === false;
+  await M.contexte.close();
+
+  // « Do Not Track » : rien ne part, quoi qu'il y ait dans les reglages.
+  const dnt = await navigateur.newContext({ viewport: { width: 420, height: 900 } });
+  await dnt.route(new RegExp(FAUX.replace(/\./g, '\\.')), gerer);
+  await dnt.addInitScript(() => Object.defineProperty(navigator, 'doNotTrack', { get: () => '1' }));
+  const pd = await dnt.newPage();
+  const avantDnt = evenements().length;
+  await pd.goto(JEU);
+  await pd.waitForSelector('.panel--menu', { timeout: 30000 });
+  await envoyer(pd);
+  resultats.mesure_DoNotTrackEstRespecte = evenements().length === avantDnt;
+  await dnt.close();
+}
+
 // ------------------------------------------------------------------ 6. deux histoires : le joueur choisit
 {
   const profilAvant = JSON.parse(JSON.stringify([...serveur.profils.values()][0].data));
@@ -959,7 +1036,8 @@ const B = await appareil('B');
   // Le pseudo voulu est applique apres la premiere synchronisation : on laisse le temps a cette seconde requete.
   for (let i = 0; i < 40 && pseudoServeur('ra@example.com') !== 'Thomas_Ra'; i += 1) await P1.page.waitForTimeout(150);
   resultats.pseudo_choisiALaCreation = pseudoServeur('ra@example.com') === 'Thomas_Ra';
-  resultats.pseudo_leChoixEnAttenteEstNettoye = (await P1.page.evaluate(() => localStorage.getItem('kubb-kings.pending-pseudo'))) === null;
+  // Le serveur a le pseudo avant que le client n'ait fini de nettoyer son marqueur : on laisse la fin de la requete.
+  resultats.pseudo_leChoixEnAttenteEstNettoye = await attendre(P1.page, () => localStorage.getItem('kubb-kings.pending-pseudo') === null, undefined, 5000);
   await P1.page.evaluate(() => window.__kubbStoreApi.getState().setScreen('menu'));
   resultats.menu_affiche_LePseudoApresLInscription = await attendre(P1.page, () => document.querySelector('[data-testid="menu-pseudo"]')?.textContent === 'Thomas_Ra');
   resultats.pseudo_aucunAvertissementSiToutVaBien = (await P1.page.locator('[data-testid="account-notice"]').count()) === 0;

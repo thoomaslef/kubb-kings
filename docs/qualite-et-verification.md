@@ -405,3 +405,7 @@ Le jeu se rattrape donc seul (`src/game/safeMode.ts`) :
 Pour un ami dont le jeu plante : lui envoyer le lien avec `?safe=1` a la fin.
 Verifie par `tests/browser/mode-compatibilite.mjs`, y compris une vraie manche en mode simplifie.
 **Non verifie** : que ce mode corrige VRAIMENT le plantage de cet iPhone — a confirmer sur l'appareil.
+
+## Mesure, signalement, mot de passe oublie
+
+Voir [`mesure-et-tests-joueurs.md`](mesure-et-tests-joueurs.md) (mesure anonyme, protocole de test), [`comptes-joueurs.md`](comptes-joueurs.md) (mot de passe oublie : SMTP a configurer ; signaler/bloquer). Chacun est verifie par le script SQL execute pour de vrai (`npm run test:sql`) et le faux serveur (`npm run test:comptes`).

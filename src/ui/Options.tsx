@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
+import { analyticsAvailable, analyticsChoice, setAnalyticsEnabled } from '../game/analytics';
 import { useT } from '../i18n/useT';
 import type { Lang } from '../i18n/translate';
 
@@ -12,6 +14,7 @@ export function Options() {
   const setScreen = useGameStore((s) => s.setScreen);
   const lang = useGameStore((s) => s.lang);
   const setLang = useGameStore((s) => s.setLang);
+  const [measure, setMeasure] = useState(analyticsChoice);
 
   return (
     <div className="overlay overlay--solid">
@@ -31,6 +34,28 @@ export function Options() {
               </button>
             ))}
           </div>
+
+          {analyticsAvailable() && (
+            <>
+              <p className="segmented-label">{t('options.measure.label')}</p>
+              <div className="segmented" role="group" aria-label={t('options.measure.label')} data-testid="measure-options">
+                {([true, false] as const).map((on) => (
+                  <button
+                    key={String(on)}
+                    className={`segmented__item${measure === on ? ' segmented__item--on' : ''}`}
+                    aria-pressed={measure === on}
+                    onClick={() => {
+                      setAnalyticsEnabled(on);
+                      setMeasure(on);
+                    }}
+                  >
+                    {t(on ? 'options.measure.on' : 'options.measure.off')}
+                  </button>
+                ))}
+              </div>
+              <p className="footnote footnote--tight">{t('options.measure.hint')}</p>
+            </>
+          )}
 
           <button className="btn btn--ghost" onClick={() => setScreen('menu')}>
             {t('hub.back')}

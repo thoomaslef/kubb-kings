@@ -42,6 +42,47 @@ const blocs = extrait.match(/create or replace function[\s\S]*?\n\$\$;/g) ?? [];
 resultats.lExtraitAPoserLesDeuxFonctions = blocs.length === 2;
 resultats.lExtraitEstIdentiqueAuScriptComplet = blocs.every((b) => sql.includes(b));
 
+// -------- mesure d'usage anonyme (supabase/mesure.sql)
+const mesure = readFileSync(new URL('../../supabase/mesure.sql', import.meta.url), 'utf8');
+let mesureOk = true;
+try {
+  await db.exec(mesure);
+  await db.exec(mesure);
+} catch (e) {
+  mesureOk = false;
+  erreurs.push(String(e));
+}
+resultats.mesure_leScriptSExecuteEtSeRelance = mesureOk;
+const appareil1 = '11111111-1111-1111-1111-111111111111';
+const suivre = async (anon, evenements) => (await db.query('select public.track_usage($1::uuid, $2::jsonb) as n', [anon, JSON.stringify(evenements)])).rows[0].n;
+resultats.mesure_unEvenementValideEstEnregistre = (await suivre(appareil1, [{ name: 'match_end', mode: 'solo', result: 'win', seconds: 95, version: '1.2.3' }])) === 1;
+resultats.mesure_lesEvenementsInconnusSontIgnores = (await suivre(appareil1, [{ name: 'vol_de_donnees' }, { name: 'session_start' }, 'texte', 5])) === 1;
+const ligne = (await db.query(`select mode, result, seconds from public.usage_events where name = 'match_end'`)).rows[0];
+resultats.mesure_lesChampsValidesSontGardes = ligne.mode === 'solo' && ligne.result === 'win' && ligne.seconds === 95;
+await suivre(appareil1, [{ name: 'match_start', mode: 'pirate', result: 'gagne', seconds: -4 }]);
+const filtre = (await db.query(`select mode, result, seconds from public.usage_events where name = 'match_start'`)).rows[0];
+resultats.mesure_lesValeursHorsListeSontEffacees = filtre.mode === null && filtre.result === null && filtre.seconds === null;
+resultats.mesure_vingtEvenementsAuPlusParAppel = (await suivre(appareil1, Array.from({ length: 50 }, () => ({ name: 'search', mode: 'ranked', result: 'cancelled', seconds: 3 })))) === 20;
+resultats.mesure_aucunTexteLibreNiIdentiteDansLaTable = (await db.query(`select column_name from information_schema.columns where table_name = 'usage_events' order by 1`)).rows.map((r) => r.column_name).join(',') === 'anon_id,app_version,created_at,id,mode,name,result,seconds';
+// Plafond journalier : 400 par appareil.
+for (let i = 0; i < 20; i += 1) await suivre(appareil1, Array.from({ length: 20 }, () => ({ name: 'session_start' })));
+resultats.mesure_plafondJournalierParAppareil = (await suivre(appareil1, [{ name: 'session_start' }])) === 0;
+// Un appel mal forme ne leve rien.
+resultats.mesure_appelMalFormeIgnore = (await suivre(appareil1, { name: 'session_start' })) === 0;
+const rlsMesure = await db.query(`select relrowsecurity from pg_class where relname = 'usage_events'`);
+const reglesMesure = await db.query(`select count(*)::int as n from pg_policies where tablename = 'usage_events'`);
+resultats.mesure_laTableEstFermeeALAPI = rlsMesure.rows[0].relrowsecurity === true && reglesMesure.rows[0].n === 0;
+// Les vues de chiffres se lisent (et la retention distingue les jours).
+await db.exec(`insert into public.usage_events (anon_id, name, created_at) values ('22222222-2222-2222-2222-222222222222', 'session_start', now() - interval '3 days'), ('22222222-2222-2222-2222-222222222222', 'session_start', now() - interval '2 days')`);
+const retention = (await db.query(`select cohorte, appareils, revus_j1 from stats.retention where appareils = 1 and revus_j1 = 1`)).rows;
+resultats.mesure_laRetentionJ1SeCalcule = retention.length === 1;
+resultats.mesure_lesAutresVuesSeLisent = (await db.query('select * from stats.par_jour')).rows.length > 0 && (await db.query('select * from stats.par_mode')).rows.length > 0 && (await db.query('select * from stats.recherche')).rows.length > 0;
+resultats.mesure_laPurgeSupprimeLeVieux = (await (async () => {
+  await db.exec(`insert into public.usage_events (anon_id, name, created_at) values ('33333333-3333-3333-3333-333333333333', 'session_start', now() - interval '14 months')`);
+  const n = (await db.query('select public.purge_usage_events() as n')).rows[0].n;
+  return n === 1;
+})());
+
 const A = '00000000-0000-0000-0000-00000000000a';
 const B = '00000000-0000-0000-0000-00000000000b';
 await db.exec(`insert into auth.users values ('${A}'), ('${B}')`);

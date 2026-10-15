@@ -207,8 +207,8 @@ l&apos;execution du service demande (article 6.1.b).
 > soient divulgues **dans les deux formes** — qui avaient deja diverge une fois.
 
 Hors mode en ligne, le constat reste vrai, et les textes le disent explicitement : solo,
-local, Defi et tournoi n&apos;ouvrent aucune connexion. Aucun compte, aucun outil
-d&apos;analyse, aucune publicite — et tout ce qui est conserve (preferences, progression,
+local, Defi et tournoi n&apos;ouvrent aucune connexion. Compte facultatif, aucun outil
+d&apos;analyse externe (seulement une mesure d&apos;usage anonyme, coupable dans Options), aucune publicite — et tout ce qui est conserve (preferences, progression,
 succes, meilleure serie) reste en stockage local sur l&apos;appareil.
 
 Identite editeur renseignee : Tommy Studio (Thomas Lefevre), entrepreneur individuel, Caen. A
