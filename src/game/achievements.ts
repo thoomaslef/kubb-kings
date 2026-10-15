@@ -38,24 +38,24 @@ export interface Achievement {
 }
 
 export const ACHIEVEMENTS: readonly Achievement[] = [
-  { id: 'double', xp: 150, coins: 50 },
-  { id: 'triple', xp: 250, coins: 75 },
-  { id: 'perfect', xp: 350, coins: 100 },
-  { id: 'kubb-eloigne', xp: 150, coins: 50 },
-  { id: 'ricochet', xp: 150, coins: 50 },
-  { id: 'sans-faute', xp: 400, coins: 150 },
-  { id: 'victoire-parfaite', xp: 350, coins: 125 },
-  { id: 'roi-dernier-lancer', xp: 400, coins: 150 },
-  { id: 'frolement', xp: 250, coins: 75 },
-  { id: 'nettoyeur', xp: 250, coins: 75 },
-  { id: 'dans-le-vent', xp: 150, coins: 50 },
-  { id: 'chirurgien', xp: 400, coins: 150 },
-  { id: 'remontada', xp: 350, coins: 125 },
-  { id: 'collectionneur', xp: 500, coins: 200 },
-  { id: 'increvable', xp: 600, coins: 250 },
-  { id: 'bapteme-du-feu', xp: 200, coins: 75 },
-  { id: 'tombeur-de-geant', xp: 500, coins: 200 },
-  { id: 'invaincu', xp: 700, coins: 300 }
+  { id: 'double', xp: 50, coins: 50 },
+  { id: 'triple', xp: 80, coins: 75 },
+  { id: 'perfect', xp: 120, coins: 100 },
+  { id: 'kubb-eloigne', xp: 50, coins: 50 },
+  { id: 'ricochet', xp: 50, coins: 50 },
+  { id: 'sans-faute', xp: 130, coins: 150 },
+  { id: 'victoire-parfaite', xp: 120, coins: 125 },
+  { id: 'roi-dernier-lancer', xp: 130, coins: 150 },
+  { id: 'frolement', xp: 80, coins: 75 },
+  { id: 'nettoyeur', xp: 80, coins: 75 },
+  { id: 'dans-le-vent', xp: 50, coins: 50 },
+  { id: 'chirurgien', xp: 130, coins: 150 },
+  { id: 'remontada', xp: 120, coins: 125 },
+  { id: 'collectionneur', xp: 170, coins: 200 },
+  { id: 'increvable', xp: 200, coins: 250 },
+  { id: 'bapteme-du-feu', xp: 70, coins: 75 },
+  { id: 'tombeur-de-geant', xp: 170, coins: 200 },
+  { id: 'invaincu', xp: 230, coins: 300 }
 ];
 
 /**

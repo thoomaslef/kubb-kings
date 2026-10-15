@@ -47,7 +47,7 @@ tous les modes — un seul joueur sur cet appareil, meme quand un second humain 
 Rouge en 1v1/2v2 local. Affiche au menu (badge compact) et sur l&apos;ecran de resultat
 (gain d&apos;XP du match qui vient de se terminer + barre de niveau).
 
-**Niveau.** XP necessaire pour passer du niveau *n* au niveau *n+1* : `100 + 25*(n-1)`
+**Niveau.** XP necessaire pour passer du niveau *n* au niveau *n+1* : `250 + 60*(n-1)` (ancien bareme `100 + 25*(n-1)`, juge beaucoup trop rapide : une seule partie, succes compris, faisait passer du niveau 1 au 6)
 (croissance lineaire douce). Chaque niveau porte un titre (purement cosmetique) :
 
 | Niveau | Titre                |
@@ -97,24 +97,24 @@ tombe pendant la partie.
 
 | Succes            | Condition                                                     | Recompense |
 | ------------------ | ---------------------------------------------------------------- | :--------: |
-| Double            | Faire tomber 2 kubbs (ou plus) avec un seul lancer               | +150 XP · +50 🪙  |
-| Triple            | Faire tomber exactement 3 kubbs avec un seul lancer              | +250 XP · +75 🪙  |
-| Perfect           | Faire tomber 4 kubbs ou plus avec un seul lancer                 | +350 XP · +100 🪙 |
-| Longue distance   | Faire tomber le kubb adverse le plus eloigne du point de lancer  | +150 XP · +50 🪙  |
-| Ricochet          | Redresser un kubb grace a un tir indirect (rebond sur une bande) | +150 XP · +50 🪙  |
-| Sans-faute        | Gagner une partie sans rater un seul lancer                      | +400 XP · +150 🪙 |
-| Victoire parfaite | Gagner une partie sans perdre un seul de ses propres kubbs       | +350 XP · +125 🪙 |
-| Coup de grace     | Faire tomber le roi sur son tout dernier lancer disponible       | +400 XP · +150 🪙 |
-| Froleur           | En partie, s&apos;arreter a moins de 60px du roi sans le toucher | +250 XP · +75 🪙  |
-| Nettoyeur         | Degager 3 kubbs de champ de son camp dans la meme partie         | +250 XP · +75 🪙  |
-| Dans le vent      | Abattre un kubb avec un vent de travers de force 2               | +150 XP · +50 🪙  |
-| Chirurgien        | Gagner sans qu&apos;un seul de ses batons touche une bande       | +400 XP · +150 🪙 |
-| Remontada         | Gagner apres n&apos;avoir plus eu qu&apos;un seul kubb debout    | +350 XP · +125 🪙 |
-| Collectionneur    | Gagner au moins une fois sur chacun des 11 terrains              | +500 XP · +200 🪙 |
-| Increvable        | Terminer les 30 manches du mode Defi                             | +600 XP · +250 🪙 |
-| Bapteme du feu    | Gagner sa premiere partie en ligne                               | +200 XP · +75 🪙  |
-| Tombeur de geant  | Battre en ligne un joueur d&apos;au moins 3 niveaux de plus      | +500 XP · +200 🪙 |
-| Invaincu          | Enchainer 3 victoires en ligne sans une seule defaite            | +700 XP · +300 🪙 |
+| Double            | Faire tomber 2 kubbs (ou plus) avec un seul lancer               | +50 XP · +50 🪙  |
+| Triple            | Faire tomber exactement 3 kubbs avec un seul lancer              | +80 XP · +75 🪙  |
+| Perfect           | Faire tomber 4 kubbs ou plus avec un seul lancer                 | +120 XP · +100 🪙 |
+| Longue distance   | Faire tomber le kubb adverse le plus eloigne du point de lancer  | +50 XP · +50 🪙  |
+| Ricochet          | Redresser un kubb grace a un tir indirect (rebond sur une bande) | +50 XP · +50 🪙  |
+| Sans-faute        | Gagner une partie sans rater un seul lancer                      | +130 XP · +150 🪙 |
+| Victoire parfaite | Gagner une partie sans perdre un seul de ses propres kubbs       | +120 XP · +125 🪙 |
+| Coup de grace     | Faire tomber le roi sur son tout dernier lancer disponible       | +130 XP · +150 🪙 |
+| Froleur           | En partie, s&apos;arreter a moins de 60px du roi sans le toucher | +80 XP · +75 🪙  |
+| Nettoyeur         | Degager 3 kubbs de champ de son camp dans la meme partie         | +80 XP · +75 🪙  |
+| Dans le vent      | Abattre un kubb avec un vent de travers de force 2               | +50 XP · +50 🪙  |
+| Chirurgien        | Gagner sans qu&apos;un seul de ses batons touche une bande       | +130 XP · +150 🪙 |
+| Remontada         | Gagner apres n&apos;avoir plus eu qu&apos;un seul kubb debout    | +120 XP · +125 🪙 |
+| Collectionneur    | Gagner au moins une fois sur chacun des 11 terrains              | +170 XP · +200 🪙 |
+| Increvable        | Terminer les 30 manches du mode Defi                             | +200 XP · +250 🪙 |
+| Bapteme du feu    | Gagner sa premiere partie en ligne                               | +70 XP · +75 🪙  |
+| Tombeur de geant  | Battre en ligne un joueur d&apos;au moins 3 niveaux de plus      | +170 XP · +200 🪙 |
+| Invaincu          | Enchainer 3 victoires en ligne sans une seule defaite            | +230 XP · +300 🪙 |
 
 Les seuils (`GRAZE_MAX_DISTANCE = 60`, `FIELD_KUBBS_CLEARED_TARGET = 3`,
 `COMEBACK_MAX_STANDING = 1`, `GIANT_LEVEL_GAP = 3`, `ONLINE_STREAK_TARGET = 3`)

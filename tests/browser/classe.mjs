@@ -31,6 +31,7 @@ async function nouvellePage(nom, indexDeRang = OR_2, { pending = false } = {}) {
   const page = await contexte.newPage();
   surveiller(nom, page, erreurs);
   await ouvrirJeu(page);
+  // Terrain et vent sont tires au hasard en classee : pour jouer un scenario precis (tir droit sur le roi), on les force.
   await page.evaluate(
     ({ index, pending }) => {
       localStorage.setItem('kubb-kings.rank', JSON.stringify({ index, wins: 0, losses: 0, peak: index }));
@@ -41,6 +42,7 @@ async function nouvellePage(nom, indexDeRang = OR_2, { pending = false } = {}) {
   );
   await page.reload();
   await page.waitForTimeout(1000);
+  await page.evaluate(() => { window.__kubbForcedRankedSetup = { preset: 'classique', wind: false }; });
   return page;
 }
 

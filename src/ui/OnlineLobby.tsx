@@ -13,7 +13,8 @@ import { createMatchTransport, transportKind } from '../game/online/transportFac
 import { setCurrentSession } from '../game/online/currentSession';
 import { OnlineSession } from '../game/online/session';
 import { PROTOCOL_VERSION, type MatchSetup, type PlayerCard } from '../game/online/protocol';
-import { FIELD_PRESETS, WIND_DIRECTIONS, drawStartingTeam, type FieldPresetId } from '../game/rules';
+import { WIND_DIRECTIONS, drawStartingTeam, type FieldPresetId } from '../game/rules';
+import { rankedConditions } from '../game/online/rankedSetup';
 import type { BatonId } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { useRankName } from './RankBadge';
@@ -50,12 +51,6 @@ function drawSetup(
     batons: { blue: batonId, red: 'base' },
     startingTeam: drawStartingTeam()
   };
-}
-
-/** Terrain tire au hasard pour une partie classee. */
-function randomPreset(): FieldPresetId {
-  const ids = Object.keys(FIELD_PRESETS) as FieldPresetId[];
-  return ids[Math.floor(Math.random() * ids.length)];
 }
 
 export function OnlineLobby() {
@@ -169,7 +164,10 @@ export function OnlineLobby() {
         // jamais de kubbs de champ (reserves aux parties entre amis). Les skins (kubbs, baton, trainee)
         // sont personnels et purement visuels : ils voyagent, sans rien changer au jeu.
         ranked
-          ? drawSetup(randomPreset(), Math.random() < 0.5, false, batonId)
+          ? (() => {
+              const c = rankedConditions();
+              return drawSetup(c.preset, c.wind, false, batonId);
+            })()
           : drawSetup(fieldPreset, windEnabled, fieldKubbsEnabled, batonId),
         `hote-${code}`,
         card

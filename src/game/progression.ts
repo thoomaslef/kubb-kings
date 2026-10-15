@@ -44,9 +44,12 @@ function titleForLevel(level: number) {
   return current;
 }
 
-/** XP necessaire pour passer du niveau `level` au niveau `level + 1` : croissance lineaire douce. */
+/**
+ * XP necessaire pour passer du niveau `level` au niveau `level + 1` : croissance lineaire douce.
+ * (Ancien bareme 100 + 25 par niveau : un seul match, succes compris, faisait passer du niveau 1 au 6.)
+ */
 export function xpForLevel(level: number): number {
-  return 100 + (level - 1) * 25;
+  return 250 + (level - 1) * 60;
 }
 
 export interface LevelInfo {

@@ -131,3 +131,18 @@ describe('gain d XP', () => {
     expect(computeXpAward({ ...vide, won: true }, avant).after.gamesPlayed).toBe(8);
   });
 });
+
+describe('rythme de la progression', () => {
+  it('une premiere partie, succes compris, ne fait pas sauter de nombreux niveaux', () => {
+    // Observe : victoire + quatre succes debloques d'un coup = environ 500 XP.
+    expect(levelFromXp(500).level).toBeLessThanOrEqual(2);
+  });
+
+  it('le niveau 10 demande de nombreuses parties (au moins une vingtaine)', () => {
+    let cumul = 0;
+    for (let n = 1; n < 10; n += 1) cumul += xpForLevel(n);
+    // Une partie gagnee « normale » rapporte environ 150 XP hors succes.
+    expect(cumul / 150).toBeGreaterThanOrEqual(20);
+  });
+});
+
