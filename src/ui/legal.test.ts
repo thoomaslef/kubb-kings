@@ -202,7 +202,7 @@ describe("le reseau reellement present est divulgue", () => {
 
   it("le compte ne stocke que la progression : le code n'ecrit que par les fonctions prevues", () => {
     // Pas de table ecrite directement, pas de stockage de fichiers : seulement
-    // les trois fonctions SQL de supabase/comptes.sql.
+    // les fonctions SQL de supabase/comptes.sql.
     expect(backendSource).not.toMatch(/\.from\(|\.insert\(|\.upsert\(|\.storage/);
     const appels = [...backendSource.matchAll(/\.rpc\(\s*'([a-z_]+)'/g)].map((m) => m[1]).sort();
     expect(appels).toEqual([
@@ -210,10 +210,22 @@ describe("le reseau reellement present est divulgue", () => {
       "get_leaderboard",
       "load_profile",
       "my_standing",
+      "report_player",
       "reroll_pseudo",
       "save_profile",
-            "set_pseudo",
+      "set_pseudo",
     ]);
+  });
+
+  it("le signalement de pseudo est decrit dans les pages, et ce que le serveur en garde", () => {
+    // Ancrage sur le CODE : tant que le jeu envoie un signalement, le texte doit dire ce qui est enregistre.
+    expect(backendSource).toContain("report_player");
+    for (const chemin of [POLITIQUE, ECRAN]) {
+      const texte = texteJoueur(chemin);
+      for (const fait of ["signaler", "identifiant", "trois joueurs", "Bloquer"]) {
+        expect(texte, `"${fait}" manque dans ${chemin}`).toContain(fait);
+      }
+    }
   });
 
   it("le classement est public : le texte le dit, avec ce qu'il montre et ce qu'il ne montre pas", () => {

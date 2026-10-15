@@ -228,7 +228,8 @@ a l'envoi comme a la reception :
 avec la partie, et ne sont ecrits ni sur l'appareil ni sur le relais — qui ne fait que
 retransmettre (`supabaseTransport.ts` n'utilise ni table, ni storage). Consequence assumee
 et ecrite noir sur blanc dans les pages legales : il n'y a **ni moderation, ni historique,
-ni signalement possible**, puisqu'il ne reste rien a produire.
+ni signalement possible**, puisqu'il ne reste rien a produire. Le recours est un bouton qui **coupe le tchat**
+(🔔/🔇 dans le panneau) : plus rien n'est affiche ni envoye pour la partie.
 
 > **Ce que ce choix a coute ailleurs.** Les textes legaux promettaient a trois endroits
 > « ni chat, ni messagerie, ni contenu publie par les joueurs » — et dans la politique de

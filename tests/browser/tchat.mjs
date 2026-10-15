@@ -77,6 +77,23 @@ const vuParHote = await messages(hote);
 console.log('hote voit  :', JSON.stringify(vuParHote));
 resultats.reponseRecue = vuParHote.includes('merci, a toi');
 
+// ---- 2b. Couper le tchat (le « bloquer » d'une partie entre amis).
+await ouvrirLeTchat(hote);
+await hote.locator('[data-testid="chat-mute"]').click();
+resultats.coupe_LeJoueurLeSait = (await hote.locator('[data-testid="chat-muted"]').count()) === 1;
+resultats.coupe_OnNePeutPlusEcrire = await hote.locator('.chat__saisie button').isDisabled();
+await ecrire(invite, 'pendant la coupure');
+await hote.bringToFront();
+await hote.waitForTimeout(600);
+resultats.coupe_RienNEstAffiche = (await messages(hote)).length === 0;
+await hote.locator('[data-testid="chat-mute"]').click();
+resultats.coupe_ReactiverRemetLeTchat = (await hote.locator('[data-testid="chat-muted"]').count()) === 0;
+await ecrire(invite, 'apres la coupure');
+await hote.bringToFront();
+await hote.waitForTimeout(600);
+const apresCoupure = await messages(hote);
+resultats.coupe_LesMessagesPerdusNeReviennentPas = !apresCoupure.includes('pendant la coupure') && apresCoupure.includes('apres la coupure');
+
 // ---- 3. Les retours a la ligne ne doivent pas fabriquer plusieurs bulles.
 //         `fill` les accepte alors que le champ est sur une ligne : c'est
 //         exactement le genre de contenu qui n'arrive pas de l'interface.

@@ -23,6 +23,10 @@ export function Chat() {
   const [brouillon, setBrouillon] = useState('');
   const [ouvert, setOuvert] = useState(false);
   const [nonLus, setNonLus] = useState(0);
+  // Tchat coupe : on ne recoit plus rien de l'autre joueur (c'est le « bloquer » d'une partie entre amis).
+  const [coupe, setCoupe] = useState(false);
+  const coupeRef = useRef(false);
+  coupeRef.current = coupe;
   const prochainId = useRef(0);
   const finDeListe = useRef<HTMLDivElement>(null);
 
@@ -35,6 +39,7 @@ export function Chat() {
   useEffect(() => {
     if (!session) return;
     return session.onChat((texte) => {
+      if (coupeRef.current) return;
       setMessages((anciens) => appendChat(anciens, { id: (prochainId.current += 1), mine: false, text: texte }));
       setNonLus((n) => n + 1);
     });
@@ -76,14 +81,25 @@ export function Chat() {
     <div className="chat">
       <div className="chat__entete">
         <span className="chat__titre">{t('chat.title')}</span>
+        <button
+          className="chat__fermer"
+          onClick={() => setCoupe((c) => !c)}
+          aria-pressed={coupe}
+          aria-label={t(coupe ? 'chat.unmute' : 'chat.mute')}
+          title={t(coupe ? 'chat.unmute' : 'chat.mute')}
+          data-testid="chat-mute"
+        >
+          {coupe ? '🔇' : '🔔'}
+        </button>
         <button className="chat__fermer" onClick={() => setOuvert(false)} aria-label={t('chat.close')}>
           ✕
         </button>
       </div>
 
       <div className="chat__messages" role="log" aria-live="polite">
-        {messages.length === 0 && <p className="chat__vide">{t('chat.empty')}</p>}
-        {messages.map((m) => (
+        {coupe && <p className="chat__vide" data-testid="chat-muted">{t('chat.muted')}</p>}
+        {!coupe && messages.length === 0 && <p className="chat__vide">{t('chat.empty')}</p>}
+        {(coupe ? [] : messages).map((m) => (
           <p key={m.id} className={`chat__message${m.mine ? ' chat__message--moi' : ''}`}>
             {m.text}
           </p>
@@ -106,7 +122,7 @@ export function Chat() {
           aria-label={t('chat.placeholder')}
           autoComplete="off"
         />
-        <button type="submit" className="btn btn--primary" disabled={!sanitizeChatText(brouillon)}>
+        <button type="submit" className="btn btn--primary" disabled={coupe || !sanitizeChatText(brouillon)}>
           {t('chat.send')}
         </button>
       </form>

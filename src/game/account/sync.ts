@@ -6,7 +6,8 @@ import {
   type AccountBackend,
   type AccountErrorCode,
   type AccountUser,
-  type PseudoErrorCode
+  type PseudoErrorCode,
+  type ReportResult
 } from './backend';
 import { validatePseudo, type PseudoProblem } from './pseudo';
 import {
@@ -443,6 +444,14 @@ export async function signInWithGoogle(): Promise<AuthOutcome> {
   store().setAccount({ notice: null });
   const result = await backend.signInWithGoogle(returnUrl());
   return result.ok ? { ok: true, needsEmailConfirmation: false } : { ok: false, error: result.error };
+}
+
+/** Signale un pseudo du classement. Il faut un compte : un signalement anonyme ne pourrait pas etre limite. */
+export async function reportPlayer(pseudo: string, reason: 'pseudo' | 'autre' = 'pseudo'): Promise<ReportResult | { ok: false; error: 'signed-out' }> {
+  ensureBackend();
+  if (!backend) return { ok: false, error: 'unavailable' };
+  if (store().account.status !== 'signedIn') return { ok: false, error: 'signed-out' };
+  return backend.reportPlayer(pseudo, reason);
 }
 
 /** Demande l'e-mail de reinitialisation. L'adresse inconnue n'est jamais signalee (cf. AccountBackend). */

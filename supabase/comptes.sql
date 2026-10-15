@@ -283,6 +283,75 @@ $$;
 -- `set_leaderboard_visible` d'une version precedente est retiree (la colonne `show_in_leaderboard` reste, inutilisee).
 drop function if exists public.set_leaderboard_visible(boolean);
 
+-- ---------------------------------------------------------------------------------------------
+-- Signalement d'un pseudo (le seul texte libre PUBLIC du jeu : il apparait au classement).
+--   * Un joueur CONNECTE signale un pseudo ; la table `reports` n'est lisible par personne via l'API
+--     (RLS sans regle) — l'editeur la lit dans le tableau de bord : select * from public.reports order by created_at desc;
+--   * un signalement par couple (signaleur, signale) ; au plus 10 signalements par signaleur et par 24 h ;
+--   * a 3 signaleurs DIFFERENTS, le pseudo est remplace d'office par un pseudo genere et le joueur ne peut plus
+--     le rechanger pendant 30 jours (on ne decide pas a sa place s'il est coupable, on retire le texte).
+-- ---------------------------------------------------------------------------------------------
+create table if not exists public.reports (
+  id              bigserial primary key,
+  reporter_id     uuid not null references auth.users (id) on delete cascade,
+  reported_id     uuid not null references auth.users (id) on delete cascade,
+  reported_pseudo text not null,
+  reason          text not null check (reason in ('pseudo', 'autre')),
+  created_at      timestamptz not null default now(),
+  unique (reporter_id, reported_id)
+);
+alter table public.reports enable row level security;
+-- Volontairement AUCUNE regle : ni lecture ni ecriture par l'API, tout passe par report_player.
+alter table public.profiles add column if not exists moderated_at timestamptz;
+
+-- Renvoie {"ok": true, "moderated": bool} ou {"ok": false, "error": "not-found|self|too-many|bad-reason"}.
+create or replace function public.report_player(p_pseudo text, p_reason text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  cible uuid;
+  depuis timestamptz;
+  vrai text;
+  nb integer;
+begin
+  if uid is null then
+    raise exception 'non connecte';
+  end if;
+  if p_reason is null or p_reason not in ('pseudo', 'autre') then
+    return jsonb_build_object('ok', false, 'error', 'bad-reason');
+  end if;
+  select user_id, moderated_at, pseudo into cible, depuis, vrai from public.profiles where lower(pseudo) = lower(btrim(coalesce(p_pseudo, '')));
+  if cible is null then
+    return jsonb_build_object('ok', false, 'error', 'not-found');
+  end if;
+  if cible = uid then
+    return jsonb_build_object('ok', false, 'error', 'self');
+  end if;
+  if (select count(*) from public.reports where reporter_id = uid and created_at > now() - interval '24 hours') >= 10 then
+    return jsonb_build_object('ok', false, 'error', 'too-many');
+  end if;
+
+  insert into public.reports (reporter_id, reported_id, reported_pseudo, reason)
+  values (uid, cible, vrai, p_reason)
+  on conflict (reporter_id, reported_id) do nothing;
+
+  -- Signaleurs distincts depuis la derniere moderation de ce joueur.
+  select count(distinct reporter_id) into nb from public.reports
+   where reported_id = cible and created_at > coalesce(depuis, '-infinity'::timestamptz);
+  if nb >= 3 then
+    update public.profiles
+       set pseudo = public.generate_pseudo(), pseudo_changed_at = now() + interval '30 days', moderated_at = now()
+     where user_id = cible;
+    return jsonb_build_object('ok', true, 'moderated', true);
+  end if;
+  return jsonb_build_object('ok', true, 'moderated', false);
+end;
+$$;
+
 create or replace function public.delete_my_account()
 returns void
 language plpgsql
@@ -316,3 +385,5 @@ grant execute on function public.get_leaderboard(integer) to anon, authenticated
 grant execute on function public.my_standing() to authenticated;
 grant execute on function public.reroll_pseudo() to authenticated;
 grant execute on function public.set_pseudo(text) to authenticated;
+revoke all on function public.report_player(text, text) from public, anon;
+grant execute on function public.report_player(text, text) to authenticated;

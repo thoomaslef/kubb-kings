@@ -181,8 +181,7 @@ attente ; un refus definitif (pris, interdit) l'abandonne, le joueur garde le ps
 l'ecran Compte. Se deconnecter efface le choix en attente.
 
 **Limites assumees.** Un filtre de mots n'est pas une moderation : il en laisse passer (orthographes inventees,
-autres langues). Il n'y a pas de bouton « signaler » ; les mentions legales donnent l'adresse de contact, et un pseudo
-inapproprie signale y est reinitialise. Le pseudo n'est jamais affiche en partie (ni tchat, ni adversaire) : seulement
+autres langues). Le complement est le **signalement** (ci-dessous) ; les mentions legales donnent aussi l'adresse de contact. Le pseudo n'est jamais affiche en partie (ni tchat, ni adversaire) : seulement
 au classement.
 
 > **A faire une fois : relancer `supabase/comptes.sql`** (SQL Editor, coller, Run — sans danger a relancer). Il ajoute
@@ -235,3 +234,23 @@ la reinitialisation ne fonctionnera que pour vous.
    (avec le `/` final) — sinon le lien renvoie sur la mauvaise page.
 4. *Authentication -> Emails -> Templates -> Reset Password* : traduire si voulu (le lien `{{ .ConfirmationURL }}` doit rester).
 Verification : « Mot de passe oublie ? » avec votre adresse -> l'e-mail doit arriver en quelques secondes.
+
+## Signaler et bloquer un pseudo
+
+Au classement, chaque ligne (sauf la sienne) a un bouton « ⋯ » : **Signaler** ou **Bloquer**.
+
+- **Signaler** (compte necessaire : un signalement anonyme ne pourrait pas etre limite) appelle `report_player`
+  (`supabase/comptes.sql`). Un signalement par couple (signaleur, signale), 10 par signaleur et par 24 h. Le pseudo signale est
+  conserve avec le signalement (preuve, meme s'il change ensuite). A **3 signaleurs differents**, le pseudo est remplace d'office
+  par un pseudo genere, et le joueur ne peut pas le rechanger pendant 30 jours : on retire le texte sans trancher sur la
+  culpabilite. La table `reports` est fermee a l'API (RLS sans regle) : **vous** la lisez dans Supabase ->
+  *Table Editor -> reports* (ou `select * from public.reports order by created_at desc;`). Pour reinitialiser un pseudo a la
+  main : `update public.profiles set pseudo = public.generate_pseudo() where lower(pseudo) = lower('Pseudo_Fautif');`.
+- **Bloquer** masque le pseudo du classement, **sur cet appareil seulement** (`account/blocklist.ts`, stockage local, 100 max) ;
+  marche sans compte. « Joueurs bloques : n — tout afficher de nouveau » les rend.
+- **Tchat entre amis** : il n'y a aucune identite derriere un message (code de salon seulement) ; le bouton 🔔/🔇 du panneau
+  **coupe le tchat** pour la partie (rien n'est plus affiche ni envoye).
+
+Les pages legales decrivent ce qui est enregistre (identifiant de compte du signaleur, pseudo signale, date) ; `legal.test.ts` l'exige.
+**A surveiller** : la table `reports` est a lire de temps en temps — il n'y a pas de notification. Si le jeu grandit, brancher un
+envoi d'e-mail (fonction Edge ou webhook de base) sur chaque insertion.

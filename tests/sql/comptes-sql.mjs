@@ -120,5 +120,62 @@ await moi(A);
 const classement = await db.query('select * from public.get_leaderboard(10)');
 resultats.leClassementSeLit = Array.isArray(classement.rows);
 
+// -------- signalement d'un pseudo
+const ids = ['d', 'e', 'f', '1', '2'].map((c) => `00000000-0000-0000-0000-0000000000${c}0`);
+for (const id of ids) {
+  await db.exec(`insert into auth.users values ('${id}')`);
+  await creerProfil(id);
+}
+const [D, E, F, G, H] = ids;
+await moi(D);
+await db.query('select public.set_pseudo($1)', ['Cible_Un']);
+const signaler = async (qui, pseudoCible, raison = 'pseudo') => {
+  await moi(qui);
+  return (await db.query('select public.report_player($1, $2) as r', [pseudoCible, raison])).rows[0].r;
+};
+const pseudoDe = async (id) => (await db.query('select pseudo from public.profiles where user_id = $1', [id])).rows[0].pseudo;
+
+resultats.signaler_unPseudoInconnuEstRefuse = (await signaler(E, 'Personne_Ici')).error === 'not-found';
+resultats.signaler_soiMemeEstRefuse = (await signaler(D, 'Cible_Un')).error === 'self';
+resultats.signaler_unMotifInconnuEstRefuse = (await signaler(E, 'Cible_Un', 'nimporte')).error === 'bad-reason';
+resultats.signaler_insensibleALaCasse = (await signaler(E, 'cible_UN')).ok === true;
+const dejaVu = await signaler(E, 'Cible_Un');
+const nbRapports = (await db.query('select count(*)::int as n from public.reports where reported_id = $1', [D])).rows[0].n;
+resultats.signaler_unSeulSignalementParCouple = dejaVu.ok === true && nbRapports === 1;
+resultats.signaler_deuxSignaleursNeSuffisentPas = (await signaler(F, 'Cible_Un')).moderated === false && (await pseudoDe(D)) === 'Cible_Un';
+const troisieme = await signaler(G, 'Cible_Un');
+resultats.signaler_troisSignaleursDifferentsRetirentLePseudo = troisieme.moderated === true && (await pseudoDe(D)) !== 'Cible_Un';
+await moi(D);
+resultats.signaler_lePseudoNePeutPasEtreRemisAussitot = (await db.query('select public.set_pseudo($1) as r', ['Cible_Un'])).rows[0].r.error === 'too-soon';
+const ancien = await db.query(`select reported_pseudo from public.reports where reported_id = $1 limit 1`, [D]);
+resultats.signaler_lePseudoSignaleEstConserveCommePreuve = ancien.rows[0].reported_pseudo === 'Cible_Un';
+
+// Limite de 10 signalements par signaleur et par 24 h.
+await moi(H);
+await db.query('select public.set_pseudo($1)', ['Pseudo_H']);
+let refusLimite = false;
+for (let i = 0; i < 12; i += 1) {
+  const c = `00000000-0000-0000-0000-0000000001${String(i).padStart(2, '0')}`;
+  await db.exec(`insert into auth.users values ('${c}')`);
+  await creerProfil(c);
+  await db.query('select public.set_pseudo($1)', [`Cible_${i}_x`]);
+  const r = await signaler(H, `Cible_${i}_x`);
+  if (i >= 10 && r.error === 'too-many') refusLimite = true;
+}
+resultats.signaler_pasPlusDeDixParJour = refusLimite;
+
+// Droits : sans compte, rien ; et la table n'est lisible par personne via l'API.
+await moi('');
+let anon = false;
+try {
+  await db.query('select public.report_player($1, $2)', ['Cible_Un', 'pseudo']);
+} catch {
+  anon = true;
+}
+resultats.signaler_sansConnexionOnNePeutPas = anon;
+const rls = await db.query(`select relrowsecurity from pg_class where relname = 'reports'`);
+const regles = await db.query(`select count(*)::int as n from pg_policies where tablename = 'reports'`);
+resultats.signaler_laTableEstFermeeALAPI = rls.rows[0].relrowsecurity === true && regles.rows[0].n === 0;
+
 console.log(resultats);
 conclure(resultats, erreurs);

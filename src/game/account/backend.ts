@@ -42,6 +42,9 @@ export type PseudoErrorCode =
   | 'unavailable'
   | 'network';
 
+export type ReportErrorCode = 'not-found' | 'self' | 'too-many' | 'bad-reason' | 'unavailable' | 'network';
+export type ReportResult = { ok: true } | { ok: false; error: ReportErrorCode };
+
 export type PseudoResult = { ok: true; pseudo: string } | { ok: false; error: PseudoErrorCode };
 
 const PSEUDO_ERRORS: readonly string[] = ['too-short', 'too-long', 'chars', 'forbidden', 'taken', 'too-soon', 'not-ready'];
@@ -89,6 +92,8 @@ export interface AccountBackend {
   rerollPseudo(): Promise<string | null>;
   /** Choisit son pseudo ; le serveur applique les regles (alphabet, termes interdits, unicite, delai). */
   setPseudo(pseudo: string): Promise<PseudoResult>;
+  /** Signale un pseudo du classement a l'editeur (compte necessaire ; cf. supabase/comptes.sql::report_player). */
+  reportPlayer(pseudo: string, reason: 'pseudo' | 'autre'): Promise<ReportResult>;
   /** Supprime le compte ET son profil (cf. supabase/comptes.sql). */
   deleteAccount(): Promise<boolean>;
   /** Appelee quand la session change hors de nos actions (jeton revoque, compte supprime ailleurs). */
@@ -260,6 +265,19 @@ export function createSupabaseBackend(): AccountBackend | null {
         }
         const code = typeof r?.error === 'string' && PSEUDO_ERRORS.includes(r.error) ? (r.error as PseudoErrorCode) : 'network';
         return { ok: false, error: code };
+      } catch {
+        return { ok: false, error: 'network' };
+      }
+    },
+
+    async reportPlayer(pseudo, reason) {
+      try {
+        const { data, error } = await (await client()).rpc('report_player', { p_pseudo: pseudo, p_reason: reason });
+        if (error) return { ok: false, error: /function|schema cache|not find/i.test(error.message) ? 'unavailable' : 'network' };
+        const r = (Array.isArray(data) ? data[0] : data) as { ok?: unknown; error?: unknown } | null;
+        if (r && r.ok === true) return { ok: true };
+        const known = ['not-found', 'self', 'too-many', 'bad-reason'];
+        return { ok: false, error: typeof r?.error === 'string' && known.includes(r.error) ? (r.error as ReportErrorCode) : 'network' };
       } catch {
         return { ok: false, error: 'network' };
       }

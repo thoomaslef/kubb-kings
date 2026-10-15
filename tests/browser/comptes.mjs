@@ -70,6 +70,8 @@ const serveur = {
   profils: new Map(), // id -> { data, revision }
   confirmerEmail: false,
   limiter: false,
+  signalements: [], // { par, pseudo, motif }
+  signalementRefus: null, // code d'erreur a renvoyer
   recoveries: new Map(), // code -> email (le lien « mot de passe oublie » recu par e-mail)
   oauthEchec: false,
   setPseudoAbsent: false,
@@ -271,6 +273,11 @@ async function gerer(route) {
       p.pseudo = v;
       p.pseudoChange = Date.now();
       return repondre(route, 200, { ok: true, pseudo: v });
+    }
+    if (nom === 'report_player') {
+      if (serveur.signalementRefus) return repondre(route, 200, { ok: false, error: serveur.signalementRefus });
+      serveur.signalements.push({ par: id, pseudo: corps.p_pseudo, motif: corps.p_reason });
+      return repondre(route, 200, { ok: true, moderated: false });
     }
     if (nom === 'delete_my_account') {
       for (const [email, u] of serveur.users) if (u.id === id) serveur.users.delete(email);
@@ -796,6 +803,26 @@ const B = await appareil('B');
   resultats.classement_InviteALaConnexion = /Connectez-vous pour apparaitre/.test(
     (await I.page.locator('.panel--ranks').textContent()) ?? ''
   );
+  // Bloquer marche sans compte ; signaler demande de se connecter.
+  const menuDe = async (page, i) => {
+    await page.locator('[data-testid="leaderboard"] li').nth(i).locator('[data-testid="player-actions"]').click();
+    await page.waitForSelector('[data-testid="player-menu"]');
+  };
+  resultats.signaler_visiteurVoitUnBoutonParLigne = (await I.page.locator('[data-testid="player-actions"]').count()) === 3; // visiteur : 3 lignes, 3 boutons
+  await menuDe(I.page, 0);
+  await I.page.locator('[data-testid="report-button"]').click();
+  resultats.signaler_sansCompteOnDemandeDeSeConnecter = /Connectez-vous pour signaler/.test((await I.page.locator('[data-testid="report-message"]').textContent()) ?? '');
+  resultats.signaler_aucuneRequeteSansCompte = !serveur.journal.some((l) => l.includes('report_player'));
+  await menuDe(I.page, 0);
+  await I.page.locator('[data-testid="block-button"]').click();
+  const apresBlocage = await lignes(I.page);
+  resultats.bloquer_LeJoueurDisparaitDuClassement = apresBlocage.length === 2 && !apresBlocage.some((l) => /AigleViking11/.test(l.texte));
+  await I.page.reload();
+  await I.page.waitForFunction(() => Boolean(window.__kubbStoreApi), null, { timeout: 30000 });
+  await ouvrirRangs(I.page);
+  resultats.bloquer_LeBlocageSeRetrouveApresRechargement = (await lignes(I.page)).length === 2;
+  await I.page.locator('[data-testid="unblock-all"]').click();
+  resultats.bloquer_ToutDebloquer = (await lignes(I.page)).length === 3;
   await I.contexte.close();
 
   // H : un joueur connecte, rang Or 1 (marche 10), 12 victoires.
@@ -835,6 +862,28 @@ const B = await appareil('B');
   await ouvrirRangs(H.page);
   const l2 = await lignes(H.page);
   resultats.classement_LeRangJoueMonte = /Platine 3/.test(l2.find((l) => l.moi)?.texte ?? '');
+
+  // Signaler un pseudo (compte connecte) : une requete, avec le pseudo et le motif, et un retour clair.
+  const menuH = async (i) => {
+    await H.page.locator('[data-testid="leaderboard"] li:not(.leaderboard__row--me)').nth(i).locator('[data-testid="player-actions"]').click();
+    await H.page.waitForSelector('[data-testid="player-menu"]');
+  };
+  const nbBoutons = await H.page.locator('[data-testid="player-actions"]').count();
+  resultats.signaler_pasDeBoutonSurSaPropreLigne = nbBoutons === (await lignes(H.page)).length - 1;
+  await menuH(0);
+  await H.page.locator('[data-testid="report-button"]').click();
+  await H.page.waitForSelector('[data-testid="report-message"]');
+  resultats.signaler_UneRequeteEstEnvoyee = serveur.signalements.length === 1 && serveur.signalements[0].pseudo === 'AigleViking11' && serveur.signalements[0].motif === 'pseudo';
+  resultats.signaler_LeJoueurEstRemercie = /Merci/.test((await H.page.locator('[data-testid="report-message"]').textContent()) ?? '');
+  serveur.signalementRefus = 'too-many';
+  await menuH(1);
+  await H.page.locator('[data-testid="report-button"]').click();
+  await H.page.waitForFunction(() => /Trop de signalements/.test(document.querySelector('[data-testid="report-message"]')?.textContent ?? ''));
+  resultats.signaler_LaLimiteJournaliereEstExpliquee = true;
+  serveur.signalementRefus = null;
+  await menuH(1);
+  await H.page.locator('button', { hasText: /^Annuler$/ }).click();
+  resultats.signaler_AnnulerNEnvoieRien = serveur.signalements.length === 1 && (await H.page.locator('[data-testid="player-menu"]').count()) === 0;
 
   await H.contexte.close();
 

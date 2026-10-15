@@ -28,6 +28,15 @@ export function Legal() {
           jeu se joue en entier sans.
         </p>
         <p className="panel__text">
+          <strong>Signalement et blocage.</strong> Un joueur connecte peut signaler un pseudo depuis
+          le classement : le serveur enregistre alors l&apos;identifiant (aleatoire) de son compte, le
+          pseudo signale et la date, jamais l&apos;adresse e-mail, pour que l&apos;editeur puisse examiner
+          le signalement ; ces lignes ne sont lisibles que par l&apos;editeur et sont effacees avec
+          l&apos;un ou l&apos;autre des deux comptes. Quand trois joueurs differents signalent le meme
+          pseudo, il est remplace automatiquement par un pseudo genere. Bloquer un pseudo le masque
+          du classement, sur votre appareil uniquement : rien n&apos;est envoye.
+        </p>
+        <p className="panel__text">
           Les modes solo, local, Defi et tournoi fonctionnent entierement hors ligne : aucune
           connexion n&apos;est etablie. Le mode en ligne, lui, a besoin d&apos;un service tiers
           pour relayer les coups entre les deux joueurs.

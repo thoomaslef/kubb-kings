@@ -3,8 +3,10 @@ import { useGameStore } from '../store/useGameStore';
 import {
   fetchLeaderboard,
   fetchStanding,
+  reportPlayer,
   rerollMyPseudo
 } from '../game/account/sync';
+import { blockPseudo, loadBlocked, unblockAll, withoutBlocked } from '../game/account/blocklist';
 import type { LeaderboardEntry, Standing } from '../game/account/leaderboard';
 import { DIVISIONS_PER_TIER, RANK_COLORS, RANK_COUNT, RANK_TIERS, rankPosition } from '../game/ranks';
 import { useT } from '../i18n/useT';
@@ -36,6 +38,11 @@ export function Ranks() {
   const [board, setBoard] = useState<Board>({ state: 'loading' });
   const [standing, setStanding] = useState<Standing | null>(null);
   const pseudoRequested = useRef(false);
+  // Signaler / bloquer : le pseudo sur lequel on agit, les pseudos masques sur cet appareil, et le dernier retour.
+  const [target, setTarget] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState<string[]>(loadBlocked);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const loadBoard = useCallback(async () => {
     setBoard({ state: 'loading' });
@@ -64,6 +71,19 @@ export function Ranks() {
   const current = rankPosition(rank.index);
   const total = rank.wins + rank.losses;
   const winRate = total > 0 ? Math.round((rank.wins / total) * 100) : null;
+
+  const report = async (pseudo: string) => {
+    setBusy(true);
+    const outcome = await reportPlayer(pseudo, 'pseudo');
+    setBusy(false);
+    setTarget(null);
+    setActionMessage(t(outcome.ok ? 'report.sent' : `report.error.${outcome.error}`));
+  };
+  const block = (pseudo: string) => {
+    setBlocked(blockPseudo(pseudo));
+    setTarget(null);
+    setActionMessage(t('report.blocked'));
+  };
 
   const back = () => {
     clearRankChange();
@@ -150,7 +170,7 @@ export function Ranks() {
               </p>
             ) : (
               <ol className="leaderboard" data-testid="leaderboard">
-                {board.entries.map((e) => (
+                {withoutBlocked(board.entries, blocked).map((e) => (
                   <li key={e.place} className={`leaderboard__row${e.isMe ? ' leaderboard__row--me' : ''}`}>
                     <span className="leaderboard__place">{e.place}</span>
                     <RankBadge index={e.rankIndex} size="sm" />
@@ -160,9 +180,49 @@ export function Ranks() {
                     </span>
                     <span className="leaderboard__rank">{rankName(e.rankIndex)}</span>
                     <span className="leaderboard__score">{t('ranks.board.score', { wins: e.wins, losses: e.losses })}</span>
+                    {!e.isMe && (
+                      <button
+                        type="button"
+                        className="leaderboard__more"
+                        aria-label={t('report.open', { pseudo: e.pseudo })}
+                        data-testid="player-actions"
+                        onClick={() => {
+                          setActionMessage(null);
+                          setTarget(e.pseudo);
+                        }}
+                      >
+                        ⋯
+                      </button>
+                    )}
                   </li>
                 ))}
               </ol>
+            )}
+            {target && (
+              <div className="leaderboard-actions" role="group" aria-label={t('report.open', { pseudo: target })} data-testid="player-menu">
+                <p className="panel__text">{t('report.title', { pseudo: target })}</p>
+                <div className="button-column">
+                  <button className="btn" onClick={() => void report(target)} disabled={busy} data-testid="report-button">
+                    {t('report.action')}
+                  </button>
+                  <button className="btn" onClick={() => block(target)} disabled={busy} data-testid="block-button">
+                    {t('report.block')}
+                  </button>
+                  <button className="btn btn--ghost" onClick={() => setTarget(null)} disabled={busy}>
+                    {t('online.cancel')}
+                  </button>
+                </div>
+              </div>
+            )}
+            {actionMessage && (
+              <p className="footnote" role="status" data-testid="report-message">
+                {actionMessage}
+              </p>
+            )}
+            {blocked.length > 0 && (
+              <button className="link-btn" onClick={() => setBlocked(unblockAll())} data-testid="unblock-all">
+                {t('report.unblockAll', { n: blocked.length })}
+              </button>
             )}
             <p className="footnote">{t('ranks.board.unverified')}</p>
           </>

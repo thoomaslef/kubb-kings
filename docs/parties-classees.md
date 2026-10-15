@@ -38,7 +38,7 @@ s'il est hors des 20 premiers, sa place est affichee en dessous (« 37e sur 412 
 c'est un revirement assume — le premier choix de conception etait « jamais de texte libre », parce qu'un classement
 PUBLIC avec des noms libres demande de moderer des insultes et que le jeu est joue par des enfants. Un pseudo choisi
 est donc encadre (3 a 16 caracteres, alphabet restreint, filtre de termes interdits, unicite, delai entre deux
-changements) — mais un filtre n'est pas une moderation, et il n'y a pas de bouton « signaler » : voir
+changements) — mais un filtre n'est pas une moderation : d'ou un bouton « signaler » et le blocage au classement, voir
 [`comptes-joueurs.md`](comptes-joueurs.md#pseudo). L'e-mail et le nom n'y figurent jamais. **Figurer au classement n'est pas un choix** : quiconque a un compte et a joue une partie classee y apparait (c'est le principe
 d'un classement). Supprimer son compte l'en retire. (Une ancienne option « ne plus apparaitre » a ete retiree ; la colonne
 `show_in_leaderboard` reste en base, inutilisee.) L'ecran des rangs n'edite rien : le pseudo se change depuis la Boutique.
