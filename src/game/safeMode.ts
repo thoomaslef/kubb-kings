@@ -22,7 +22,8 @@
  * Mode compatibilite : rendu Canvas 2D (pas de WebGL), definition 1x (pas de super-resolution),
  * aucun effet graphique (halo du roi, vignette). Moins beau, mais il joue exactement le meme jeu.
  *
- * Force a la main : `?safe=1` dans l'adresse (retenu ensuite), `?safe=0` pour revenir au rendu normal.
+ * Force a la main : `?safe=1` dans l'adresse (retenu ensuite), `?safe=0` pour revenir au rendu normal. Dans les deux cas le
+ * parametre est retire de l'adresse des qu'il a ete lu : un rechargement (ou le retour apres un plantage) repart de la detection normale.
  */
 const ATTEMPT_KEY = 'kubb-kings.boot-attempt';
 const FORCED_KEY = 'kubb-kings.safe-mode';
@@ -85,6 +86,19 @@ function decide(): { on: boolean; reason: SafeModeReason } {
     param = new URLSearchParams(window.location.search).get('safe');
   } catch {
     // Adresse illisible : pas de parametre.
+  }
+
+  // Le parametre n'est qu'un ORDRE ponctuel : on le retire de l'adresse tout de suite. Laisse la, `?safe=0` effacait a
+  // chaque rechargement la detection de plantage — un appareil qui plante en rendu normal restait alors bloque sur
+  // « Un probleme recurrent est survenu », sans jamais retomber en mode compatibilite.
+  if (param !== null) {
+    try {
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete('safe');
+      window.history.replaceState(window.history.state, document.title, clean.toString());
+    } catch {
+      // Adresse non modifiable : tant pis, le comportement precedent reste.
+    }
   }
 
   if (param === '0') {

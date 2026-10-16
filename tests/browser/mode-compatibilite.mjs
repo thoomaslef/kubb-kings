@@ -191,6 +191,22 @@ const moteur = (page) =>
   await page.waitForTimeout(1200);
   const e = await moteur(page);
   resultats.safe0_RenduNormal = e.rendu === 2 && !e.avis && e.souvenir === null;
+  // Le parametre est RETIRE de l'adresse : un rechargement ne repasse plus par « ?safe=0 ».
+  resultats.safe0_LeParametreEstRetireDeLAdresse = !/[?&]safe=/.test(page.url());
+  // Et si ce demarrage normal plante (note de demarrage ancienne restee), le suivant retombe en mode compatibilite
+  // au lieu de rester bloque.
+  // (La note est posee AVANT le chargement suivant : la fermeture normale de la page, elle, l'effacerait.)
+  await contexte.addInitScript(() => {
+    if (!sessionStorage.getItem('__note-posee')) {
+      sessionStorage.setItem('__note-posee', '1');
+      localStorage.setItem('kubb-kings.boot-attempt', String(Date.now() - 20000));
+    }
+  });
+  await page.goto(JEU);
+  await page.waitForSelector('.panel--menu', { timeout: 60000 });
+  await page.waitForTimeout(800);
+  const apres = await moteur(page);
+  resultats.safe0_ApresUnPlantageOnRetombeEnModeCompatibilite = apres.rendu === 1 && apres.avis;
   await contexte.close();
 }
 
