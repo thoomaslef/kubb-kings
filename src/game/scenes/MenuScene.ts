@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { bridge } from '../GameBridge';
 import { gameStore } from '../../store/useGameStore';
 import { fitCameraToDesign } from '../renderScale';
+import { markStage } from '../safeMode';
 
 /**
  * Scene "vide" : le menu visible est rendu par React.
@@ -13,6 +14,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create() {
+    markStage('menu');
     fitCameraToDesign(this);
     gameStore.getState().resetHud();
     gameStore.getState().setScreen('menu');

@@ -3,6 +3,7 @@ import { useGameStore } from '../store/useGameStore';
 import { getCrashLog, clearCrashLog, formatCrashLogForCopy } from '../game/diagnostics';
 import { version } from '../../package.json';
 import { useT } from '../i18n/useT';
+import { lastCrashStage } from '../game/safeMode';
 
 /**
  * Version, credits, contact — et un journal d'erreurs local que le joueur
@@ -56,6 +57,12 @@ export function About() {
             n: crashCount
           })}
         </p>
+
+        {lastCrashStage() && (
+          <p className="panel__text" data-testid="crash-stage">
+            {t('about.crashStage', { stage: lastCrashStage() ?? '' })}
+          </p>
+        )}
 
         <div className="button-column">
           {crashCount > 0 && (

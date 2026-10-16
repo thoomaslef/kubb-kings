@@ -4,6 +4,7 @@ import { PALETTE, KUBB_SKINS, type KubbSkin, KING_SKINS, KING_SKIN_COLORS } from
 import { OBSTACLE_RADIUS } from '../rules';
 import { Pinceau } from '../pinceau';
 import { renderScaleFactor } from '../renderScale';
+import { markStage } from '../safeMode';
 
 /**
  * Genere toutes les textures du jeu par code (aucun asset externe a charger),
@@ -19,6 +20,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
+    markStage('textures');
     this.buildGrassTexture();
     this.buildNightGrassTexture();
     this.buildIceTexture();
@@ -34,6 +36,7 @@ export class BootScene extends Phaser.Scene {
     this.buildShadowTexture();
     this.buildParticleTextures();
 
+    markStage('textures-ok');
     this.scene.start('MenuScene');
   }
 

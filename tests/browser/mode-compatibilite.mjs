@@ -105,8 +105,17 @@ const moteur = (page) =>
 // ------------------------------------------------------------ 2. un demarrage jamais abouti => mode compatibilite
 {
   // (a) la note de l'ONGLET est restee : cet onglet a plante.
-  const { page, contexte } = await ouvrir('plantage-onglet', '', () => sessionStorage.setItem('kubb-kings.boot-attempt', String(Date.now())));
+  const { page, contexte } = await ouvrir('plantage-onglet', '', () => {
+    sessionStorage.setItem('kubb-kings.boot-attempt', String(Date.now()));
+    localStorage.setItem('kubb-kings.boot-stage', 'textures');
+  });
   await page.waitForTimeout(1500);
+  // L'etape ou le demarrage precedent s'est arrete est retenue, et l'ecran « A propos » la dit.
+  resultats.plantage_LEtapeEstRetenue = (await page.evaluate(() => localStorage.getItem('kubb-kings.crash-stage'))) === 'textures';
+  await page.evaluate(() => window.__kubbStoreApi.getState().setScreen('about'));
+  await page.waitForSelector('[data-testid="crash-stage"]', { timeout: 5000 });
+  resultats.plantage_LEcranAProposDitOuCaPlante = /textures/.test((await page.locator('[data-testid="crash-stage"]').textContent()) ?? '');
+  await page.evaluate(() => window.__kubbStoreApi.getState().setScreen('menu'));
   const e = await moteur(page);
   console.log({ plantage: e });
   resultats.plantage_PasseEnModeCompatibilite = e.rendu === 1 && e.avis;

@@ -612,6 +612,7 @@ const fr: Record<string, string> = {
   'tournament.bracket.forfeit': 'Abandonner le tournoi',
 
   // ---- About
+  'about.crashStage': "Dernier plantage au demarrage : etape « {stage} ». Merci de l'indiquer si vous nous ecrivez.",
   'about.title': 'A propos',
   'about.createdBy': 'Cree par {name}',
   'about.contact': 'Contact : {email}',
@@ -1252,6 +1253,7 @@ const en: Record<string, string> = {
   'tournament.bracket.forfeit': 'Forfeit the tournament',
 
   // ---- About
+  'about.crashStage': 'Last startup crash: stage “{stage}”. Please mention it if you write to us.',
   'about.title': 'About',
   'about.createdBy': 'Created by {name}',
   'about.contact': 'Contact: {email}',

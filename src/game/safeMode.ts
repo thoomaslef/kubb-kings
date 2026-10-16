@@ -27,6 +27,9 @@
  */
 const ATTEMPT_KEY = 'kubb-kings.boot-attempt';
 const FORCED_KEY = 'kubb-kings.safe-mode';
+/** Derniere etape de demarrage atteinte (ecrite au fil du demarrage), et celle du dernier demarrage qui a plante. */
+const STAGE_KEY = 'kubb-kings.boot-stage';
+const CRASH_STAGE_KEY = 'kubb-kings.crash-stage';
 /** Delai de stabilite apres lequel on estime que le demarrage s'est bien passe. */
 const HEALTHY_AFTER_MS = 4000;
 /** Age a partir duquel une note du stockage PARTAGE n'est plus celle d'un autre onglet en train de demarrer. */
@@ -114,7 +117,10 @@ function decide(): { on: boolean; reason: SafeModeReason } {
   }
   if (read(FORCED_KEY) === '1') return { on: true, reason: 'remembered' };
   if (previousBootNeverFinished()) {
-    // Le demarrage precedent n'est jamais alle au bout : on retient le mode compatibilite.
+    // Le demarrage precedent n'est jamais alle au bout : on retient le mode compatibilite — et l'ETAPE ou il s'est arrete,
+    // pour que l'ecran « A propos » puisse dire ou ca plante (la cause exacte est inconnue : cf. plus haut).
+    const stage = read(STAGE_KEY);
+    if (stage) write(CRASH_STAGE_KEY, stage);
     write(FORCED_KEY, '1');
     return { on: true, reason: 'crash' };
   }
@@ -149,6 +155,16 @@ export function beginBoot() {
   };
   window.addEventListener('pagehide', clear, { once: true });
   setTimeout(clear, HEALTHY_AFTER_MS);
+}
+
+/** Note l'etape de demarrage atteinte (cf. `lastCrashStage`). Ne doit jamais lever. */
+export function markStage(name: string) {
+  write(STAGE_KEY, name);
+}
+
+/** Etape ou le dernier demarrage qui a plante s'est arrete (ex. « textures »), ou null. */
+export function lastCrashStage(): string | null {
+  return read(CRASH_STAGE_KEY);
 }
 
 /** Quitter le mode compatibilite : on efface le souvenir, puis on recharge la page. */
