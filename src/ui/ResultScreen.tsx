@@ -62,6 +62,9 @@ export function ResultScreen() {
   const isDefi = mode === 'defi';
   const isOnline = mode === 'online';
   const online = useGameStore((s) => s.online);
+  const botRanked = useGameStore((s) => s.botRanked);
+  // Partie classee : contre un joueur, ou contre le bot de repli de la recherche.
+  const rankedGame = (isOnline && !!online?.ranked) || (mode === 'solo' && botRanked);
   const patchOnline = useGameStore((s) => s.patchOnline);
   const lastRankChange = useGameStore((s) => s.lastRankChange);
   const clearRankChange = useGameStore((s) => s.clearRankChange);
@@ -265,7 +268,7 @@ export function ResultScreen() {
           </div>
         )}
 
-        {online?.ranked && lastRankChange?.reason === 'match' && (
+        {rankedGame && lastRankChange?.reason === 'match' && (
           <div className="rank-line">
             <RankBadge index={lastRankChange.before} size="sm" />
             <span>
@@ -279,7 +282,7 @@ export function ResultScreen() {
             <RankBadge index={lastRankChange.after} size="sm" />
           </div>
         )}
-        {online?.ranked &&
+        {rankedGame &&
           lastRankChange?.reason === 'match' &&
           rankPosition(lastRankChange.before).tier !== rankPosition(lastRankChange.after).tier && (
             <p className="footnote">
@@ -328,7 +331,7 @@ export function ResultScreen() {
                 </button>
               </>
             )
-          ) : isOnline && online?.ranked ? (
+          ) : rankedGame ? (
             // Classe : pas de revanche (le rang est deja joue), mais on peut
             // enchainer sur une nouvelle recherche.
             <>

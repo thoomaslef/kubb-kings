@@ -88,7 +88,7 @@ export function Legal() {
           joueur en recherche annonce sa presence (identifiant aleatoire temporaire, heure
           d&apos;arrivee) sur un canal commun, sans rien conserver. Il n&apos;y a pas de tchat
           dans ces parties. Sans adversaire au bout d&apos;une minute, vous jouez contre un bot,
-          sans aucun echange en ligne.
+          sans aucun echange en ligne ; cette partie compte pour votre rang, comme les autres.
         </p>
         <p className="panel__text">
           <strong>Compte joueur (facultatif).</strong> Si vous en creez un, Supabase (region

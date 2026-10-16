@@ -206,20 +206,44 @@ async function chercherClasse(page) {
   await p.close();
 }
 
-// ---------------------------------------------------------------- 5. seul : un bot d'entrainement, sans effet sur le rang
+// ---------------------------------------------------------------- 5. seul : le bot de repli compte pour le rang
 {
   const a = await nouvellePage('seul');
   await chercherClasse(a);
+  // La recherche n'annonce plus le delai ni le bot.
+  const texteRecherche = await a.evaluate(() => document.body.innerText);
+  resultats.laRechercheNAnnonceNiLeBotNiLeDelai = /joueurs en file/.test(texteRecherche) && !/bot|dans \d+ s/i.test(texteRecherche);
   const enMatch = await attendreEcran(a, 'match', 260);
   await a.waitForTimeout(1500);
   const e = await a.evaluate(() => {
     const s = window.__kubbStoreApi.getState();
-    return { mode: s.mode, online: s.online, rank: s.rank, pending: localStorage.getItem('kubb-kings.ranked-pending') };
+    const scene = window.__kubb.scene.getScene('MatchScene');
+    return {
+      mode: s.mode,
+      online: s.online,
+      rank: s.rank,
+      pending: localStorage.getItem('kubb-kings.ranked-pending'),
+      preset: scene.fieldPreset,
+      champ: scene.fieldKubbsEnabled
+    };
   });
   console.log({ enMatch, e });
   resultats.leBotArriveEnClasse = enMatch && e.mode === 'solo' && e.online === null;
-  resultats.leRangNeBougePasContreLeBot = e.rank.index === OR_2 && e.rank.wins === 0 && e.rank.losses === 0;
-  resultats.aucunMarqueurDAbandonContreLeBot = e.pending === null;
+  resultats.lePartieContreLeBotEstMarqueeClasse = e.pending === '1';
+  resultats.pasDeKubbsDeChampContreLeBot = e.champ === false;
+  // Une victoire contre le bot fait monter le rang.
+  await a.evaluate(() => {
+    const scene = window.__kubb.scene.getScene('MatchScene');
+    scene.finish({ winner: 'blue', reason: 'king-down', knockedDown: { blue: 5, red: 5 } }, 100);
+  });
+  await a.waitForTimeout(2500);
+  const apres = await rang(a);
+  resultats.uneVictoireContreLeBotFaitMonterLeRang = apres.index === OR_2 + 1 && apres.wins === 1;
+  resultats.leMarqueurEstEfface = (await a.evaluate(() => localStorage.getItem('kubb-kings.ranked-pending'))) === null;
+  const ligne = await a.evaluate(() => document.querySelector('.rank-line')?.textContent ?? null);
+  resultats.lEcranDeFinAnnonceLeRangContreLeBot = /Or 2/.test(ligne ?? '') && /Or 3/.test(ligne ?? '');
+  const boutons = await a.evaluate(() => [...document.querySelectorAll('.button-column button')].map((b) => b.textContent));
+  resultats.pasDeRevancheContreLeBot = !boutons.some((b) => /revanche|Rejouer/i.test(b ?? ''));
   await a.close();
 }
 

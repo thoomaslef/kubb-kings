@@ -4,7 +4,6 @@ import { bridge } from '../game/GameBridge';
 import { createRoomCode } from '../game/online/localTransport';
 import {
   Matchmaker,
-  QUEUE_BOT_AFTER_MS,
   QUEUE_CHANNEL,
   QUEUE_CHANNEL_RANKED,
   type QueueMessage
@@ -84,7 +83,7 @@ export function OnlineLobby() {
   // Recherche rapide (cf. game/online/matchmaking.ts).
   /** Recherche en cours : heure d'arrivee en file (pour garder son rang si on la relance). */
   const [searching, setSearching] = useState<{ since: number; ranked: boolean } | null>(null);
-  const [waitedMs, setWaitedMs] = useState(0);
+  
   const [queueSize, setQueueSize] = useState(1);
   /** Salon ouvert par la recherche : on n'affiche pas un code a partager, personne n'en a besoin. */
   const [quickRoom, setQuickRoom] = useState(false);
@@ -256,11 +255,9 @@ export function OnlineLobby() {
     });
     matchmakerRef.current = matchmaker;
     setSearching({ since: matchmaker.since, ranked });
-    setWaitedMs(Date.now() - matchmaker.since);
     setQueueSize(1);
     searchTimerRef.current = setInterval(() => {
       matchmaker.tick();
-      setWaitedMs(Date.now() - matchmaker.since);
       setQueueSize(matchmaker.queueSize);
     }, 1000);
   };
@@ -340,18 +337,13 @@ export function OnlineLobby() {
     );
   }
 
-  // Recherche rapide : on attend qu'un autre joueur arrive, ou le bot.
+  // Recherche : on attend qu'un autre joueur arrive (le bot de repli arrive apres une minute, sans qu'on l'annonce ici).
   if (searching) {
-    const leftS = Math.max(0, Math.ceil((QUEUE_BOT_AFTER_MS - waitedMs) / 1000));
     return (
       <div className="overlay overlay--solid">
         <div className="panel">
-          <h2 className="panel__title">{t(searching.ranked ? 'online.rankedTitle' : 'online.searchingTitle')}</h2>
-          <p className="panel__text">
-            {searching.ranked
-              ? t('online.rankedText', { rank: rankName(rank.index), n: queueSize, s: leftS })
-              : t('online.searchingText', { n: queueSize, s: leftS })}
-          </p>
+          <h2 className="panel__title">{t('online.rankedTitle')}</h2>
+          <p className="panel__text">{t('online.rankedText', { rank: rankName(rank.index), n: queueSize })}</p>
           <div className="button-column">
             <button className="btn btn--ghost" onClick={back}>
               {t('online.cancel')}

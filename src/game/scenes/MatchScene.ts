@@ -91,6 +91,7 @@ import {
 import { endOfMatchAchievements } from '../matchEndAchievements';
 import { levelFromXp } from '../progression';
 import { track, type UsageMode } from '../analytics';
+import { rankedConditions } from '../online/rankedSetup';
 
 /** La plus proche d'un ensemble de positions de lancer (voir THROW_POSITIONS). */
 function nearestThrowPosition(x: number, positions: readonly number[]): number {
@@ -326,7 +327,7 @@ export class MatchScene extends Phaser.Scene {
     this.aiTimer = null;
     this.aiTween = null;
 
-    const { mode, difficulty: chosenDifficulty, difficultyOverride, fieldPreset, kubbSkin, kingSkin, batonId, windEnabled, fieldKubbsEnabled, profileTeam, run } =
+    const { mode, difficulty: chosenDifficulty, difficultyOverride, fieldPreset, kubbSkin, kingSkin, batonId, windEnabled, fieldKubbsEnabled, profileTeam, run, botRanked } =
       gameStore.getState();
     const difficulty = difficultyOverride ?? chosenDifficulty;
     this.batonStats = BATONS[batonId];
@@ -356,7 +357,9 @@ export class MatchScene extends Phaser.Scene {
     // Partie classee : le rang est en jeu. On pose le marqueur d'abandon tout de
     // suite — fermer l'onglet en cours de partie comptera comme une defaite
     // (cf. rankPersistence.ts).
-    this.ranked = mode === 'online' && !!gameStore.getState().online?.ranked;
+    // Le bot de repli d'une recherche classee compte aussi pour le rang (cf. OnlineLobby.tsx::onBot).
+    const rankedBot = mode === 'solo' && botRanked;
+    this.ranked = (mode === 'online' && !!gameStore.getState().online?.ranked) || rankedBot;
     if (this.ranked) gameStore.getState().beginRankedMatch();
     // En Defi, le niveau et le terrain viennent de l'echelle (roguelite.ts),
     // pas des selecteurs du menu casual — mais l'IA reste exactement la
@@ -366,6 +369,15 @@ export class MatchScene extends Phaser.Scene {
     this.ai = stage ? AI_PROFILES[stage.difficulty] : mode === 'solo' ? AI_PROFILES[difficulty] : null;
     this.playerIndex = { blue: 1, red: 1 };
     this.fieldPreset = stage ? stage.fieldPreset : fieldPreset;
+    if (rankedBot) {
+      // Memes conditions qu'une partie classee : terrain et vent tires au hasard, jamais de kubbs de champ.
+      const c = rankedConditions();
+      this.fieldPreset = c.preset;
+      this.fieldKubbsEnabled = false;
+      this.wind = c.wind
+        ? { direction: WIND_DIRECTIONS[Math.floor(Math.random() * WIND_DIRECTIONS.length)], force: Math.random() < 0.5 ? 1 : 2 }
+        : null;
+    }
     // Defi : le vent vient de l'echelle (leger des la manche 10, plus fort des la 20), pas du menu.
     if (stage) {
       const force = defiWindForce((run?.stageIndex ?? 0) + 1);
@@ -2218,6 +2230,9 @@ export class MatchScene extends Phaser.Scene {
         gameStore.getState().recordRankedMatch('loss', 'forfeit-loss');
       }
       if (voluntary) gameStore.getState().endOnline();
+    } else if (this.ranked && this.phase !== 'over') {
+      // Bot de repli d'une recherche classee : partir en cours de partie est une defaite, comme contre un joueur.
+      gameStore.getState().recordRankedMatch('loss', 'forfeit-loss');
     }
     this.scene.start('MenuScene');
   }

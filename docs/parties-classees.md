@@ -87,8 +87,11 @@ le terrain et le vent d'une partie classee ne dependent que du tirage.
 - **Liaison perdue / desynchronisation** : aucun changement — rien ne designe le fautif.
   Limite connue : un adversaire qui ferme son onglet (sans message d'adieu) se voit comme une
   liaison perdue chez nous : pas de victoire par forfait dans ce cas.
-- **Sans adversaire au bout d'une minute** : un bot en difficile, **en entrainement** — le
-  rang ne bouge pas, aucun marqueur d'abandon n'est pose (aucune partie en ligne n'a lieu).
+- **Sans adversaire au bout d'une minute** : un bot en difficile, dont la partie **compte pour le rang** exactement comme
+  une autre (victoire/defaite, marqueur d'abandon, partir en cours de partie = defaite) — le but est qu'un debut sans
+  adversaire ne soit pas une impasse. La recherche n'annonce plus le delai ; les conditions sont tirees comme en classee
+  (terrain et vent au hasard, jamais de kubbs de champ). **Honnetete envers les joueurs** : le bot n'est jamais presente
+  comme un humain (l'ecran de fin dit « IA », les regles et les pages legales disent qu'un bot peut etre rencontre et qu'il compte).
 
 ## La vue en miroir
 
@@ -118,7 +121,7 @@ l'applique ne prouverait rien.
 - `rules.test.ts` : quand la vue est en miroir, et la lecture du vent.
 - `tests/browser/classe.mjs` : l'ecran, la file classee, les conditions imposees, le rang qui
   bouge vraiment (Or 2 -> Or 3 pour le vainqueur, Or 2 -> Or 1 pour le perdant), le forfait,
-  l'onglet ferme, le bot sans effet sur le rang. Dure environ 3 minutes (une vraie minute
+  l'onglet ferme, le bot qui compte pour le rang. Dure environ 3 minutes (une vraie minute
   d'attente pour le bot).
 - `tests/browser/vue-miroir.mjs` : la camera, le bas de chaque ecran, un vrai geste de
   l'invite, les textes, le vent, et le 1v1 local jamais retourne.
@@ -130,7 +133,7 @@ l'applique ne prouverait rien.
 Le menu porte :
 
 - **Jouer en ligne** : une page a deux choix — **Trouver une partie** (recherche d'adversaire lancee tout de suite ;
-  TOUTE partie trouvee ainsi est classee, bot d'entrainement au bout d'une minute, sans effet sur le rang) et
+  TOUTE partie trouvee ainsi est classee, bot au bout d'une minute, qui compte pour le rang) et
   **Jouer avec un ami** (code a partager, tchat, conditions au choix, jamais classee).
 - **Classement** : l'ecran des rangs (comment ca marche, echelle, classement des joueurs) ; il ne lance rien.
 - **Jouer hors ligne** : Solo (avec le niveau de l'IA), 1v1 local, 2v2 local, Tournoi local.

@@ -90,7 +90,7 @@ const fr: Record<string, string> = {
   'ranks.rule.divisions': 'Six rangs de trois divisions : la division 3 est la plus haute. Or 2 + une victoire = Or 3, puis Platine 1.',
   'ranks.rule.fixed': 'Terrain et vent tires au hasard, les memes pour les deux joueurs ; jamais de kubbs de champ (reserves aux parties entre amis). Vos skins (kubbs, baton, trainee) restent a vous et se voient chez l\'adversaire, mais ne changent rien au jeu.',
   'ranks.rule.forfeit': 'Quitter une partie en cours, ou fermer l\'onglet, compte comme une defaite. Si votre adversaire part, vous gagnez.',
-  'ranks.rule.bot': 'Sans adversaire au bout d\'une minute, vous jouez un bot pour vous entrainer : cette partie ne change pas votre rang.',
+  'ranks.rule.bot': 'Sans adversaire au bout d\'une minute, vous jouez contre un bot de niveau difficile : cette partie compte pour votre rang, comme les autres.',
   'ranks.how.title': 'Comment ca marche',
   'ranks.how.intro': 'Chaque « Partie rapide » est classee : vous affrontez un autre joueur, et le resultat fait bouger votre rang. Rien a regler, rien a configurer.',
   'ranks.change.forfeit-win': 'Victoire par forfait : {from} → {to}.',
@@ -103,9 +103,8 @@ const fr: Record<string, string> = {
   'ranks.result.demotion': 'Relegation...',
   'ranks.again': 'Autre partie classee',
   'online.rankedTitle': 'Recherche d\'un adversaire classe',
-  'online.rankedText': 'Rang {rank} — joueurs en file : {n}. Sans adversaire, un bot d\'entrainement (sans effet sur le rang) vous affrontera dans {s} s.',
+  'online.rankedText': 'Rang {rank} — joueurs en file : {n}.',
   'online.rankedFound': 'Adversaire classe trouve, connexion...',
-  'online.rankedBot': 'Entrainement contre un bot : cette partie ne change pas votre rang.',
 
   // ---- Compte joueur (src/game/account/)
   'menu.safeMode.text': "Mode compatibilite : graphismes simplifies, pour que le jeu fonctionne sur cet appareil.",
@@ -203,8 +202,6 @@ const fr: Record<string, string> = {
   'online.anyDeviceHint':
     "Votre adversaire peut etre sur un autre appareil, ou l'ordinateur d'a cote : il lui suffit du code.",
   'online.connectionFailed': "Service en ligne injoignable. Verifiez votre connexion, puis reessayez.",
-  'online.searchingTitle': "Recherche d'un adversaire",
-  'online.searchingText': "Joueurs en file : {n}. Sans adversaire, un bot (difficile) vous affrontera dans {s} s.",
   'online.quickFound': 'Adversaire trouve, connexion...',
   'online.create': 'Creer une partie',
   'online.join': 'Rejoindre',
@@ -735,7 +732,7 @@ const en: Record<string, string> = {
   'ranks.rule.divisions': 'Six ranks of three divisions: division 3 is the highest. Gold 2 + a win = Gold 3, then Platinum 1.',
   'ranks.rule.fixed': 'Random field and wind, the same for both players; never field kubbs (friends-only). Your skins (kubbs, baton, trail) stay yours and show on your opponent\'s screen, but change nothing in the game.',
   'ranks.rule.forfeit': 'Leaving a match in progress, or closing the tab, counts as a loss. If your opponent leaves, you win.',
-  'ranks.rule.bot': 'With no opponent after a minute, you play a practice bot: that match does not change your rank.',
+  'ranks.rule.bot': 'With no opponent after a minute, you play a hard-level bot: that match counts for your rank, like any other.',
   'ranks.how.title': 'How it works',
   'ranks.how.intro': 'Every “Quick match” is ranked: you face another player and the result moves your rank. Nothing to set up.',
   'ranks.change.forfeit-win': 'Win by forfeit: {from} → {to}.',
@@ -748,9 +745,8 @@ const en: Record<string, string> = {
   'ranks.result.demotion': 'Demotion...',
   'ranks.again': 'Another ranked match',
   'online.rankedTitle': 'Looking for a ranked opponent',
-  'online.rankedText': 'Rank {rank} — players in queue: {n}. With no opponent, a practice bot (no effect on your rank) will face you in {s} s.',
+  'online.rankedText': 'Rank {rank} — players in queue: {n}.',
   'online.rankedFound': 'Ranked opponent found, connecting...',
-  'online.rankedBot': 'Practice against a bot: this match does not change your rank.',
 
   // ---- Player account (src/game/account/)
   'menu.safeMode.text': 'Compatibility mode: simplified graphics, so the game runs on this device.',
@@ -847,8 +843,6 @@ const en: Record<string, string> = {
     'Here both players must be in two tabs of the SAME browser: with no online service configured, matches do not travel between devices.',
   'online.anyDeviceHint': 'Your opponent can be on another device, anywhere: all they need is the code.',
   'online.connectionFailed': 'Online service unreachable. Check your connection, then try again.',
-  'online.searchingTitle': 'Looking for an opponent',
-  'online.searchingText': 'Players in queue: {n}. With no opponent, a bot (hard) will face you in {s} s.',
   'online.quickFound': 'Opponent found, connecting...',
   'online.create': 'Create a match',
   'online.join': 'Join',

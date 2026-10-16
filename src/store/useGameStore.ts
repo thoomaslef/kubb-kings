@@ -342,6 +342,8 @@ interface GameState {
   setMode: (mode: GameMode) => void;
   /** Partie solo contre un bot en difficile (repli de la recherche rapide). */
   startBotMatch: () => void;
+  /** Partie contre le bot de repli d'une recherche CLASSEE : elle compte pour le rang (cf. MatchScene). */
+  botRanked: boolean;
   setDifficulty: (difficulty: Difficulty) => void;
   setFieldPreset: (preset: FieldPresetId) => void;
   setKubbSkin: (skin: KubbSkin) => void;
@@ -478,6 +480,7 @@ export const useGameStore = create<GameState>((set) => ({
   onlineWinStreak: loadOnlineStreak(),
   ...settleRankAtStartup(),
   rankedLobby: false,
+  botRanked: false,
   account: { status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null, pseudo: null, recovering: false },
   accountConflict: null,
 
@@ -489,8 +492,8 @@ export const useGameStore = create<GameState>((set) => ({
   patchHud: (patch) => set((state) => ({ hud: { ...state.hud, ...patch } })),
   resetHud: () => set({ hud: initialHud(), result: null, paused: false }),
   setResult: (result) => set({ result }),
-  setMode: (mode) => set({ mode, difficultyOverride: null }),
-  startBotMatch: () => set({ mode: 'solo', difficultyOverride: 'difficile', profileTeam: 'blue' }),
+  setMode: (mode) => set({ mode, difficultyOverride: null, botRanked: false }),
+  startBotMatch: () => set({ mode: 'solo', difficultyOverride: 'difficile', profileTeam: 'blue', botRanked: true }),
   setDifficulty: (difficulty) => set({ difficulty }),
   setFieldPreset: (preset) => set({ fieldPreset: preset }),
   setKubbSkin: (skin) => set({ kubbSkin: skin }),
