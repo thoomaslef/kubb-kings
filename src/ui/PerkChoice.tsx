@@ -49,6 +49,15 @@ export function PerkChoice() {
   const setScreen = useGameStore((s) => s.setScreen);
   const advanceRun = useGameStore((s) => s.advanceRun);
   const addPerk = useGameStore((s) => s.addPerk);
+  const perkFromMenu = useGameStore((s) => s.perkFromMenu);
+  const setPerkFromMenu = useGameStore((s) => s.setPerkFromMenu);
+  // Reprise depuis le menu : la scene courante est celle du menu, qui demarre la manche (et non « restart »).
+  const startNext = () => {
+    if (perkFromMenu) {
+      setPerkFromMenu(false);
+      bridge.send('start-match');
+    } else bridge.send('restart-match');
+  };
 
   // Tire une seule fois par passage sur cet ecran, pas a chaque rendu.
   const choices = useMemo(() => pickPerkChoices(run?.perks ?? []), [run]);
@@ -58,13 +67,14 @@ export function PerkChoice() {
     if (choices.length > 0 || startedNext.current) return;
     startedNext.current = true;
     advanceRun();
-    bridge.send('restart-match');
+    startNext();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [choices, advanceRun]);
 
   const choose = (id: (typeof choices)[number]) => {
     addPerk(id);
     advanceRun();
-    bridge.send('restart-match');
+    startNext();
   };
 
   // Seul ecran qui n'avait aucun moyen de revenir au menu — entre deux

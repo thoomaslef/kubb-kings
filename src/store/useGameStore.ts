@@ -22,6 +22,7 @@ import { applyRankedResult, type RankState, type RankedOutcome } from '../game/r
 import { hasPendingRankedMatch, loadRank, saveRank, setPendingRankedMatch } from '../game/rankPersistence';
 import type { ProfileSnapshot } from '../game/account/profileSnapshot';
 import { forceBestStage } from '../game/roguelite';
+import { clearSavedRun, loadSavedRun, saveRun, type SavedRun } from '../game/runSave';
 import { getInitialLang, persistLang } from '../i18n/langPersistence';
 import type { Lang } from '../i18n/translate';
 
@@ -355,6 +356,17 @@ interface GameState {
   setProfileTeam: (team: TeamId) => void;
   /** (Re)demarre une run a la manche 1, sans bonus. */
   startRun: () => void;
+  /** Run sauvegardee (cf. game/runSave.ts) : reprise possible apres fermeture du jeu. */
+  savedRun: SavedRun | null;
+  /** La reprise arrive depuis le menu et non depuis un ecran de fin de manche (cf. PerkChoice). */
+  perkFromMenu: boolean;
+  setPerkFromMenu: (value: boolean) => void;
+  /** Reprend la run sauvegardee ; true s'il reste un bonus a choisir avant la manche suivante. */
+  resumeRun: () => boolean;
+  /** La manche vient d'etre gagnee : on retient la run, bonus a choisir. */
+  rememberWonStage: () => void;
+  /** La run est terminee (defaite ou 30 manches) : plus rien a reprendre. */
+  endSavedRun: () => void;
   /** Passe a la manche suivante ; no-op hors run active. */
   advanceRun: () => void;
   /** Ajoute un bonus a la run en cours ; no-op hors run active. */
@@ -448,7 +460,7 @@ interface GameState {
   recordOnlineWin: (won: boolean) => void;
 }
 
-export const useGameStore = create<GameState>((set) => ({
+export const useGameStore = create<GameState>((set, get) => ({
   screen: 'boot',
   paused: false,
   hud: initialHud(),
@@ -502,13 +514,53 @@ export const useGameStore = create<GameState>((set) => ({
   setWindEnabled: (enabled) => set({ windEnabled: enabled }),
   setFieldKubbsEnabled: (enabled) => set({ fieldKubbsEnabled: enabled }),
   setProfileTeam: (team) => set({ profileTeam: team }),
-  startRun: () => set({ run: { stageIndex: 0, perks: [], sursisUsed: false } }),
+  startRun: () => {
+    clearSavedRun();
+    set({ run: { stageIndex: 0, perks: [], sursisUsed: false }, savedRun: null });
+  },
+  savedRun: loadSavedRun(),
+  perkFromMenu: false,
+  setPerkFromMenu: (value) => set({ perkFromMenu: value }),
+  resumeRun: () => {
+    const saved = get().savedRun;
+    if (!saved) return false;
+    set({ mode: 'defi', difficultyOverride: null, botRanked: false, run: { ...saved.run, perks: [...saved.run.perks] } });
+    return saved.perkPending;
+  },
+  rememberWonStage: () =>
+    set((state) => {
+      if (!state.run) return state;
+      const saved: SavedRun = { run: { ...state.run, perks: [...state.run.perks] }, perkPending: true };
+      saveRun(saved);
+      return { savedRun: saved };
+    }),
+  endSavedRun: () => {
+    clearSavedRun();
+    set({ savedRun: null });
+  },
   advanceRun: () =>
-    set((state) => (state.run ? { run: { ...state.run, stageIndex: state.run.stageIndex + 1 } } : state)),
+    set((state) => {
+      if (!state.run) return state;
+      const run = { ...state.run, stageIndex: state.run.stageIndex + 1 };
+      // Manche suivante prete (bonus choisi) : c'est de la qu'on reprendra.
+      const saved: SavedRun = { run: { ...run, perks: [...run.perks] }, perkPending: false };
+      saveRun(saved);
+      return { run, savedRun: saved };
+    }),
   addPerk: (id) =>
     set((state) => (state.run ? { run: { ...state.run, perks: [...state.run.perks, id] } } : state)),
   useSursis: () =>
-    set((state) => (state.run ? { run: { ...state.run, sursisUsed: true } } : state)),
+    set((state) => {
+      if (!state.run) return state;
+      const run = { ...state.run, sursisUsed: true };
+      // Le sursis est consomme pour de bon : refermer le jeu ne doit pas le rendre.
+      if (state.savedRun && !state.savedRun.perkPending) {
+        const saved: SavedRun = { run: { ...run, perks: [...run.perks] }, perkPending: false };
+        saveRun(saved);
+        return { run, savedRun: saved };
+      }
+      return { run };
+    }),
   startOnline: (roomCode, role, ranked = false, matchmade = false) =>
     set({
       online: { roomCode, role, status: 'attente', team: null, endedBecause: null, rematch: 'aucune', ranked, matchmade },

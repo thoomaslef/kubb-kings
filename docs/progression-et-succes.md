@@ -278,3 +278,12 @@ persistance du tutoriel.
 > du joueur (`POIGNE_FERME_KING_THRESHOLD_MULTIPLIER`, x1,25). **Bras infatigable** passe de +2 a
 > +1 lancer. **Pillage** (recompenses) et **Trait guide** (visee) ont ete ajoutes dans la foulee ;
 > `aimArrowLength` (rules.ts) est le calcul pur de la fleche, testee a l'unite. Une run en cours n'est pas persistee : retirer un bonus ne laisse rien d'orphelin.
+
+## Sauvegarde de la run du Defi
+
+Fermer le jeu au milieu des 30 manches ne perd plus la run (`src/game/runSave.ts`, stockage local de l'appareil). Ce qui est
+retenu : la manche, les bonus et le sursis — **jamais une partie en cours** : la manche interrompue repart de son debut.
+Ecrit a chaque manche gagnee (bonus encore a choisir : `perkPending`, la reprise rouvre le choix) et quand on passe a la manche
+suivante ; effacee a la defaite, apres la 30e manche, ou par « Nouveau Defi ». Au menu : « Reprendre le Defi — manche N/30 »
+au-dessus de « Nouveau Defi (efface la sauvegarde) ». Une sauvegarde abimee ou truquee est ignoree (`loadSavedRun` valide chaque champ).
+La sauvegarde n'est pas synchronisee avec le compte (seule la meilleure manche l'est). Verifie par `tests/browser/defi-reprise.mjs`.

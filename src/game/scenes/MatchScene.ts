@@ -1670,6 +1670,12 @@ export class MatchScene extends Phaser.Scene {
     // L'ordre compte : ces deux ecritures sont synchrones (Zustand), la
     // decision qui suit lit donc bien la partie du jour incluse.
     if (won) gameStore.getState().recordTerrainWin(this.fieldPreset);
+    // Defi : une manche gagnee (pas la derniere) se retient — la run se reprend apres fermeture du jeu ; sinon elle est finie.
+    if (this.mode === 'defi') {
+      const stageNumber = (gameStore.getState().run?.stageIndex ?? 0) + 1;
+      if (won && stageNumber < LADDER.length) gameStore.getState().rememberWonStage();
+      else gameStore.getState().endSavedRun();
+    }
     if (this.mode === 'online' && result.winner !== 'draw') gameStore.getState().recordOnlineWin(won);
     if (this.ranked) {
       if (result.winner === 'draw') gameStore.getState().clearRankedMatch();

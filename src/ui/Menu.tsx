@@ -3,6 +3,7 @@ import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
 import { levelFromXp } from '../game/progression';
 import { LADDER, getBestStage } from '../game/roguelite';
+import { savedRunStageNumber } from '../game/runSave';
 import { useT } from '../i18n/useT';
 import { RankBadge, useRankName } from './RankBadge';
 import { isSafeMode, leaveSafeMode, safeModeReason } from '../game/safeMode';
@@ -45,6 +46,15 @@ export function Menu() {
 
   // Le terrain se choisit maintenant sur son propre ecran, juste avant la
   // partie (cf. MapSelect.tsx) : le menu n'enchaine plus directement.
+  const savedRun = useGameStore((s) => s.savedRun);
+  const resumeDefi = () => {
+    const pendingPerk = useGameStore.getState().resumeRun();
+    if (pendingPerk) {
+      // La manche gagnee avant la fermeture attendait encore son bonus : on rouvre le choix.
+      useGameStore.getState().setPerkFromMenu(true);
+      setScreen('perk');
+    } else bridge.send('start-match');
+  };
   const playDefi = () => {
     setMode('defi');
     startRun();
@@ -174,8 +184,13 @@ export function Menu() {
           <button className="btn btn--primary" onClick={() => setScreen('local-hub')}>
             {t('menu.playLocal')}
           </button>
+          {savedRun && (
+            <button className="btn btn--primary" onClick={resumeDefi} data-testid="defi-resume">
+              {t('menu.defi.resume', { n: savedRunStageNumber(savedRun), total: LADDER.length })}
+            </button>
+          )}
           <button className="btn" onClick={playDefi}>
-            {t('menu.defi', { n: LADDER.length })}
+            {savedRun ? t('menu.defi.new') : t('menu.defi', { n: LADDER.length })}
           </button>
           {bestStage > 0 && (
             <p className="footnote footnote--tight">
