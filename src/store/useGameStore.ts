@@ -90,8 +90,8 @@ export interface AccountState {
   /** `error` : la derniere synchronisation a echoue — la progression reste sur l'appareil, et sera reessayee. */
   sync: 'idle' | 'syncing' | 'ok' | 'error';
   lastSyncAt: number | null;
-  /** Retour d'une connexion Google qui a echoue ou ete annulee, a annoncer sur l'ecran Compte. */
-  notice: 'oauth-error' | 'pseudo-taken' | 'pseudo-refused' | null;
+  /** Pseudo voulu a la creation et refuse par le serveur, a annoncer sur l'ecran Compte. */
+  notice: 'pseudo-taken' | 'pseudo-refused' | null;
   /** Pseudo du classement, une fois lu sur le serveur (affiche au menu) ; null tant qu'on ne le connait pas. */
   pseudo: string | null;
   /** Le joueur arrive par le lien « mot de passe oublie » : l'ecran Compte lui demande un nouveau mot de passe. */

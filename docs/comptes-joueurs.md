@@ -43,52 +43,11 @@ Sans le script SQL, la connexion fonctionne mais la synchronisation echoue : l'e
 affiche alors « Synchronisation impossible pour l'instant » et la progression reste sur
 l'appareil.
 
-## Connexion avec Google
+## Pas de connexion avec Google
 
-Bouton « Continuer avec Google » sur l'ecran Compte. Meme compte, meme progression : seule la
-facon de s'authentifier change (`backend.ts::signInWithGoogle`, `sync.ts::oauthComeback`).
-
-**Flux (PKCE).** Le jeu envoie le navigateur chez Google ; Google renvoie sur le jeu avec un
-`?code=` a usage unique, que le SDK echange contre la session (`flowType: 'pkce'`,
-`detectSessionInUrl`). Rien de secret ne transite dans l'adresse, et le code est retire de la barre
-d'adresse. Si le joueur annule chez Google, le retour porte `?error_description=` : le jeu l'explique
-sur l'ecran Compte et nettoie l'adresse.
-
-**Le bouton est CACHE tant que Google n'est pas configure** (`src/game/account/config.ts`) : un bouton
-visible mais sans effet renverrait le joueur sur une page d'erreur brute de Supabase. Une fois les
-etapes ci-dessous faites, il suffit de passer `GOOGLE_READY` a `true` (une ligne) — ou de me le demander.
-Un build peut aussi l'allumer sans toucher au code avec `VITE_GOOGLE_AUTH=1` (c'est ce que fait
-`npm run test:comptes` ; `GOOGLE_AUTH_TEST=0 npm run test:comptes` verifie que le bouton reste cache).
-
-### Mise en place (une fois, par vous) — a faire sur ordinateur de preference
-
-**A. Chez Google** (console.cloud.google.com)
-1. Creer un projet (nom libre, ex. « Kubb Kings »).
-2. *APIs & Services -> OAuth consent screen* (ou « Google Auth Platform ») : type **External**, nom de
-   l'application, e-mail d'assistance, e-mail du developpeur. Scopes par defaut (email, profile, openid) :
-   rien a ajouter.
-3. **Publier l'application** (« Publish app » / statut « In production »). Piege courant : en statut
-   *Testing*, seuls les comptes listes comme « utilisateurs test » peuvent se connecter. Pour ces scopes
-   de base, Google n'exige aucune verification.
-4. *Credentials -> Create credentials -> OAuth client ID* -> type **Web application** ->
-   *Authorized redirect URIs* : l'adresse de rappel **que Supabase affiche** sur sa page Google
-   (de la forme `https://<identifiant-du-projet>.supabase.co/auth/v1/callback`).
-5. Copier l'**ID client** et le **secret client**.
-
-**B. Chez Supabase**
-1. *Authentication -> Sign In / Providers -> Google* : activer, coller l'ID client et le secret, **Save**.
-2. *Authentication -> URL Configuration* :
-   - **Site URL** : `https://thoomaslef.github.io/kubb-kings/`
-   - **Redirect URLs** : ajouter la meme adresse (avec le `/` final). Sans cela, Supabase refuse de
-     renvoyer le joueur sur le jeu apres Google.
-
-**Meme adresse e-mail que votre compte existant.** Supabase relie normalement l'identite Google au compte
-e-mail existant de meme adresse (meme joueur, meme progression). Non verifie ici — a controler lors de votre
-premier essai ; sinon un deuxieme compte, vide, serait cree.
-
-**Ce que Google transmet.** L'adresse e-mail ; Supabase peut aussi conserver le nom et la photo de profil
-que Google lui envoie (le jeu ne les utilise pas). C'est dit dans la politique de confidentialite, et
-`legal.test.ts` verrouille cette mention sur le code. Un compte Google n'a pas de mot de passe chez nous.
+Elle a ete **retiree** (jamais activee en production : le bouton restait cache faute de configuration chez Google). Plus de
+bouton, plus de `config.ts`, plus de `signInWithOAuth` ; les pages legales n'en parlent plus et `legal.test.ts` verifie qu'elles ne la
+mentionnent pas. Le retour par `?code=` reste utilise pour le lien « mot de passe oublie » (voir plus bas).
 
 ## Comment la synchronisation fonctionne
 
@@ -206,18 +165,18 @@ Le tchat reste dans les parties privees (par code de salon), entre gens qui se c
 - `profileSnapshot.test.ts` : validation, fusion, symetrie, « ne perd rien ».
 - `legal.test.ts` : les textes legaux disent la verite sur le compte et sur le tchat.
 - `tests/browser/comptes.mjs` (`npm run test:comptes`) : la chaine complete contre un **faux
-  Supabase** (y compris la connexion Google en PKCE : retour avec code, annulation, adresse nettoyee) — le vrai SDK, de vraies requetes interceptees, deux « appareils » a stockage separe
+  Supabase** (y compris le retour par lien e-mail en PKCE) — le vrai SDK, de vraies requetes interceptees, deux « appareils » a stockage separe
   et un serveur commun. Couvre la creation, un appareil vierge qui retrouve tout, les erreurs
   (mauvais mot de passe, adresse prise, trop de tentatives, service injoignable), une progression
   qui voyage d'un appareil a l'autre, deux appareils qui ecrivent **en meme temps** sans rien perdre,
   les trois choix du dialogue, la deconnexion, la confirmation d'e-mail et la suppression.
-- **Non verifie** : le vrai service Supabase ET le vrai Google (ecran de consentement, liaison avec un compte e-mail de meme adresse) (non joignable depuis l'atelier) — notamment que votre
+- **Non verifie** : le vrai service Supabase (non joignable depuis l'atelier) — notamment que votre
   projet a bien le script SQL et le reglage « Confirm email » voulus.
 
 ## Mot de passe oublie
 
 Sur l'ecran Compte (onglet « Connexion ») : « Mot de passe oublie ? » -> l'adresse -> un e-mail avec un lien. Le lien
-revient sur le jeu avec un code (meme principe que Google : PKCE), le SDK l'echange contre une session et emet
+revient sur le jeu avec un code (PKCE), le SDK l'echange contre une session et emet
 `PASSWORD_RECOVERY` ; le jeu affiche alors **un seul formulaire**, « Nouveau mot de passe »
 (`sync.ts::initAccount` ecoute l'evenement AVANT `restore()`, `App.tsx` montre le formulaire meme si la scene du menu
 repose l'ecran « menu » en demarrant). Le message est le meme que l'adresse ait un compte ou non : on ne laisse

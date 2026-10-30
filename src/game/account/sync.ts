@@ -341,9 +341,8 @@ export async function initAccount(): Promise<void> {
   if (!backend) return;
   offStore = watchProgress();
 
-  const comeback = oauthComeback();
-  if (comeback === 'error') store().setAccount({ notice: 'oauth-error' });
-  // Le lien « mot de passe oublie » revient sur le jeu avec un code, comme Google : l'evenement de reinitialisation
+  const comeback = emailLinkComeback();
+  // Le lien « mot de passe oublie » revient sur le jeu avec un code : l'evenement de reinitialisation
   // part pendant l'echange de ce code (dans restore), donc on l'ecoute AVANT.
   if (comeback === 'code') {
     offRecovery = backend.onPasswordRecovery(() => {
@@ -371,19 +370,12 @@ export async function initAccount(): Promise<void> {
 }
 
 /**
- * Retour d'une connexion Google : l'adresse porte `?code=` (a echanger contre la
- * session) ou, si le joueur a refuse / annule, `?error_description=...`. On
- * nettoie l'adresse dans le second cas : le SDK, lui, n'est pas charge.
+ * Retour par un lien recu par e-mail (« mot de passe oublie ») : l'adresse porte `?code=`, a echanger contre la session
+ * (c'est le SDK qui le fait, au chargement). Renvoie `'code'` dans ce cas.
  */
-function oauthComeback(): 'code' | 'error' | null {
+function emailLinkComeback(): 'code' | null {
   try {
-    const params = new URLSearchParams(window.location.search);
-    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-    if (params.has('error_description') || params.has('error') || hash.has('error_description')) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-      return 'error';
-    }
-    if (params.has('code')) return 'code';
+    if (new URLSearchParams(window.location.search).has('code')) return 'code';
   } catch {
     // Pas d'adresse lisible : pas de retour a traiter.
   }
@@ -431,19 +423,9 @@ async function authenticate(kind: 'signIn' | 'signUp', email: string, password: 
   return { ok: true, needsEmailConfirmation: result.needsEmailConfirmation };
 }
 
-/** Adresse du jeu, sans reste d'URL : la ou Google doit nous renvoyer. */
+/** Adresse du jeu, sans reste d'URL : la ou le lien de reinitialisation doit nous renvoyer. */
 function returnUrl(): string {
   return `${window.location.origin}${import.meta.env.BASE_URL}`;
-}
-
-/** Lance la connexion par Google : le navigateur quitte la page, puis revient avec un code. */
-export async function signInWithGoogle(): Promise<AuthOutcome> {
-  ensureBackend();
-  if (!backend) return { ok: false, error: 'unavailable' };
-  if (!offStore) offStore = watchProgress();
-  store().setAccount({ notice: null });
-  const result = await backend.signInWithGoogle(returnUrl());
-  return result.ok ? { ok: true, needsEmailConfirmation: false } : { ok: false, error: result.error };
 }
 
 /** Signale un pseudo du classement. Il faut un compte : un signalement anonyme ne pourrait pas etre limite. */

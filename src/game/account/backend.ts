@@ -65,11 +65,6 @@ export interface AccountBackend {
   restore(): Promise<AccountUser | null>;
   signUp(email: string, password: string): Promise<AuthResult>;
   signIn(email: string, password: string): Promise<AuthResult>;
-  /**
-   * Connexion par Google : redirige le navigateur vers Google, qui nous renvoie
-   * sur `redirectTo` (le retour est repris par `restore()` au chargement suivant).
-   */
-  signInWithGoogle(redirectTo: string): Promise<{ ok: true } | { ok: false; error: AccountErrorCode }>;
   signOut(): Promise<void>;
   /**
    * Envoie un e-mail de reinitialisation du mot de passe. Reussit MEME si l'adresse n'a pas de compte
@@ -151,15 +146,6 @@ export function createSupabaseBackend(): AccountBackend | null {
         const { data, error } = await (await client()).auth.signInWithPassword({ email, password });
         if (error) return { ok: false, error: mapAuthError(error) };
         return { ok: true, user: toUser(data.session), needsEmailConfirmation: false };
-      } catch {
-        return { ok: false, error: 'network' };
-      }
-    },
-
-    async signInWithGoogle(redirectTo) {
-      try {
-        const { error } = await (await client()).auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
-        return error ? { ok: false, error: mapAuthError(error) } : { ok: true };
       } catch {
         return { ok: false, error: 'network' };
       }

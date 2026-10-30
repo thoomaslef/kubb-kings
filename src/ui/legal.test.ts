@@ -192,12 +192,10 @@ describe("le reseau reellement present est divulgue", () => {
       }
     }
     expect(texteJoueur(CGU)).toContain("Compte joueur");
-    // La connexion par Google existe dans le code : Google et ce que Supabase en conserve doivent etre dits.
-    expect(backendSource).toContain("signInWithOAuth");
-    for (const chemin of [POLITIQUE, ECRAN]) {
-      const texte = texteJoueur(chemin);
-      expect(texte, `${chemin} ne parle pas de Google`).toContain("Google");
-      expect(texte, `${chemin} tait la photo de profil`).toContain("photo de profil");
+    // La connexion par Google a ete retiree du code : plus aucune page ne doit en parler (ce serait annoncer ce qui n'existe pas).
+    expect(backendSource).not.toContain("signInWithOAuth");
+    for (const chemin of [POLITIQUE, ECRAN, CGU]) {
+      expect(texteJoueur(chemin), `${chemin} parle encore de la connexion Google`).not.toMatch(/connexion avec Google|compte Google|photo de profil/);
     }
   });
 

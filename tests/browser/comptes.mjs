@@ -74,7 +74,6 @@ const serveur = {
   signalements: [], // { par, pseudo, motif }
   signalementRefus: null, // code d'erreur a renvoyer
   recoveries: new Map(), // code -> email (le lien « mot de passe oublie » recu par e-mail)
-  oauthEchec: false,
   setPseudoAbsent: false,
   delaiPseudo: 1500,
   journal: [],
@@ -135,15 +134,7 @@ async function gerer(route) {
   }
   serveur.journal.push(`${req.method()} ${chemin}${url.search}`);
 
-  // Connexion Google (PKCE) : le navigateur est envoye a /authorize, qui le renvoie sur le jeu avec un code
-  // a usage unique — ou une erreur, si le joueur annule chez Google.
-  if (chemin === '/auth/v1/authorize') {
-    const retour = url.searchParams.get('redirect_to');
-    const cible = serveur.oauthEchec
-      ? `${retour}?error=access_denied&error_code=access_denied&error_description=Annule`
-      : `${retour}?code=gcode-${serveur.suivant++}`;
-    return route.fulfill({ status: 302, headers: { location: cible }, body: '' });
-  }
+  // Retour par un lien recu par e-mail (PKCE) : le jeu echange le code contre une session.
   if (chemin === '/auth/v1/token' && url.searchParams.get('grant_type') === 'pkce') {
     if (!corps.auth_code || !corps.code_verifier) {
       return repondre(route, 400, { code: 400, error_code: 'validation_failed', msg: 'pkce' });
@@ -152,12 +143,7 @@ async function gerer(route) {
       const cible = serveur.users.get(serveur.recoveries.get(corps.auth_code));
       return cible ? repondre(route, 200, session(cible)) : repondre(route, 400, { code: 400, error_code: 'validation_failed', msg: 'code' });
     }
-    let user = serveur.users.get('google@example.com');
-    if (!user) {
-      user = { id: `u-${serveur.suivant++}`, email: 'google@example.com', password: null };
-      serveur.users.set(user.email, user);
-    }
-    return repondre(route, 200, session(user));
+    return repondre(route, 400, { code: 400, error_code: 'validation_failed', msg: 'code inconnu' });
   }
 
   if (chemin === '/auth/v1/signup') {
@@ -796,52 +782,14 @@ const B = await appareil('B');
   resultats.onNePeutPlusSeConnecter = /incorrect/.test((await message(A.page)) ?? '');
 }
 
-// ------------------------------------------------------------------ 9. connexion avec Google
+// ------------------------------------------------------------------ 9. plus de connexion avec Google
 {
-  const G = await appareil('G', {
-    'kubb-kings.progression': { totalXp: 700, winStreak: 0, gamesPlayed: 9, totalWins: 5 },
-    'kubb-kings.currency': { coins: 55 }
-  });
+  const G = await appareil('G');
   await ouvrirCompte(G.page);
-  const bouton = await G.page.locator('button', { hasText: /Continuer avec Google/ }).count();
-  // Le bouton n'est propose que si Google est configure (account/config.ts) : present quand le build
-  // l'active, ABSENT sinon — un bouton visible mais sans effet renverrait sur une page d'erreur brute.
-  const googleActive = process.env.VITE_GOOGLE_AUTH === '1';
-  resultats.leBoutonGoogleSuitLeDrapeau = bouton === (googleActive ? 1 : 0);
-  if (!googleActive) {
-    await G.contexte.close();
-    console.log('Google desactive dans ce build : section de connexion Google ignoree.');
-  } else {
-
-  // Annulation chez Google : le jeu l'explique, ne plante pas, et nettoie l'adresse.
-  serveur.oauthEchec = true;
-  await G.page.locator('button', { hasText: /Continuer avec Google/ }).click();
-  await G.page.waitForURL(/kubb-kings/, { timeout: 30000 });
-  await G.page.waitForSelector('.panel--menu', { timeout: 30000 });
-  await ouvrirCompte(G.page);
-  resultats.googleAnnule_LeJeuLExplique = (await G.page.locator('[data-testid="account-notice"]').count()) === 1;
-  resultats.googleAnnule_LAdresseEstNettoyee = !/error/.test(G.page.url());
-  resultats.googleAnnule_PasConnecte = (await etat(G.page)).compte.status === 'signedOut';
-
-  // Reussite : retour avec un code, echange (PKCE), connexion, synchronisation.
-  serveur.oauthEchec = false;
-  await G.page.locator('button', { hasText: /Continuer avec Google/ }).click();
-  await G.page.waitForURL(/kubb-kings/, { timeout: 30000 });
-  await G.page.waitForSelector('.panel--menu', { timeout: 30000 });
-  const connecte = await attendre(G.page, () => {
-    const s = window.__kubbStoreApi.getState();
-    return s.account.status === 'signedIn' && s.account.sync === 'ok';
-  }, undefined, 30000);
-  const eg = await etat(G.page);
-  console.log({ google: eg.compte, url: G.page.url() });
-  resultats.googleConnecte = connecte && eg.compte.email === 'google@example.com';
-  resultats.leFluxEstEnPKCE = serveur.journal.some((l) => l.includes('/auth/v1/authorize') && l.includes('code_challenge=')) &&
-    serveur.journal.some((l) => l.includes('grant_type=pkce'));
-  resultats.googleLAdresseNePorteAucunCode = !/[?&]code=/.test(G.page.url());
-  const profilG = [...serveur.profils.values()].find((p) => p.data.progression.totalXp === 700);
-  resultats.googleLaProgressionEstEnvoyee = !!profilG && profilG.data.coins === 55;
+  const texte = (await G.page.locator('.panel').textContent()) ?? '';
+  resultats.google_AucunBoutonNiMention = (await G.page.locator('button', { hasText: /Google/ }).count()) === 0 && !/Google/i.test(texte);
+  resultats.google_AucuneAdresseDeConnexionExterne = !serveur.journal.some((l) => l.includes('/auth/v1/authorize'));
   await G.contexte.close();
-  }
 }
 
 // ------------------------------------------------------------------ 10. classement des parties classees
