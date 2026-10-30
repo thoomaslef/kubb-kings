@@ -25,8 +25,8 @@ export function Legal() {
         <p className="panel__text">
           KUBB: Kings n&apos;utilise aucun outil d&apos;analyse externe, aucun SDK tiers de
           suivi et aucune publicite ; il envoie seulement une mesure d&apos;usage anonyme, decrite
-          plus bas et que vous pouvez couper. Un compte joueur est propose, mais il est facultatif : le
-          jeu se joue en entier sans.
+          plus bas et que vous pouvez couper. Un compte joueur est necessaire pour jouer en ligne ; il reste
+          facultatif pour tous les modes hors ligne, qui se jouent en entier sans.
         </p>
         <p className="panel__text">
           <strong>Signalement et blocage.</strong> Un joueur connecte peut signaler un pseudo depuis
@@ -80,7 +80,7 @@ export function Legal() {
         <p className="panel__text">
           Rien n&apos;est enregistre sur le serveur pendant une partie : les messages sont
           relayes en direct puis perdus, et aucun historique de partie n&apos;est conserve. Les
-          seules donnees enregistrees en ligne sont celles du compte joueur facultatif, decrit
+          seules donnees enregistrees en ligne sont celles du compte joueur, decrit
           plus bas.
         </p>
         <p className="panel__text">
@@ -91,7 +91,7 @@ export function Legal() {
           sans aucun echange en ligne ; cette partie compte pour votre rang, comme les autres.
         </p>
         <p className="panel__text">
-          <strong>Compte joueur (facultatif).</strong> Si vous en creez un, Supabase (region
+          <strong>Compte joueur (necessaire en ligne, facultatif hors ligne).</strong> Si vous en creez un, Supabase (region
           Europe) enregistre votre adresse e-mail, qui ne sert qu&apos;a vous connecter, votre
           mot de passe sous forme chiffree, et votre progression : niveau, pieces, succes,
           articles, rang des parties classees, meilleures series, plus un pseudo pour le
@@ -126,8 +126,8 @@ export function Legal() {
           Les modes solo, local, Defi et tournoi ne comportent aucun echange et conviennent a
           tous les ages. Pour un enfant, nous recommandons que le code de salon ne soit partage
           qu&apos;avec des personnes connues de lui, et qu&apos;un adulte soit informe de
-          l&apos;usage du mode en ligne et de la creation d&apos;un compte joueur facultatif
-          (adresse e-mail).
+          l&apos;usage du mode en ligne et de la creation d&apos;un compte joueur (adresse e-mail),
+          necessaire pour jouer en ligne.
         </p>
         <p className="panel__text">
           Le jeu ne demande aucune permission (localisation, contacts, photos,
@@ -153,8 +153,8 @@ export function Legal() {
           Le mode en ligne met en relation deux joueurs qui partagent un code de salon. Ce code
           est le seul element qui protege une partie privee : il vous appartient de ne le
           communiquer qu&apos;a la personne avec qui vous souhaitez jouer. La partie rapide et la
-          partie classee vous opposent a un joueur tire au sort, sans tchat. Un compte joueur
-          facultatif permet de retrouver votre progression : vous etes responsable de votre mot
+          partie classee vous opposent a un joueur tire au sort, sans tchat. Un compte joueur,
+          necessaire pour jouer en ligne, permet de retrouver votre progression : vous etes responsable de votre mot
           de passe, et le rang des parties classees n&apos;est pas verifie par un serveur. Ce mode repose sur un service
           tiers propose sans garantie de disponibilite ; l&apos;editeur peut le suspendre ou
           l&apos;interrompre a tout moment, sans que cela affecte les modes hors ligne.

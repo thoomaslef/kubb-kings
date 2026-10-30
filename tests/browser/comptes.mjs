@@ -676,6 +676,43 @@ const B = await appareil('B');
   await dnt.close();
 }
 
+// ------------------------------------------------------------------ 5e. un compte est exige pour jouer en ligne (jamais hors ligne)
+{
+  const Q = await appareil('Q');
+  const ecran = () => Q.page.evaluate(() => window.__kubbStoreApi.getState().screen);
+  // Hors ligne : aucun compte demande.
+  await Q.page.locator('button', { hasText: /Jouer hors ligne/ }).click();
+  await attendre(Q.page, () => window.__kubbStoreApi.getState().screen === 'local-hub');
+  resultats.exige_HorsLigneSansCompte = (await ecran()) === 'local-hub';
+  await Q.page.locator('button', { hasText: /Retour/ }).click();
+  await attendre(Q.page, () => window.__kubbStoreApi.getState().screen === 'menu');
+
+  // En ligne : la page explique, et ne propose ni recherche ni salon.
+  await Q.page.locator('button', { hasText: /Jouer en ligne/ }).click();
+  await attendre(Q.page, () => window.__kubbStoreApi.getState().screen === 'online-hub');
+  resultats.exige_LaPageExpliqueQuUnCompteEstNecessaire = (await Q.page.locator('[data-testid="online-needs-account"]').count()) === 1;
+  resultats.exige_AucuneRechercheSansCompte =
+    (await Q.page.locator('button', { hasText: /Trouver une partie|Jouer avec un ami/ }).count()) === 0;
+  // Atteindre le salon par un autre chemin ne contourne pas l'exigence.
+  await Q.page.evaluate(() => window.__kubbStoreApi.getState().setScreen('online'));
+  await attendre(Q.page, () => window.__kubbStoreApi.getState().screen === 'online-hub');
+  resultats.exige_LeSalonRenvoieALaPage = (await ecran()) === 'online-hub';
+
+  // Creer le compte : on revient DIRECTEMENT a la page « Jouer en ligne », qui propose alors les deux choix.
+  await Q.page.locator('button', { hasText: /Creer mon compte/ }).click();
+  await attendre(Q.page, () => window.__kubbStoreApi.getState().screen === 'account');
+  resultats.exige_LEcranCompteDitPourquoi = (await Q.page.locator('[data-testid="account-online-required"]').count()) === 1;
+  await remplir(Q.page, { email: 'enligne@example.com', mdp: 'motdepasse1', confirmation: 'motdepasse1' });
+  await Q.page.locator('button[type="submit"]').click();
+  await attendre(Q.page, () => window.__kubbStoreApi.getState().screen === 'online-hub');
+  resultats.exige_ApresLeCompteOnRevientEnLigne = (await ecran()) === 'online-hub';
+  resultats.exige_LesDeuxChoixApparaissent =
+    (await Q.page.locator('button', { hasText: /Trouver une partie/ }).count()) === 1 &&
+    (await Q.page.locator('button', { hasText: /Jouer avec un ami/ }).count()) === 1;
+  resultats.exige_PlusDeRetourAutomatiqueEnsuite = (await Q.page.evaluate(() => window.__kubbStoreApi.getState().afterLogin)) === null;
+  await Q.contexte.close();
+}
+
 // ------------------------------------------------------------------ 6. deux histoires : le joueur choisit
 {
   const profilAvant = JSON.parse(JSON.stringify([...serveur.profils.values()][0].data));
@@ -809,6 +846,7 @@ const B = await appareil('B');
     );
   const ouvrirRangs = async (page) => {
     await focus(page);
+    await page.waitForSelector('.panel--menu, .panel--ranks', { timeout: 30000 });
     if ((await page.locator('.btn--ranked').count()) > 0) await page.locator('.btn--ranked').click();
     await page.waitForSelector('.panel--ranks');
     await page.waitForFunction(

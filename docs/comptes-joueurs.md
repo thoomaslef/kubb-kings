@@ -1,8 +1,11 @@
 # Comptes joueurs
 
-Un compte **facultatif**, par e-mail et mot de passe, pour retrouver sa progression sur
-un autre appareil. Le jeu reste entierement jouable sans compte, hors ligne, exactement
-comme avant.
+Un compte par e-mail et mot de passe, pour retrouver sa progression sur un autre appareil.
+**Exige pour jouer en ligne** (« Jouer en ligne » : trouver une partie classee, jouer avec un ami) : c'est lui qui donne un pseudo au
+classement et permet de signaler un joueur. **Jamais exige hors ligne** : solo, 1v1, 2v2, tournoi et Defi restent entierement
+jouables sans compte, exactement comme avant. Mecanique : `Hubs.tsx::OnlineHub` affiche une page qui explique et propose « Creer mon
+compte » (`afterLogin` ramene a « Jouer en ligne » une fois connecte) ; `OnlineLobby` renvoie a cette page si on y arrive sans compte. Sans service
+de compte configure (developpement local), aucune exigence.
 
 ## Un compte = une progression
 

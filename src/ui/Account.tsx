@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import {
   accountAvailable,
@@ -26,7 +26,17 @@ export function Account() {
   const setScreen = useGameStore((s) => s.setScreen);
   const account = useGameStore((s) => s.account);
 
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const afterLogin = useGameStore((s) => s.afterLogin);
+  const setAfterLogin = useGameStore((s) => s.setAfterLogin);
+  // Arrive pour jouer en ligne : une fois connecte, on y retourne (cf. Hubs.tsx::OnlineHub).
+  useEffect(() => {
+    if (account.status === 'signedIn' && afterLogin && !account.recovering) {
+      setAfterLogin(null);
+      setScreen(afterLogin);
+    }
+  }, [account.status, account.recovering, afterLogin, setAfterLogin, setScreen]);
+
+  const [mode, setMode] = useState<'login' | 'signup'>(afterLogin ? 'signup' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -38,7 +48,10 @@ export function Account() {
   const [forgot, setForgot] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const back = () => setScreen('menu');
+  const back = () => {
+    setAfterLogin(null);
+    setScreen('menu');
+  };
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -300,6 +313,11 @@ export function Account() {
       <div className="panel">
         <h2 className="panel__title">{t('account.title')}</h2>
         <p className="panel__text">{t('account.intro')}</p>
+        {afterLogin && (
+          <p className="footnote" data-testid="account-online-required">
+            {t('account.onlineRequired')}
+          </p>
+        )}
 
         <div className="segmented" role="group" aria-label={t('account.title')}>
           <button

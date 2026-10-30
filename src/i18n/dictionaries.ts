@@ -29,6 +29,10 @@ const fr: Record<string, string> = {
   'hub.online.find': 'Trouver une partie',
   'hub.local.title': 'Jouer hors ligne',
   'hub.back': 'Retour',
+  'hub.online.needsAccount': "Pour jouer en ligne, creez un compte gratuit : une adresse e-mail et un mot de passe, 30 secondes. Vous apparaitrez au classement sous un pseudo, et votre progression vous suivra d'un appareil a l'autre. Hors ligne, aucun compte n'est necessaire.",
+  'hub.online.createAccount': 'Creer mon compte',
+  'hub.online.checking': 'Verification de votre connexion...',
+  'account.onlineRequired': 'Un compte est necessaire pour jouer en ligne. Une fois connecte, vous reviendrez directement a la page « Jouer en ligne ».',
 
   // ---- Rangs (src/game/ranks.ts)
   'rank.tier.bronze': 'Bronze',
@@ -670,6 +674,10 @@ const en: Record<string, string> = {
   'hub.online.find': 'Find a match',
   'hub.local.title': 'Play offline',
   'hub.back': 'Back',
+  'hub.online.needsAccount': 'To play online, create a free account: an email address and a password, 30 seconds. You will appear on the leaderboard under a username, and your progress follows you across devices. Offline, no account is needed.',
+  'hub.online.createAccount': 'Create my account',
+  'hub.online.checking': 'Checking your connection...',
+  'account.onlineRequired': 'An account is required to play online. Once signed in, you will go straight back to the “Play online” page.',
 
   // ---- Ranks (src/game/ranks.ts)
   'rank.tier.bronze': 'Bronze',

@@ -18,6 +18,7 @@ import type { BatonId } from '../game/batons';
 import { levelFromXp } from '../game/progression';
 import { useRankName } from './RankBadge';
 import { track } from '../game/analytics';
+import { accountAvailable } from '../game/account/sync';
 import { useT } from '../i18n/useT';
 
 /**
@@ -261,6 +262,14 @@ export function OnlineLobby() {
       setQueueSize(matchmaker.queueSize);
     }, 1000);
   };
+
+  // Le compte est exige pour jouer en ligne : sans lui, retour a la page qui l'explique.
+  useEffect(() => {
+    const st = useGameStore.getState();
+    if (accountAvailable() && st.account.status === 'signedOut') st.setScreen('online-hub');
+    // Une seule fois a l'arrivee sur l'ecran.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Arrive par « Partie rapide » ou l'ecran du classement : la recherche (classee) demarre d'elle-meme.
   useEffect(() => {

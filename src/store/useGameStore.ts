@@ -328,6 +328,9 @@ interface GameState {
   /** Compte joueur (facultatif : le jeu reste entierement jouable sans). */
   account: AccountState;
   accountConflict: AccountConflict | null;
+  /** Ecran ou revenir une fois connecte : le compte est exige pour jouer en ligne (cf. Hubs.tsx::OnlineHub). */
+  afterLogin: Screen | null;
+  setAfterLogin: (screen: Screen | null) => void;
   setAccount: (patch: Partial<AccountState>) => void;
   setAccountConflict: (conflict: AccountConflict | null) => void;
   /** Remplace la progression locale par ce profil, ET l'ecrit dans le stockage de l'appareil. */
@@ -495,6 +498,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   botRanked: false,
   account: { status: 'signedOut', email: null, sync: 'idle', lastSyncAt: null, notice: null, pseudo: null, recovering: false },
   accountConflict: null,
+  afterLogin: null,
+  setAfterLogin: (afterLogin) => set({ afterLogin }),
 
   mapIntent: null,
 

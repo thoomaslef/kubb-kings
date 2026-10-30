@@ -1,6 +1,7 @@
 import { AI_PROFILES, type Difficulty } from '../game/ai';
 import { useGameStore } from '../store/useGameStore';
 import { useT } from '../i18n/useT';
+import { accountAvailable } from '../game/account/sync';
 
 const LEVELS = Object.keys(AI_PROFILES) as Difficulty[];
 
@@ -61,6 +62,43 @@ export function OnlineHub() {
   const t = useT();
   const setScreen = useGameStore((s) => s.setScreen);
   const openMapSelect = useGameStore((s) => s.openMapSelect);
+  const account = useGameStore((s) => s.account);
+  const setAfterLogin = useGameStore((s) => s.setAfterLogin);
+
+  // Un compte est exige pour jouer en ligne : c'est lui qui donne un pseudo au classement et qui permet de signaler un
+  // joueur. Les modes hors ligne n'en demandent jamais. Sans service de compte configure (developpement), pas d'exigence.
+  if (accountAvailable() && account.status !== 'signedIn') {
+    const goToAccount = () => {
+      setAfterLogin('online-hub');
+      setScreen('account');
+    };
+    return (
+      <div className="overlay overlay--solid">
+        <div className="panel">
+          <h2 className="panel__title">{t('hub.online.title')}</h2>
+          {account.status === 'checking' ? (
+            <p className="panel__text">{t('hub.online.checking')}</p>
+          ) : (
+            <>
+              <p className="panel__text" data-testid="online-needs-account">
+                {t('hub.online.needsAccount')}
+              </p>
+              <div className="button-column">
+                <button className="btn btn--primary" onClick={goToAccount}>
+                  {t('hub.online.createAccount')}
+                </button>
+              </div>
+            </>
+          )}
+          <div className="button-column">
+            <button className="btn btn--ghost" onClick={() => setScreen('menu')}>
+              {t('hub.back')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const find = () => {
     useGameStore.getState().setRankedLobby(true);
