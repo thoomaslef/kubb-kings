@@ -9,6 +9,7 @@ import { RankBadge, useRankName } from './RankBadge';
 import { isSafeMode, leaveSafeMode, safeModeReason } from '../game/safeMode';
 import { gameUrl, shareGame, type ShareData, type ShareOutcome } from '../game/shareLink';
 import { accountAvailable } from '../game/account/sync';
+import { IconBag, IconBook, IconGear, IconGlobe, IconMedal, IconPalette, IconShare, IconSword, IconTarget, MenuEmblem } from './icons';
 
 export function Menu() {
   const t = useT();
@@ -80,12 +81,15 @@ export function Menu() {
   }
 
   return (
-    <div className="overlay overlay--solid">
+    <div className="overlay overlay--solid overlay--menu">
       <div className="panel panel--menu">
-        <h1 className="title">
-          KUBB<span className="title__accent">: Kings</span>
-        </h1>
-        <p className="subtitle">{t('menu.subtitle')}</p>
+        <div className="hero">
+          <MenuEmblem />
+          <h1 className="title">
+            KUBB<span className="title__accent">: Kings</span>
+          </h1>
+          <p className="subtitle">{t('menu.subtitle')}</p>
+        </div>
 
         {/* Mode compatibilite (safeMode.ts) : le jeu a plante au demarrage, ou le joueur l'a demande. */}
         {isSafeMode() && (
@@ -152,6 +156,7 @@ export function Menu() {
         </div>
 
         <button type="button" className="btn btn--ghost btn--share" onClick={shareWithFriend}>
+          <IconShare />
           {t('menu.share.button')}
         </button>
         {shareState === 'copied' && (
@@ -178,10 +183,12 @@ export function Menu() {
         )}
 
         <div className="button-column">
-          <button className="btn btn--primary" onClick={() => setScreen('online-hub')}>
+          <button className="btn btn--primary btn--hero" onClick={() => setScreen('online-hub')}>
+            <IconGlobe />
             {t('menu.playOnline')}
           </button>
-          <button className="btn btn--primary" onClick={() => setScreen('local-hub')}>
+          <button className="btn btn--primary btn--hero" onClick={() => setScreen('local-hub')}>
+            <IconTarget />
             {t('menu.playLocal')}
           </button>
           {savedRun && (
@@ -189,7 +196,8 @@ export function Menu() {
               {t('menu.defi.resume', { n: savedRunStageNumber(savedRun), total: LADDER.length })}
             </button>
           )}
-          <button className="btn" onClick={playDefi}>
+          <button className="btn btn--wide" onClick={playDefi}>
+            <IconSword />
             {savedRun ? t('menu.defi.new') : t('menu.defi', { n: LADDER.length })}
           </button>
           {bestStage > 0 && (
@@ -200,30 +208,39 @@ export function Menu() {
               })}
             </p>
           )}
-          <button className="btn btn--ranked" onClick={() => setScreen('ranks')}>
+          <button className="btn btn--ranked btn--wide" onClick={() => setScreen('ranks')}>
             <RankBadge index={rank.index} size="sm" />
             {t('menu.ranked', { rank: rankName(rank.index) })}
           </button>
 
-          <button className="btn" onClick={() => setScreen('appearance')}>
-            {t('menu.appearance')}
-          </button>
-          <button className="btn" onClick={() => setScreen('shop')}>
-            {t('menu.shop')} — {t('menu.coinsAria', { n: coins })}
-          </button>
-          <button className="btn" onClick={() => setScreen('achievements')}>
-            {t('menu.achievements')}
-          </button>
-
-          <button className="btn" onClick={() => setScreen('options')}>
-            {t('menu.options')}
-          </button>
-          <button className="btn" onClick={() => setScreen('rules')}>
-            {t('menu.rules')}
-          </button>
-          <button className="btn btn--ghost" onClick={() => setScreen('quit')}>
-            {t('menu.quit')}
-          </button>
+          <div className="menu-tiles">
+            <button className="btn btn--tile" onClick={() => setScreen('appearance')}>
+              <IconPalette />
+              {t('menu.appearance')}
+            </button>
+            <button className="btn btn--tile" onClick={() => setScreen('shop')}>
+              <IconBag />
+              <span className="btn--tile__label">
+                {t('menu.shop')}
+                <span className="btn--tile__sub"> — {t('menu.coinsAria', { n: coins })}</span>
+              </span>
+            </button>
+            <button className="btn btn--tile" onClick={() => setScreen('achievements')}>
+              <IconMedal />
+              {t('menu.achievements')}
+            </button>
+            <button className="btn btn--tile" onClick={() => setScreen('options')}>
+              <IconGear />
+              {t('menu.options')}
+            </button>
+            <button className="btn btn--tile" onClick={() => setScreen('rules')}>
+              <IconBook />
+              {t('menu.rules')}
+            </button>
+            <button className="btn btn--tile btn--tile-ghost" onClick={() => setScreen('quit')}>
+              {t('menu.quit')}
+            </button>
+          </div>
         </div>
 
         <p className="footnote">{t('menu.footer')}</p>

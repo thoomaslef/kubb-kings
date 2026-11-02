@@ -1479,3 +1479,235 @@ body {
 .ranks-me {
   margin: 8px 0 14px;
 }
+
+/* ---------- Menu : en-tete illustre, boutons a icones, entree animee ---------- */
+
+.overlay--menu {
+  overflow: hidden;
+}
+
+/* Deux lueurs douces qui derivent lentement derriere le panneau (aucune image : du degrade CSS). */
+.overlay--menu::before,
+.overlay--menu::after {
+  content: '';
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.35;
+  filter: blur(40px);
+}
+
+.overlay--menu::before {
+  top: -30vmax;
+  left: -25vmax;
+  background: radial-gradient(circle, rgba(242, 193, 78, 0.22), transparent 65%);
+  animation: menu-drift-a 18s ease-in-out infinite alternate;
+}
+
+.overlay--menu::after {
+  bottom: -35vmax;
+  right: -30vmax;
+  background: radial-gradient(circle, rgba(60, 160, 110, 0.3), transparent 65%);
+  animation: menu-drift-b 22s ease-in-out infinite alternate;
+}
+
+@keyframes menu-drift-a {
+  to {
+    transform: translate(12vmax, 8vmax);
+  }
+}
+
+@keyframes menu-drift-b {
+  to {
+    transform: translate(-10vmax, -6vmax);
+  }
+}
+
+.panel--menu {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(22, 44, 33, 0.9), rgba(12, 26, 19, 0.94));
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.emblem {
+  margin-bottom: 2px;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45));
+  animation: emblem-float 4.5s ease-in-out infinite;
+}
+
+@keyframes emblem-float {
+  50% {
+    transform: translateY(-5px) rotate(-1.5deg);
+  }
+}
+
+.hero .title {
+  background: linear-gradient(180deg, #ffffff 30%, #cfe2d6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
+}
+
+.hero .title__accent {
+  background: linear-gradient(180deg, #ffe08a 20%, #e0a020 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero .subtitle {
+  margin: 4px 0 18px;
+}
+
+.icon {
+  flex: none;
+}
+
+.btn--hero,
+.btn--wide,
+.btn--share,
+.btn--tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn--hero {
+  padding: 18px 18px;
+  font-size: 19px;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(217, 159, 42, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Un reflet qui traverse les gros boutons de temps en temps. */
+.btn--hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.45) 50%, transparent 60%);
+  transform: translateX(-120%);
+  animation: btn-shine 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.btn--hero + .btn--hero::after {
+  animation-delay: 1.2s;
+}
+
+@keyframes btn-shine {
+  0%,
+  70% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.btn--wide {
+  padding: 16px 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+}
+
+.menu-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn--tile {
+  flex-direction: column;
+  gap: 6px;
+  min-height: 78px;
+  padding: 12px 8px;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.btn--tile .icon {
+  color: var(--gold);
+}
+
+.btn--tile__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.btn--tile-ghost {
+  background: transparent;
+  color: var(--muted);
+  border-style: dashed;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.btn--primary:hover {
+  background: linear-gradient(180deg, #f7cd63 0%, #e0a52f 100%);
+}
+
+/* Entree en cascade : chaque element du menu arrive du bas, a quelques dixiemes d'ecart. */
+.panel--menu > *,
+.panel--menu .button-column > *,
+.panel--menu .menu-tiles > * {
+  animation: menu-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.panel--menu .button-column > :nth-child(1) {
+  animation-delay: 0.08s;
+}
+.panel--menu .button-column > :nth-child(2) {
+  animation-delay: 0.14s;
+}
+.panel--menu .button-column > :nth-child(3) {
+  animation-delay: 0.2s;
+}
+.panel--menu .button-column > :nth-child(4) {
+  animation-delay: 0.26s;
+}
+.panel--menu .button-column > :nth-child(5) {
+  animation-delay: 0.32s;
+}
+.panel--menu .menu-tiles > :nth-child(odd) {
+  animation-delay: 0.38s;
+}
+.panel--menu .menu-tiles > :nth-child(even) {
+  animation-delay: 0.44s;
+}
+
+@keyframes menu-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay--menu::before,
+  .overlay--menu::after,
+  .emblem,
+  .btn--hero::after,
+  .panel--menu > *,
+  .panel--menu .button-column > *,
+  .panel--menu .menu-tiles > * {
+    animation: none;
+  }
+}
