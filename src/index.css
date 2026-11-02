@@ -1765,3 +1765,35 @@ body {
     animation: none;
   }
 }
+
+/* ---- Fin de partie : confettis et titre de victoire ---- */
+.confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+.confetti i {
+  position: absolute;
+  top: -24px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall {
+  0% { opacity: 1; transform: translate3d(0, 0, 0) rotate(0); }
+  100% { opacity: 0.9; transform: translate3d(var(--drift), 105vh, 0) rotate(var(--spin)); }
+}
+.panel__title--win {
+  animation: win-pop 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  text-shadow: 0 0 22px currentColor;
+}
+@keyframes win-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti { display: none; }
+  .panel__title--win { animation: none; }
+}

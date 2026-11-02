@@ -1,3 +1,4 @@
+import { Confetti } from './Confetti';
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { bridge } from '../game/GameBridge';
@@ -188,8 +189,9 @@ export function ResultScreen() {
 
   return (
     <div className="overlay overlay--solid">
+      {wonMatch && <Confetti />}
       <div className="panel">
-        <h2 className="panel__title" style={{ color: accent }}>
+        <h2 className={wonMatch ? 'panel__title panel__title--win' : 'panel__title'} style={{ color: accent }}>
           {headlineText}
         </h2>
         <p className="panel__text">{detailText}</p>
