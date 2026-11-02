@@ -5,6 +5,7 @@ import { OBSTACLE_RADIUS } from '../rules';
 import { Pinceau } from '../pinceau';
 import { renderScaleFactor } from '../renderScale';
 import { markStage } from '../safeMode';
+import { registerTexturePreviewer } from '../texturePreview';
 
 /**
  * Genere toutes les textures du jeu par code (aucun asset externe a charger),
@@ -36,6 +37,12 @@ export class BootScene extends Phaser.Scene {
     this.buildShadowTexture();
     this.buildParticleTextures();
 
+    // Apercus pour l'ecran Apparence (cf. texturePreview.ts).
+    registerTexturePreviewer((key) => {
+      if (!this.textures.exists(key)) return null;
+      const source = this.textures.get(key).getSourceImage() as HTMLCanvasElement;
+      return typeof source.toDataURL === 'function' ? source.toDataURL() : null;
+    });
     markStage('textures-ok');
     this.scene.start('MenuScene');
   }
@@ -302,12 +309,45 @@ export class BootScene extends Phaser.Scene {
       KUBB_SKINS.forEach((skin) => {
         // Debout : bloc vu de tres legerement au-dessus. La face du dessus,
         // plus claire, donne le relief ; le biseau du bas l'assoit au sol.
-        this.texture(`kubb-${id}-${skin}`, 40, 40, (g) => this.drawKubbStanding(g, skin, color, shades));
+        this.texture(`kubb-${id}-${skin}`, 40, 40, (g) => {
+          this.drawKubbStanding(g, skin, color, shades);
+          this.finishKubb(g, skin, shades);
+        });
 
         // Couche : bloc bascule sur le flanc, deteint, hors jeu.
-        this.texture(`kubb-down-${id}-${skin}`, 48, 32, (g) => this.drawKubbFallen(g, skin, color, shades));
+        this.texture(`kubb-down-${id}-${skin}`, 48, 32, (g) => {
+          this.drawKubbFallen(g, skin, color, shades);
+          g.lineStyle(1, 0xffffff, 0.16);
+          g.strokeRoundedRect(1.5, 1.5, 45, 27, 6);
+        });
       });
     });
+  }
+
+  /**
+   * Finition commune a tous les habillages d'un kubb debout : un liseré de lumiere sur l'arete haute, un reflet doux, et —
+   * pour le bois — un fil plus naturel et un noeud. Rien ici ne change les dimensions ni la silhouette (la hitbox ne depend
+   * d'aucun choix visuel).
+   */
+  private finishKubb(g: Pinceau, skin: KubbSkin, shades: { light: number; dark: number; deep: number }) {
+    if (skin === 'bois') {
+      // Fil du bois : de longues ondulations, et un noeud.
+      g.lineStyle(1, shades.deep, 0.22);
+      for (let k = 0; k < 4; k += 1) {
+        const y = 21 + k * 4;
+        g.lineBetween(5, y, 14, y - 1.2);
+        g.lineBetween(14, y - 1.2, 26, y + 1);
+        g.lineBetween(26, y + 1, 35, y - 0.6);
+      }
+      g.fillStyle(shades.deep, 0.32);
+      g.fillEllipse(27, 26, 6, 4);
+      g.lineStyle(1, shades.light, 0.4);
+      g.strokeCircle(27, 26, 2.2);
+    }
+    // Reflet doux en haut a gauche, puis liseré sur l'arete.
+    g.disqueDoux(13, 10, 9, 0xffffff, 0.22, 0.4);
+    g.lineStyle(1, 0xffffff, skin === 'metal' ? 0.5 : 0.3);
+    g.strokeRoundedRect(1.5, 1.5, 37, 35, 6.5);
   }
 
   /**

@@ -1,5 +1,6 @@
 import { useGameStore } from '../store/useGameStore';
-import { BATON_IDS } from '../game/batons';
+import { BATON_IDS, BATONS } from '../game/batons';
+import { texturePreview } from '../game/texturePreview';
 import { levelFromXp } from '../game/progression';
 import { KUBB_SKINS, KING_SKINS } from '../game/theme';
 import { THROW_EFFECT_IDS } from '../game/throwEffects';
@@ -37,6 +38,20 @@ export function Appearance() {
     <div className="overlay overlay--solid">
       <div className="panel">
         <h2 className="panel__title">{t('appearance.title')}</h2>
+
+        {/* Apercu en direct : ce qu'on equipe se voit tout de suite, tel qu'il sera sur le terrain. */}
+        <div className="skin-stage" data-testid="skin-stage" aria-hidden="true">
+          {[
+            [`kubb-blue-${kubbSkin}`, 'skin-stage__kubb'],
+            [`kubb-red-${kubbSkin}`, 'skin-stage__kubb'],
+            [`kubb-down-blue-${kubbSkin}`, 'skin-stage__down'],
+            [`king-${kingSkin}`, 'skin-stage__king'],
+            [BATONS[batonId].textureKey, 'skin-stage__baton']
+          ].map(([key, cls]) => {
+            const src = texturePreview(key);
+            return src ? <img key={key} src={src} alt="" className={cls} draggable={false} /> : null;
+          })}
+        </div>
         <div className="button-column">
           <p className="segmented-label">{t('menu.skinAria')}</p>
           <div className="segmented" role="group" aria-label={t('menu.skinAria')}>

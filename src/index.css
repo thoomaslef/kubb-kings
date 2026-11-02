@@ -1711,3 +1711,57 @@ body {
     animation: none;
   }
 }
+
+/* ---------- Apparence : apercu en direct ---------- */
+
+.skin-stage {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+  margin: 4px 0 16px;
+  padding: 18px 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.12), transparent 60%),
+    repeating-linear-gradient(0deg, #2f7a4a 0 22px, #2a6e43 22px 44px);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.35);
+  min-height: 92px;
+}
+
+.skin-stage img {
+  display: block;
+  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.45));
+  animation: stage-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+.skin-stage__kubb {
+  width: 52px;
+}
+
+.skin-stage__down {
+  width: 62px;
+}
+
+.skin-stage__king {
+  width: 52px;
+}
+
+.skin-stage__baton {
+  height: 60px;
+  transform: rotate(18deg);
+}
+
+@keyframes stage-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skin-stage img {
+    animation: none;
+  }
+}
